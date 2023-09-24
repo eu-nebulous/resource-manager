@@ -1,4 +1,4 @@
-package eu.nebulous.resource.discovery.management;
+package eu.nebulous.resource.discovery.registration;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
