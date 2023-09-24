@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Firmbee.com - Free Project Management Platform for remote teams"> 
+    <title>NebulOuS Resource Discovery - Management page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="https://kit.fontawesome.com/0e035b9984.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <script src="js/addshadow.js"></script>
+
+    <script>
+$(function() {
+    updateRequestsList();
+});
+
+function updateRequestsList() {
+    $.ajax({
+        url: '/discovery/request',
+        dataType: 'json'
+    })
+    .done(function(data, status) {
+        //console.log('updateRequestsList: OK: ', data);
+        var tbody = $('#requestsTable-tbody');
+        tbody.empty();
+        var ii = 0;
+        data.forEach(item => {
+            var reqId = item.id;
+            var devName = item.device.deviceName;
+            var ipAddress = item.device.ipAddress;
+            var date = new Date( Date.parse( item.requestDate ) );
+            var dateStr = date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB')
+                            + '<br/>' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var status = item.status;
+            var color = getStatusColor(status);
+            ii++;
+            tbody.append( $(`
+                        <tr class="${color}">
+                            <th scope="row">${ii}</th>
+                            <td class="text-start">
+                                <a href="/request-edit.html?id=${reqId}">${devName} @ ${ipAddress}</a>
+                            </td>
+                            <td>${ipAddress}</td>
+                            <td>${dateStr}</td>
+                            <td>${status}</td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm" onClick="if (confirm('Delete request?')) deleteRequest('${reqId}');">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" onClick="document.location='/request-edit.html?id=${reqId}'; ">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                            </td>
+                        </tr> `
+            ) );
+        });
+    })
+    .fail(function(xhr, status, error) {
+        console.error('updateRequestsList: ERROR: ', status, error);
+    })
+    ;
+}
+
+function getStatusColor(status) {
+    if (status.indexOf('ERROR')>0) return 'table-danger';
+    if (status.indexOf('REJECT')>0) return 'bg-danger';
+    if (status.indexOf('PENDING')>=0) return 'table-warning';
+    if (status=='NEW_REQUEST') return '';
+    if (status=='SUCCESS') return 'table-success';
+    return 'table-info';
+}
+
+function deleteRequest(id) {
+    $.ajax({
+        url: '/discovery/request/'+id,
+        method: 'DELETE',
+        async: 'false'
+
+    })
+    .done(function(data, status) {
+        console.log('deleteRequest: OK: ', id);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('deleteRequest: ERROR: ', id, status, error);
+    })
+    .always(function(data, status) {
+        updateRequestsList();
+    })
+    ;
+}
+    </script>
+
+</head>
+<body>
+    <main>
+        <div style="position: absolute; left: 10px; top: 10px;">
+            <a href="index.html"><img src="img/nebulous-logo-white.png" width="155px" height="155px" alt=""></a>
+        </div>
+        <section class="light-section">
+            <div class="container">
+                <div class="text-center">
+                    <h2>Device Registration Requests</h2>
+                    <!--<p class="sub-header">Device registration requests</p>-->
+
+                    <button type="button" class="btn btn-primary" onClick="updateRequestsList()">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    <button type="button" class="btn btn-success" onClick="document.location = '/request-edit.html'; ">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+
+                <!-- Query server for stored requests -->
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col" class="w-50">Device name</th>
+                            <th scope="col">IP Address</th>
+                            <th scope="col">Reg. Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="requestsTable-tbody">
+<!--<script>
+    const REGISTRATION_STATUS = [
+        'New', 'Collecting data', 'Pending', 'Authorizing', 'Accepted', 'Onboarding', 'Rejected', 'Error'
+    ];
+    const REGISTRATION_STATUS_COLOR = [
+        'default', 'secondary', 'warning', 'primary', 'success', 'active', 'danger', 'danger'
+    ];
+    for (var ii=0; ii<10; ii++) {
+        var rand_status = Math.floor(REGISTRATION_STATUS.length * Math.random());
+        var status = REGISTRATION_STATUS[ rand_status ];
+        var color = REGISTRATION_STATUS_COLOR[ rand_status ];
+        var ipAddress = '10.10.0.'+(ii+100);
+        document.write(`
+                        <tr class="table-${color}">
+                            <th scope="row">${ii+1}</th>
+                            <td class="text-start">
+                                <a href="aaa">Device #${ii} @ ${ipAddress}</a>
+                            </td>
+                            <td>${ipAddress}</td>
+                            <td>${new Date().toISOString().replace('T', ' ').replace('Z',' GMT')}</td>
+                            <td>${status}</td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                <button type="button" class="btn btn-success btn-sm"><i class="fas fa-pen"></i></button>
+                            </td>
+                        </tr>
+        `);
+    }
+</script>-->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+        <footer class="py-5">
+          <div class="container">
+            <div class="row">
+              <div class="footer-item col-md-8">
+                <p class="footer-item-title">Links</p>
+                <a href="">About Us</a>
+                <a href="">Portfolio</a>
+                <a href="">Blog</a>
+                <a href="">Sing In</a>
+              </div>
+              <div class="footer-item col-md-4">
+              <p class="footer-item-title">Get In Touch</p>
+                <form>
+                  <div class="mb-3 pb-3">
+                    <label for="exampleInputEmail1" class="form-label pb-3">Enter your email and we'll send you more information.</label>
+                    <input type="email" placeholder="Your Email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                  </div>
+                  <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+              </div>
+              <div class="copyright pt-4 text-center text-muted">
+                <p>&copy; 2022 YOUR-DOMAIN | Created by <a href="https://firmbee.com/solutions/to-do-list/" title="Firmbee - Free To-do list App" target="_blank">Firmbee.com</a></p>
+                <!--
+                This template is licenced under Attribution 3.0 (CC BY 3.0 PL),
+                You are free to: Share and Adapt. You must give appropriate credit, you may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+                --> 
+            </div>
+          </div>
+        </footer>
+    </main>
+    <div class="fb2022-copy">Fbee 2022 copyright</div>
+</body>
+</html>
