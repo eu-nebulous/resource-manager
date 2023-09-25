@@ -78,7 +78,7 @@ function updateFormData(data) {
     // Update form fields
     Object.entries(keyValuesMap).forEach((entry) => {
         //console.log('updateFormData: Form Update: ', entry[0], entry[1]);
-        $('#'+entry[0]).val( entry[1] );
+        $(`[id="${entry[0]}"]`).val( entry[1] );
     });
 }
 
@@ -90,7 +90,7 @@ function flattenObject(ob) {
             var flatObject = flattenObject(ob[i]);
             for (var x in flatObject) {
                 if (!flatObject.hasOwnProperty(x)) continue;
-                toReturn[i + '_' + x] = flatObject[x];
+                toReturn[i + '#' + x] = flatObject[x];
             }
         } else {
             toReturn[i] = ob[i];
@@ -141,8 +141,8 @@ function getValueDeep(keyPart, data) {
 
 function saveRequestInfo() {
     // Get form fields
-    var q1 = $('input[id^="request_"]');
-    var q2 = $('textarea[id^="request_"]');
+    var q1 = $('input[id^="request#"]');
+    var q2 = $('textarea[id^="request#"]');
     var all = $.merge(q1, q2);
     //console.log('saveRequestInfo: form fields: ', all);
 
@@ -159,7 +159,7 @@ function saveRequestInfo() {
     var root = {};
     Object.entries(keyValuesMap).forEach((entry) => {
         //console.log('saveRequestInfo: KVM-each: ', entry);
-        var keyPart = entry[0].split("_");
+        var keyPart = entry[0].split("#");
         var p = root;
         keyPart.forEach((item, index) => {
             //console.log('saveRequestInfo: KVM-keyPart-each: ', item, p);
@@ -257,30 +257,30 @@ function sendRequestData(requestData) {
 
                         <!-- Request id -->
                         <div class="form-group row">
-                            <label for="request_id" class="col-sm-2 col-form-label"><b>Request Id</b></label>
+                            <label for="request#id" class="col-sm-2 col-form-label"><b>Request Id</b></label>
                             <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request_id" value="-">
+                                <input type="text" readonly class="form-control-plaintext" id="request#id" value="-">
                             </div>
                         </div>
                         <!-- Request requester -->
                         <div class="form-group row">
-                            <label for="request_requester" class="col-sm-2 col-form-label"><b>Requester</b></label>
+                            <label for="request#requester" class="col-sm-2 col-form-label"><b>Requester</b></label>
                             <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request_requester" value="-">
+                                <input type="text" readonly class="form-control-plaintext" id="request#requester" value="-">
                             </div>
                         </div>
                         <!-- Request requestDate -->
                         <div class="form-group row">
-                            <label for="request_requestDate" class="col-sm-2 col-form-label"><b>Request Date</b></label>
+                            <label for="request#requestDate" class="col-sm-2 col-form-label"><b>Request Date</b></label>
                             <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request_requestDate" value="-">
+                                <input type="text" readonly class="form-control-plaintext" id="request#requestDate" value="-">
                             </div>
                         </div>
                         <!-- Request status -->
                         <div class="form-group row">
-                            <label for="request_status" class="col-sm-2 col-form-label"><b>Request Status</b></label>
+                            <label for="request#status" class="col-sm-2 col-form-label"><b>Request Status</b></label>
                             <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request_status" value="-">
+                                <input type="text" readonly class="form-control-plaintext" id="request#status" value="-">
                             </div>
                         </div>
 
@@ -290,58 +290,58 @@ function sendRequestData(requestData) {
 
                         <!-- Device id -->
                         <div class="form-group row">
-                            <label for="request_device_deviceId" class="col-sm-2 col-form-label"><b>Device Id</b></label>
+                            <label for="request#device#deviceId" class="col-sm-2 col-form-label"><b>Device Id</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request_device_deviceId" value="" placeholder="Device unique id">
+                                <input type="text" class="form-control" id="request#device#deviceId" value="" placeholder="Device unique id">
                             </div>
                         </div>
                         <!-- Device Name -->
                         <div class="form-group row">
-                            <label for="request_device_deviceName" class="col-sm-2 col-form-label"><b>Device Name</b></label>
+                            <label for="request#device#deviceName" class="col-sm-2 col-form-label"><b>Device Name</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request_device_deviceName" value="" placeholder="Device name">
+                                <input type="text" class="form-control" id="request#device#deviceName" value="" placeholder="Device name">
                             </div>
                         </div>
                         <!-- Device Owner -->
                         <div class="form-group row">
-                            <label for="request_device_owner" class="col-sm-2 col-form-label"><b>Device Owner</b></label>
+                            <label for="request#device#owner" class="col-sm-2 col-form-label"><b>Device Owner</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request_device_owner" value="" placeholder="Device Owner">
+                                <input type="text" class="form-control" id="request#device#owner" value="" placeholder="Device Owner">
                             </div>
                         </div>
                         <!-- Device IP Address -->
                         <div class="form-group row">
-                            <label for="request_device_ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
+                            <label for="request#device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request_device_ipAddress" value="" placeholder="Device IP address">
+                                <input type="text" class="form-control" id="request#device#ipAddress" value="" placeholder="Device IP address">
                             </div>
                         </div>
                         <!-- Device Username -->
                         <div class="form-group row">
-                            <label for="request_device_username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
+                            <label for="request#device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request_device_username" value="" placeholder="SSH username">
+                                <input type="text" class="form-control" id="request#device#username" value="" placeholder="SSH username">
                             </div>
                         </div>
                         <!-- Device Password -->
                         <div class="form-group row">
-                            <label for="request_device_password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
+                            <label for="request#device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request_device_password" value="" placeholder="SSH password">
+                                <input type="text" class="form-control" id="request#device#password" value="" placeholder="SSH password">
                             </div>
                         </div>
                         <!-- Device Public Key -->
                         <div class="form-group row">
-                            <label for="request_device_publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
+                            <label for="request#device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" id="request_device_publicKey" placeholder="SSH public key"></textarea>
+                                <textarea class="form-control" id="request#device#publicKey" placeholder="SSH public key"></textarea>
                             </div>
                         </div>
                         <!-- Device Additional Info -->
                         <div class="form-group row">
-                            <label for="request_device_deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
+                            <label for="request#device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" id="request_device_deviceInfo" placeholder="Additional device info"></textarea>
+                                <textarea class="form-control" id="request#device#deviceInfo" placeholder="Additional device info"></textarea>
                             </div>
                         </div>
 
