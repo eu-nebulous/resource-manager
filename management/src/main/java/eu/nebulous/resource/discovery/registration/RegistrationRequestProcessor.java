@@ -9,7 +9,6 @@ import jakarta.jms.MessageNotWriteableException;
 import jakarta.jms.MessageProducer;
 import jakarta.jms.Session;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -66,33 +65,38 @@ public class RegistrationRequestProcessor implements InitializingBean {
 	}
 
 	@Async
-	@SneakyThrows
 	public Future<String> processRequests() {
-		// Check and set if already running
-		if (! isRunning.compareAndSet(false, true)) {
-			log.warn("processRequests: Already running");
-			return CompletableFuture.completedFuture("ALREADY RUNNING");
+		try {
+			// Check and set if already running
+			if (!isRunning.compareAndSet(false, true)) {
+				log.warn("processRequests: Already running");
+				return CompletableFuture.completedFuture("ALREADY RUNNING");
+			}
+			log.debug("processRequests: Processing registration requests");
+
+			// Connect to EMS AMQ broker
+			ActiveMQConnectionFactory connectionFactory1 = new ActiveMQConnectionFactory(brokerUsername, brokerPassword, brokerURL);
+			ActiveMQConnection conn = (ActiveMQConnection) connectionFactory1.createConnection();
+			Session session = conn.createSession();
+			MessageProducer producer = session.createProducer(new ActiveMQTopic(emsDataCollectionRequestTopic));
+
+			// Process requests
+			ObjectMapper objectMapper = new ObjectMapper();
+			processNewRequests(producer, objectMapper);
+
+			// Clone connection to EMS AMQ broker
+			conn.close();
+
+			// Clear running flag
+			log.debug("processRequests: Processing completed");
+
+			return CompletableFuture.completedFuture("DONE");
+		} catch (Throwable e) {
+			log.error("processRequests: ERROR processing requests: ", e);
+			return CompletableFuture.completedFuture("ERROR: "+e.getMessage());
+		} finally {
+			isRunning.set(false);
 		}
-		log.debug("processRequests: Processing registration requests");
-
-		// Connect to EMS AMQ broker
-		ActiveMQConnectionFactory connectionFactory1 = new ActiveMQConnectionFactory(brokerUsername, brokerPassword, brokerURL);
-		ActiveMQConnection conn = (ActiveMQConnection) connectionFactory1.createConnection();
-		Session session = conn.createSession();
-		MessageProducer producer = session.createProducer(new ActiveMQTopic(emsDataCollectionRequestTopic));
-
-		// Process requests
-		ObjectMapper objectMapper = new ObjectMapper();
-		processNewRequests(producer, objectMapper);
-
-		// Clone connection to EMS AMQ broker
-		conn.close();
-
-		// Clear running flag
-		log.debug("processRequests: Processing completed");
-		isRunning.set(false);
-
-		return CompletableFuture.completedFuture("DONE");
 	}
 
 	private void processNewRequests(MessageProducer producer, ObjectMapper objectMapper) throws JsonProcessingException, JMSException {
