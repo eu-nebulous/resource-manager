@@ -22,6 +22,22 @@
         <div style="position: absolute; left: 10px; top: 10px;">
             <a href="index.html"><img src="img/nebulous-logo-basic.png" width="155px" height="155px" alt=""></a>
         </div>
+        <div class="text-end text-secondary nowrap">
+            <img src="img/user-icon.png" width="24" height="auto">
+            <span id="whoami"><i class="fas fa-spinner fa-spin"></i></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span onClick="document.location = '/logout';">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <script>
+                $(function() {
+                    $.ajax({ url: '/discovery/whoami', dataType: 'json' })
+                        .done(function(data) { data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user ); })
+                        .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
+                });
+            </script>
+        </div>
         <section class="light-section">
             <div class="container text-center">
                 <h2>NebulOuS Resource Discovery Dashboard</h2>

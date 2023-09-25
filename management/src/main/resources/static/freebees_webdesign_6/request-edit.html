@@ -231,6 +231,22 @@ function sendRequestData(requestData) {
         <div style="position: absolute; left: 10px; top: 10px;">
             <a href="index.html"><img src="img/nebulous-logo-basic.png" width="155px" height="155px" alt=""></a>
         </div>
+        <div class="text-end text-secondary nowrap">
+            <img src="img/user-icon.png" width="24" height="auto">
+            <span id="whoami"><i class="fas fa-spinner fa-spin"></i></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span onClick="document.location = '/logout';">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <script>
+                $(function() {
+                    $.ajax({ url: '/discovery/whoami', dataType: 'json' })
+                        .done(function(data) { data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user ); })
+                        .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
+                });
+            </script>
+        </div>
         <section class="light-section">
             <div class="container">
 
@@ -242,6 +258,14 @@ function sendRequestData(requestData) {
                     <h2 id="page_title">New Registration Request</h2>
                     <!--<p class="sub-header">Device registration requests</p>-->
 
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
+                        <i class="fa fa-home"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'requests.html';">
+                        <i class="fa fa-arrow-left"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <button type="button" class="btn btn-primary" onClick="refreshRequestInfo(requestId);">
                         <i class="fa fa-refresh"></i>
                     </button>

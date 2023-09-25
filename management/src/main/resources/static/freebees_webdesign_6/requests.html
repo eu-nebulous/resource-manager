@@ -19,12 +19,18 @@
 
     <script>
 $(function() {
-    updateRequestsList();
+    updateRequestsList(false);
 });
 
-function updateRequestsList() {
+var isAdmin = false;
+var lastUpdateAsAdmin;
+
+function updateRequestsList(asAdmin) {
+    if (asAdmin === undefined) asAdmin = lastUpdateAsAdmin;
+    else lastUpdateAsAdmin = asAdmin;
+
     $.ajax({
-        url: '/discovery/request',
+        url: '/discovery/request' + (asAdmin ? '/all' : ''),
         dataType: 'json'
     })
     .done(function(data, status) {
@@ -34,6 +40,7 @@ function updateRequestsList() {
         var ii = 0;
         data.forEach(item => {
             var reqId = item.id;
+            var requester = item.requester;
             var devName = item.device.deviceName;
             var ipAddress = item.device.ipAddress;
             var date = new Date( Date.parse( item.requestDate ) );
@@ -45,6 +52,7 @@ function updateRequestsList() {
             tbody.append( $(`
                         <tr class="${color}">
                             <th scope="row">${ii}</th>
+                            <td>${requester}</td>
                             <td class="text-start">
                                 <a href="/request-edit.html?id=${reqId}">${devName} @ ${ipAddress}</a>
                             </td>
@@ -104,13 +112,41 @@ function deleteRequest(id) {
         <div style="position: absolute; left: 10px; top: 10px;">
             <a href="index.html"><img src="img/nebulous-logo-basic.png" width="155px" height="155px" alt=""></a>
         </div>
+        <div class="text-end text-secondary nowrap">
+            <img src="img/user-icon.png" width="24" height="auto">
+            <span id="whoami"><i class="fas fa-spinner fa-spin"></i></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span onClick="document.location = '/logout';">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <script>
+                $(function() {
+                    $.ajax({ url: '/discovery/whoami', dataType: 'json' })
+                        .done(function(data) {
+                            isAdmin = data.admin;
+                            data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
+                            if (isAdmin) $('.adminOnly').toggleClass('d-none');
+                        })
+                        .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
+                });
+            </script>
+        </div>
         <section class="light-section">
             <div class="container">
                 <div class="text-center">
                     <h2>Device Registration Requests</h2>
                     <!--<p class="sub-header">Device registration requests</p>-->
 
-                    <button type="button" class="btn btn-primary" onClick="updateRequestsList()">
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
+                        <i class="fa fa-home"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="adminOnly btn btn-danger d-none" onClick="updateRequestsList(true)">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <button type="button" class="btn btn-primary" onClick="updateRequestsList(false)">
                         <i class="fa fa-refresh"></i>
                     </button>
                     <button type="button" class="btn btn-success" onClick="document.location = '/request-edit.html'; ">
@@ -124,6 +160,7 @@ function deleteRequest(id) {
                         <thead>
                         <tr>
                             <th scope="col">#</th>
+                            <th scope="col">Requester</th>
                             <th scope="col" class="w-50">Device name</th>
                             <th scope="col">IP Address</th>
                             <th scope="col">Reg. Date</th>
@@ -132,35 +169,6 @@ function deleteRequest(id) {
                         </tr>
                         </thead>
                         <tbody id="requestsTable-tbody">
-<!--<script>
-    const REGISTRATION_STATUS = [
-        'New', 'Collecting data', 'Pending', 'Authorizing', 'Accepted', 'Onboarding', 'Rejected', 'Error'
-    ];
-    const REGISTRATION_STATUS_COLOR = [
-        'default', 'secondary', 'warning', 'primary', 'success', 'active', 'danger', 'danger'
-    ];
-    for (var ii=0; ii<10; ii++) {
-        var rand_status = Math.floor(REGISTRATION_STATUS.length * Math.random());
-        var status = REGISTRATION_STATUS[ rand_status ];
-        var color = REGISTRATION_STATUS_COLOR[ rand_status ];
-        var ipAddress = '10.10.0.'+(ii+100);
-        document.write(`
-                        <tr class="table-${color}">
-                            <th scope="row">${ii+1}</th>
-                            <td class="text-start">
-                                <a href="aaa">Device #${ii} @ ${ipAddress}</a>
-                            </td>
-                            <td>${ipAddress}</td>
-                            <td>${new Date().toISOString().replace('T', ' ').replace('Z',' GMT')}</td>
-                            <td>${status}</td>
-                            <td>
-                                <button type="button" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
-                                <button type="button" class="btn btn-success btn-sm"><i class="fas fa-pen"></i></button>
-                            </td>
-                        </tr>
-        `);
-    }
-</script>-->
                         </tbody>
                     </table>
                 </div>

@@ -7,10 +7,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -19,35 +23,59 @@ import java.util.List;
 public class RegistrationRequestController {
 	private final RegistrationRequestService registrationRequestService;
 
-	@GetMapping(value = "/request", produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<RegistrationRequest> listRequests() {
+	@GetMapping(value = "/whoami", produces = MediaType.APPLICATION_JSON_VALUE)
+	public Map<String, Object> whoami(Authentication authentication) {
+		List<String> roles = authentication != null
+				? authentication.getAuthorities().stream()
+						.map(Object::toString)
+						.map(s -> StringUtils.removeStartIgnoreCase(s, "ROLE_"))
+						.toList()
+				: Collections.emptyList();
+		return Map.of(
+				"user", authentication!=null ? authentication.getName() : "",
+				"roles", roles,
+				"admin", roles.contains("ADMIN")
+		);
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/all", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<RegistrationRequest> listRequestsAdmin(Authentication authentication) {
 		return registrationRequestService.getAll();
 	}
 
+	@GetMapping(value = "/request", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<RegistrationRequest> listRequests(Authentication authentication) {
+		return registrationRequestService.getAllAsUser(authentication.getName());
+	}
+
 	@GetMapping(value = "/request/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest getRequest(@PathVariable String id) {
-		return registrationRequestService.getById(id)
+	public RegistrationRequest getRequest(@PathVariable String id, Authentication authentication) {
+		return registrationRequestService.getByIdAsUser(id, authentication.getName())
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
 	}
 
 	@PutMapping(value = "/request", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest addRequest(@RequestBody RegistrationRequest registrationRequest) {
-		registrationRequest.setRequester("Moi");
+	public RegistrationRequest addRequest(@RequestBody RegistrationRequest registrationRequest, Authentication authentication) {
+		registrationRequest.setRequester(authentication.getName());
 		registrationRequest.setRequestDate(Instant.now());
 		registrationRequest.setStatus(RegistrationRequestStatus.NEW_REQUEST);
-		return registrationRequestService.save(registrationRequest);
+		return registrationRequestService.saveAsUser(registrationRequest, authentication.getName());
 	}
 
 	@PostMapping(value = "/request/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest updateRequest(@PathVariable String id, @RequestBody RegistrationRequest registrationRequest) {
+	public RegistrationRequest updateRequest(@PathVariable String id,
+											 @RequestBody RegistrationRequest registrationRequest,
+											 Authentication authentication)
+	{
 		if (! StringUtils.equals(id, registrationRequest.getId()))
 			throw new RegistrationRequestException(
 					"Id does not match the id in registration request: "+id+" <> "+registrationRequest.getId());
-		return registrationRequestService.update(registrationRequest);
+		return registrationRequestService.updateAsUser(registrationRequest, authentication.getName());
 	}
 
 	@DeleteMapping(value = "/request/{id}")
-	public void deleteRequest(@PathVariable String id) {
-		registrationRequestService.deleteById(id);
+	public void deleteRequest(@PathVariable String id, Authentication authentication) {
+		registrationRequestService.deleteByIdAsUser(id, authentication.getName());
 	}
 }

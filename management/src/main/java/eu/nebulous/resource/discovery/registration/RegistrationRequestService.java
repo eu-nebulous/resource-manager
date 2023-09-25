@@ -62,6 +62,8 @@ public class RegistrationRequestService {
 				.build();
 	}
 
+	// ------------------------------------------------------------------------
+
 	public Optional<RegistrationRequest> getById(@NonNull String id) {
 		return requests.stream().filter(rr -> id.equals(rr.getId())).findAny();
 	}
@@ -97,7 +99,8 @@ public class RegistrationRequestService {
 		checkRegistrationRequest(registrationRequest);
 		int index = requests.indexOf(result.get());
 		requests.set(index, registrationRequest);
-		return getById(registrationRequest.getId()).get();
+		return getById(registrationRequest.getId()).orElseThrow(() ->
+				new RegistrationRequestException("Request update failed for Id: "+registrationRequest.getId()));
 	}
 
 	private void checkRegistrationRequest(@NonNull RegistrationRequest registrationRequest) {
@@ -124,5 +127,58 @@ public class RegistrationRequestService {
 
 	public void delete(@NonNull RegistrationRequest registrationRequest) {
 		deleteById(registrationRequest.getId());
+	}
+
+	// ------------------------------------------------------------------------
+
+	public Optional<RegistrationRequest> getByIdAsUser(@NonNull String id, @NonNull String user) {
+		Optional<RegistrationRequest> result = getById(id);
+        result.ifPresent(registrationRequest -> checkRequester(registrationRequest, user));
+		return result;
+	}
+
+	private void checkRequester(@NonNull RegistrationRequest registrationRequest, String user) {
+		if (!canAccess(registrationRequest, user))
+			throw new RegistrationRequestException(
+					new IllegalAccessException("User "+user+" cannot access request with Id: "+registrationRequest.getId()));
+	}
+
+	private boolean canAccess(@NonNull RegistrationRequest registrationRequest, String user) {
+		String requester = registrationRequest.getRequester();
+		if (requester==null && user==null) return true;
+        return requester != null && requester.equals(user);
+    }
+
+	public List<RegistrationRequest> getAllAsUser(@NonNull String user) {
+		return getAll().stream().filter(req -> canAccess(req, user)).toList();
+	}
+
+	public @NonNull RegistrationRequest saveAsUser(@NonNull RegistrationRequest registrationRequest, @NonNull String user) {
+		checkRequester(registrationRequest, user);
+		return save(registrationRequest);
+	}
+
+	public RegistrationRequest updateAsUser(@NonNull RegistrationRequest registrationRequest, @NonNull String user) {
+		checkRequester(registrationRequest, user);
+		Optional<RegistrationRequest> result = getByIdAsUser(registrationRequest.getId(), user);
+		if (result.isEmpty())
+			throw new RegistrationRequestException(
+					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
+		checkRequester(result.get(), user);
+		return update(registrationRequest);
+	}
+
+	public void deleteByIdAsUser(@NonNull String id, @NonNull String user) {
+		Optional<RegistrationRequest> result = getByIdAsUser(id, user);
+		if (result.isEmpty())
+			throw new RegistrationRequestException(
+					"Registration request with the Id does not exists in repository: "+id);
+		checkRequester(result.get(), user);
+		deleteById(id);
+	}
+
+	public void deleteAsUser(@NonNull RegistrationRequest registrationRequest, @NonNull String user) {
+		checkRequester(registrationRequest, user);
+		deleteByIdAsUser(registrationRequest.getId(), user);
 	}
 }

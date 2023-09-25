@@ -1,5 +1,10 @@
 
+spring.web.resources.static-locations: file:resource-discovery/management/src/main/resources/static/freebees_webdesign_6
+
 #security.ignored: /**
 #security.basic.enable: false
-spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
-spring.web.resources.static-locations: file:resource-discovery/management/src/main/resources/static/freebees_webdesign_6
+#spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+#spring.security.user.name: user
+#spring.security.user.password: user
+#spring.security.user.roles: USER
