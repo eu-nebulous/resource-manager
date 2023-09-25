@@ -15,6 +15,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @Slf4j
 @RestController
@@ -22,6 +24,7 @@ import java.util.Map;
 @RequestMapping("/discovery")
 public class RegistrationRequestController {
 	private final RegistrationRequestService registrationRequestService;
+	private final RegistrationRequestProcessor registrationRequestProcessor;
 
 	@GetMapping(value = "/whoami", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Map<String, Object> whoami(Authentication authentication) {
@@ -36,6 +39,13 @@ public class RegistrationRequestController {
 				"roles", roles,
 				"admin", roles.contains("ADMIN")
 		);
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/process", produces = MediaType.APPLICATION_JSON_VALUE)
+	public Map<String, String> processRequests() throws ExecutionException, InterruptedException {
+		Future<String> future = registrationRequestProcessor.processRequests();
+		return Map.of("result", future.isDone() ? future.get() : "STARTED");
 	}
 
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")

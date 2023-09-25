@@ -104,6 +104,16 @@ function deleteRequest(id) {
     })
     ;
 }
+
+function processRequests() {
+    $.ajax({ url: '/discovery/request/process' })
+    .done(function(data, status) {
+        console.log('processRequests: OK: ', data);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('processRequests: ERROR: ', status, error);
+    });
+}
     </script>
 
 </head>
@@ -142,10 +152,15 @@ function deleteRequest(id) {
                         <i class="fa fa-home"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="adminOnly btn btn-danger d-none" onClick="processRequests()">
+                        <i class="fa fa-random"></i>
+                    </button>
+                    <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
                     <button type="button" class="adminOnly btn btn-danger d-none" onClick="updateRequestsList(true)">
                         <i class="fa fa-refresh"></i>
                     </button>
                     <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+
                     <button type="button" class="btn btn-primary" onClick="updateRequestsList(false)">
                         <i class="fa fa-refresh"></i>
                     </button>
