@@ -46,12 +46,12 @@ public class RegistrationRequestController {
 
 	@GetMapping(value = "/request", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<RegistrationRequest> listRequests(Authentication authentication) {
-		return registrationRequestService.getAllAsUser(authentication.getName());
+		return registrationRequestService.getAllAsUser(authentication);
 	}
 
 	@GetMapping(value = "/request/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public RegistrationRequest getRequest(@PathVariable String id, Authentication authentication) {
-		return registrationRequestService.getByIdAsUser(id, authentication.getName())
+		return registrationRequestService.getByIdAsUser(id, authentication)
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
 	}
 
@@ -60,7 +60,7 @@ public class RegistrationRequestController {
 		registrationRequest.setRequester(authentication.getName());
 		registrationRequest.setRequestDate(Instant.now());
 		registrationRequest.setStatus(RegistrationRequestStatus.NEW_REQUEST);
-		return registrationRequestService.saveAsUser(registrationRequest, authentication.getName());
+		return registrationRequestService.saveAsUser(registrationRequest, authentication);
 	}
 
 	@PostMapping(value = "/request/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,11 +71,11 @@ public class RegistrationRequestController {
 		if (! StringUtils.equals(id, registrationRequest.getId()))
 			throw new RegistrationRequestException(
 					"Id does not match the id in registration request: "+id+" <> "+registrationRequest.getId());
-		return registrationRequestService.updateAsUser(registrationRequest, authentication.getName());
+		return registrationRequestService.updateAsUser(registrationRequest, authentication);
 	}
 
 	@DeleteMapping(value = "/request/{id}")
 	public void deleteRequest(@PathVariable String id, Authentication authentication) {
-		registrationRequestService.deleteByIdAsUser(id, authentication.getName());
+		registrationRequestService.deleteByIdAsUser(id, authentication);
 	}
 }

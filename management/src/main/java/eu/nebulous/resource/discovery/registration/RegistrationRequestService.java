@@ -7,6 +7,8 @@ import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStat
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -131,54 +133,62 @@ public class RegistrationRequestService {
 
 	// ------------------------------------------------------------------------
 
-	public Optional<RegistrationRequest> getByIdAsUser(@NonNull String id, @NonNull String user) {
+	public Optional<RegistrationRequest> getByIdAsUser(@NonNull String id, Authentication authentication) {
 		Optional<RegistrationRequest> result = getById(id);
-        result.ifPresent(registrationRequest -> checkRequester(registrationRequest, user));
+        result.ifPresent(registrationRequest -> checkRequester(registrationRequest, authentication));
 		return result;
 	}
 
-	private void checkRequester(@NonNull RegistrationRequest registrationRequest, String user) {
-		if (!canAccess(registrationRequest, user))
+	private void checkRequester(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
+		if (! canAccess(registrationRequest, authentication))
 			throw new RegistrationRequestException(
-					new IllegalAccessException("User "+user+" cannot access request with Id: "+registrationRequest.getId()));
+					new IllegalAccessException("User "+authentication.getName()+" cannot access request with Id: "+registrationRequest.getId()));
 	}
 
-	private boolean canAccess(@NonNull RegistrationRequest registrationRequest, String user) {
+	private boolean canAccess(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
+		return canAccess(registrationRequest, authentication, false);
+	}
+
+	private boolean canAccess(@NonNull RegistrationRequest registrationRequest, Authentication authentication, boolean sameUserOnly) {
 		String requester = registrationRequest.getRequester();
-		if (requester==null && user==null) return true;
-        return requester != null && requester.equals(user);
+		if (requester == null && authentication.getName() == null) return true;
+        return requester != null && (
+                requester.equals(authentication.getName()) ||
+						!sameUserOnly && authentication.getAuthorities().stream()
+								.map(GrantedAuthority::getAuthority).toList().contains("ROLE_ADMIN")
+        );
     }
 
-	public List<RegistrationRequest> getAllAsUser(@NonNull String user) {
-		return getAll().stream().filter(req -> canAccess(req, user)).toList();
+	public List<RegistrationRequest> getAllAsUser(Authentication authentication) {
+		return getAll().stream().filter(req -> canAccess(req, authentication, true)).toList();
 	}
 
-	public @NonNull RegistrationRequest saveAsUser(@NonNull RegistrationRequest registrationRequest, @NonNull String user) {
-		checkRequester(registrationRequest, user);
+	public @NonNull RegistrationRequest saveAsUser(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
+		checkRequester(registrationRequest, authentication);
 		return save(registrationRequest);
 	}
 
-	public RegistrationRequest updateAsUser(@NonNull RegistrationRequest registrationRequest, @NonNull String user) {
-		checkRequester(registrationRequest, user);
-		Optional<RegistrationRequest> result = getByIdAsUser(registrationRequest.getId(), user);
+	public RegistrationRequest updateAsUser(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
+		checkRequester(registrationRequest, authentication);
+		Optional<RegistrationRequest> result = getByIdAsUser(registrationRequest.getId(), authentication);
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
-		checkRequester(result.get(), user);
+		checkRequester(result.get(), authentication);
 		return update(registrationRequest);
 	}
 
-	public void deleteByIdAsUser(@NonNull String id, @NonNull String user) {
-		Optional<RegistrationRequest> result = getByIdAsUser(id, user);
+	public void deleteByIdAsUser(@NonNull String id, Authentication authentication) {
+		Optional<RegistrationRequest> result = getByIdAsUser(id, authentication);
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+id);
-		checkRequester(result.get(), user);
+		checkRequester(result.get(), authentication);
 		deleteById(id);
 	}
 
-	public void deleteAsUser(@NonNull RegistrationRequest registrationRequest, @NonNull String user) {
-		checkRequester(registrationRequest, user);
-		deleteByIdAsUser(registrationRequest.getId(), user);
+	public void deleteAsUser(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
+		checkRequester(registrationRequest, authentication);
+		deleteByIdAsUser(registrationRequest.getId(), authentication);
 	}
 }

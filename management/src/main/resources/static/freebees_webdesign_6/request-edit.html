@@ -29,6 +29,7 @@ $(function() {
         refreshRequestInfo(reqId);
 });
 
+var isAdmin = false;
 var requestId;
 
 function refreshRequestInfo(id) {
@@ -242,7 +243,11 @@ function sendRequestData(requestData) {
             <script>
                 $(function() {
                     $.ajax({ url: '/discovery/whoami', dataType: 'json' })
-                        .done(function(data) { data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user ); })
+                        .done(function(data) {
+                            isAdmin = data.admin;
+                            data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
+                            if (isAdmin) $('.adminOnly').toggleClass('d-none');
+                        })
                         .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
                 });
             </script>
@@ -255,6 +260,8 @@ function sendRequestData(requestData) {
                 </div>
 
                 <div id="main-page" class="text-center">
+                    <h1 class="adminOnly d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A REQUEST YOU DON'T OWN  * * *</h1>
+
                     <h2 id="page_title">New Registration Request</h2>
                     <!--<p class="sub-header">Device registration requests</p>-->
 
