@@ -27,10 +27,16 @@ $(function() {
 
     if (reqId!=='')
         refreshRequestInfo(reqId);
+    else
+        isNew = true;
+    checkSameUser();
 });
 
+var isNew = false;
 var isAdmin = false;
+var username = '';
 var requestId;
+var requester = '';
 
 function refreshRequestInfo(id) {
     // show loading spinner
@@ -49,6 +55,10 @@ function refreshRequestInfo(id) {
             reqId=='' ? 'New Registration Request' : 'Registration Request '+reqId
         );
 
+        requestId = data.id;
+        requester = data.requester;
+        checkSameUser();
+
         updateFormData(data);
     })
     .fail(function(xhr, status, error) {
@@ -63,6 +73,14 @@ function refreshRequestInfo(id) {
         $('#main-page').toggleClass('d-none');
     })
     ;
+}
+
+function checkSameUser() {
+    if (isNew || username!=='' && requester!='' && username===requester) {
+        $('.sameUser').addClass('d-none');
+    } else {
+        $('.sameUser').removeClass('d-none');
+    }
 }
 
 function updateFormData(data) {
@@ -245,8 +263,11 @@ function sendRequestData(requestData) {
                     $.ajax({ url: '/discovery/whoami', dataType: 'json' })
                         .done(function(data) {
                             isAdmin = data.admin;
+                            username = data.user;
                             data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
                             if (isAdmin) $('.adminOnly').toggleClass('d-none');
+
+                            checkSameUser();
                         })
                         .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
                 });
@@ -260,7 +281,7 @@ function sendRequestData(requestData) {
                 </div>
 
                 <div id="main-page" class="text-center">
-                    <h1 class="adminOnly d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A REQUEST YOU DON'T OWN  * * *</h1>
+                    <h1 class="adminOnly sameUser d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A REQUEST YOU DON'T OWN  * * *</h1>
 
                     <h2 id="page_title">New Registration Request</h2>
                     <!--<p class="sub-header">Device registration requests</p>-->
@@ -276,6 +297,7 @@ function sendRequestData(requestData) {
                     <button type="button" class="btn btn-primary" onClick="refreshRequestInfo(requestId);">
                         <i class="fa fa-refresh"></i>
                     </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <button type="button" class="btn btn-success" onClick="saveRequestInfo();">
                         <i class="fa fa-save"></i>
                     </button>
