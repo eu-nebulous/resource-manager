@@ -31,10 +31,10 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 		}
 
 		// Schedule periodic sample data creation
-		cnt = 20;
+		cnt = RegistrationRequestStatus.values().length;
 		taskScheduler.scheduleAtFixedRate(
-				() -> registrationRequestService.addRequest(createRegistrationRequest(cnt++, "admin")),
-				Instant.now().plusSeconds(80), Duration.ofSeconds(30));
+				() -> registrationRequestService.addRequest(createRegistrationRequest((cnt++)%100, "admin")),
+				Instant.now().plusSeconds(90), Duration.ofSeconds(30));
 	}
 
 	private RegistrationRequest createRegistrationRequest(int pos, String owner) {
@@ -52,6 +52,7 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 		return Device.builder()
 				.deviceId( UUID.randomUUID().toString() )
 				.deviceName( "Device name #"+pos )
+				.deviceOS("LINUX")
 				.owner(owner)
 				.ipAddress("10.10.0."+(100+pos))
 				.username("ubuntu_"+pos)

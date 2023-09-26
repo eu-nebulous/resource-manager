@@ -113,16 +113,19 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 		for (RegistrationRequest registrationRequest : newRequests) {
 			registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION);
-			Map<String, String> dataCollectionRequest = Map.of(
+			Map<String, String> dataCollectionRequest = new LinkedHashMap<>(Map.of(
 					"registrationRequestId", registrationRequest.getId(),
+					"deviceId", registrationRequest.getDevice().getDeviceId(),
+					"deviceOs", registrationRequest.getDevice().getDeviceOS(),
+					"deviceName", registrationRequest.getDevice().getDeviceName(),
 					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
 					"deviceUsername", registrationRequest.getDevice().getUsername(),
 					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
-					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey()),
-					"timestamp", Long.toString(Instant.now().toEpochMilli()),
-					"priority", Double.toString(1.0),
-					"retry", Integer.toString(1)
-			);
+					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
+			));
+			dataCollectionRequest.put("timestamp", Long.toString(Instant.now().toEpochMilli()));
+			dataCollectionRequest.put("priority", Double.toString(1.0));
+			dataCollectionRequest.put("retry", Integer.toString(1));
 
 			log.debug("processNewRequests: Requesting collection of device data for request with Id: {}", registrationRequest.getId());
 			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);

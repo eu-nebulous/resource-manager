@@ -11,6 +11,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class Device {
     private String deviceId;
+    private String deviceOS;
     private String deviceName;
     private String owner;
     private String ipAddress;
