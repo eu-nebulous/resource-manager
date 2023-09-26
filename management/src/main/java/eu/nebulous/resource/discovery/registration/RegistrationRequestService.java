@@ -151,4 +151,14 @@ public class RegistrationRequestService {
 		checkRequester(registrationRequest, authentication);
 		deleteByIdAsUser(registrationRequest.getId(), authentication);
 	}
+
+	public Optional<RegistrationRequest> authorizeRequest(String id, boolean authorize) {
+		Optional<RegistrationRequest> result = getById(id);
+		if (result.isEmpty()) return result;
+		result.get().setStatus( authorize
+				? RegistrationRequestStatus.PENDING_ONBOARDING
+				: RegistrationRequestStatus.AUTHORIZATION_REJECT );
+		update(result.get());
+		return result;
+	}
 }

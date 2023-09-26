@@ -20,6 +20,7 @@
     <script>
 $(function() {
     updateRequestsList(false);
+    setInterval(() => updateRequestsList(), 10000);
 });
 
 var isAdmin = false;
@@ -48,6 +49,17 @@ function updateRequestsList(asAdmin) {
                             + '<br/>' + Intl.DateTimeFormat().resolvedOptions().timeZone;
             var status = item.status;
             var color = getStatusColor(status);
+            var adminActions = (isAdmin && (item.status==='PENDING_AUTHORIZATION'
+                                            || item.status==='AUTHORIZATION_REJECT'
+                                            || item.status==='PENDING_ONBOARDING')
+                               ) ? `
+                                <button type="button" class="btn btn-primary btn-sm" onClick="authorizeRequest('${reqId}', true); ">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-danger btn-sm" onClick="authorizeRequest('${reqId}', false); ">
+                                    <i class="fas fa-bomb"></i>
+                                </button>
+                ` : '';
             ii++;
             tbody.append( $(`
                         <tr class="${color}">
@@ -66,6 +78,7 @@ function updateRequestsList(asAdmin) {
                                 <button type="button" class="btn btn-success btn-sm" onClick="document.location='/request-edit.html?id=${reqId}'; ">
                                     <i class="fas fa-pen"></i>
                                 </button>
+                                ${adminActions}
                             </td>
                         </tr> `
             ) );
@@ -112,6 +125,18 @@ function processRequests() {
     })
     .fail(function(xhr, status, error) {
         console.error('processRequests: ERROR: ', status, error);
+    });
+}
+
+function authorizeRequest(reqId, authorize) {
+    var authStr = authorize ? 'authorize' : 'reject';
+    $.ajax({ url: `/discovery/request/${reqId}/${authStr}` })
+    .done(function(data, status) {
+        console.log('authorizeRequest: OK: ', data);
+        updateRequestsList(true);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('authorizeRequest: ERROR: ', status, error);
     });
 }
     </script>

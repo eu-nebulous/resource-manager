@@ -88,4 +88,18 @@ public class RegistrationRequestController {
 	public void deleteRequest(@PathVariable String id, Authentication authentication) {
 		registrationRequestService.deleteByIdAsUser(id, authentication);
 	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/{id}/authorize", produces = MediaType.APPLICATION_JSON_VALUE)
+	public RegistrationRequest authorizeRequest(@PathVariable String id) {
+		return registrationRequestService.authorizeRequest(id, true)
+				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/{id}/reject", produces = MediaType.APPLICATION_JSON_VALUE)
+	public RegistrationRequest rejectRequest(@PathVariable String id) {
+		return registrationRequestService.authorizeRequest(id, false)
+				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
+	}
 }

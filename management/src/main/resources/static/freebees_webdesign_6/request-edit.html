@@ -99,6 +99,11 @@ function updateFormData(data) {
         //console.log('updateFormData: Form Update: ', entry[0], entry[1]);
         $(`[id="${entry[0]}"]`).val( entry[1] );
     });
+
+    // Update device info field
+    if (data.device.deviceInfo) {
+        $(`[id="request#device#deviceInfo"]`).val( JSON.stringify(data.device.deviceInfo, null, 2) );
+    }
 }
 
 function flattenObject(ob) {
@@ -200,7 +205,9 @@ function saveRequestInfo() {
     }
 
     // Fix device info
-    root['device']['deviceInfo'] = {};
+    var deviceInfo = $(`[id="request#device#deviceInfo"]`).val().trim();
+    if (deviceInfo==='') deviceInfo = '{}';
+    root['device']['deviceInfo'] = JSON.parse( deviceInfo );
 
     // Check request Id
     if (requestId!=='' && requestId!==root.id) {

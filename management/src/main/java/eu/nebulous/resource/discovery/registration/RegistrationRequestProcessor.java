@@ -228,9 +228,12 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 						requestId, timestamp, processedDevInfo);
 				registrationRequest.getDevice().setDeviceInfo(processedDevInfo);
 
+				registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
+
 				log.debug("processResponse: Done processing response for request: id={}, timestamp={}", requestId, timestamp);
 			} else {
 				log.warn("processResponse: No device info found in message or it is of wrong type: id={}, obj={}", requestId, obj);
+				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_ERROR);
 			}
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
