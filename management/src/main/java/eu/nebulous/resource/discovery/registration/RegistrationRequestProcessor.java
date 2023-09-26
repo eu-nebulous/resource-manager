@@ -1,6 +1,7 @@
 package eu.nebulous.resource.discovery.registration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
@@ -114,7 +115,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		for (RegistrationRequest registrationRequest : newRequests) {
 			registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION);
 			Map<String, String> dataCollectionRequest = new LinkedHashMap<>(Map.of(
-					"registrationRequestId", registrationRequest.getId(),
+					"requestId", registrationRequest.getId(),
 					"deviceId", registrationRequest.getDevice().getDeviceId(),
 					"deviceOs", registrationRequest.getDevice().getDeviceOS(),
 					"deviceName", registrationRequest.getDevice().getDeviceName(),
@@ -153,6 +154,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			MessageConsumer consumer = session.createConsumer(
 					new ActiveMQTopic(processorProperties.getDataCollectionResponseTopic()));
 			consumer.setMessageListener(this);
+			conn.start();
 		} catch (Exception e) {
 			log.error("RegistrationRequestProcessor: ERROR while subscribing to Message broker for Device info announcements: ", e);
 			taskScheduler.schedule(this::initializeResultsListener, Instant.now().plusSeconds(processorProperties.getSubscriptionRetry()));
@@ -166,7 +168,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			if (message instanceof ActiveMQTextMessage textMessage) {
 				String payload = textMessage.getText();
 				log.trace("RegistrationRequestProcessor: Message payload: {}", payload);
-				Object obj = objectMapper.reader().readValue(payload);
+				TypeReference<Map<String,Object>> typeRef = new TypeReference<>() { };
+				Object obj = objectMapper.readerFor(typeRef).readValue(payload);
 				if (obj instanceof Map response) {
 					processResponse(response);
 				} else {
@@ -181,7 +184,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void processResponse(@NonNull Map<String, Object> response) {
-		String requestId = response.getOrDefault("registrationRequestId", "").toString();
+		String requestId = response.getOrDefault("requestId", "").toString();
 		String deviceIpAddress = response.getOrDefault("deviceIpAddress", "").toString();
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString());
 
@@ -199,7 +202,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				return;
 			}
 
-			Object obj = response.get("deviceInfo");
+			Object obj = response.get("nodeInfo");
 			if (obj instanceof Map devInfo) {
 				// Update request info
 				registrationRequest.setLastUpdateTimestamp(timestamp);
@@ -221,7 +224,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 						}
 					}
                 });
-				log.info("processResponse: New Device info for request: id={}, timestamp={}, device-info{}",
+				log.info("processResponse: New Device info for request: id={}, timestamp={}, device-info={}",
 						requestId, timestamp, processedDevInfo);
 				registrationRequest.getDevice().setDeviceInfo(processedDevInfo);
 
