@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.registration;
 
+import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.registration.model.Device;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class RegistrationRequestService_SampleDataCreator implements InitializingBean {
+	private final ResourceDiscoveryProperties properties;
 	private final RegistrationRequestService registrationRequestService;
 	private final TaskScheduler taskScheduler;
 	private int cnt;
@@ -25,16 +27,22 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		// Create initial sample data
-		for (int ii=0; ii<RegistrationRequestStatus.values().length; ii++) {
-			registrationRequestService.addRequest(
-					createRegistrationRequest(ii, "user_" + (ii % 5)));
+		if (properties.isCreateSampleDataAtStartup()) {
+			for (int ii = 0; ii < RegistrationRequestStatus.values().length; ii++) {
+				registrationRequestService.addRequest(
+						createRegistrationRequest(ii, "user_" + (ii % 5)));
+			}
 		}
 
 		// Schedule periodic sample data creation
-		cnt = RegistrationRequestStatus.values().length;
-		taskScheduler.scheduleAtFixedRate(
-				() -> registrationRequestService.addRequest(createRegistrationRequest((cnt++)%100, "admin")),
-				Instant.now().plusSeconds(90), Duration.ofSeconds(30));
+		if (properties.isCreateSampleDataPeriodically()) {
+			cnt = RegistrationRequestStatus.values().length;
+			taskScheduler.scheduleAtFixedRate(
+					() -> registrationRequestService.addRequest(
+							createRegistrationRequest((cnt++) % 100, properties.getCreateSampleDataOwner())),
+					Instant.now().plusSeconds(properties.getCreateSampleDataStartupDelay()),
+					Duration.ofSeconds(properties.getCreateSampleDataPeriod()));
+		}
 	}
 
 	private RegistrationRequest createRegistrationRequest(int pos, String owner) {

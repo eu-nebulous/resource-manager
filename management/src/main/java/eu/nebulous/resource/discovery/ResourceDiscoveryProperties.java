@@ -20,6 +20,12 @@ public class ResourceDiscoveryProperties {
 	private long processingStartupDelay = 10;
 	private long processingPeriod = 60;
 
+	private boolean createSampleDataAtStartup;
+	private boolean createSampleDataPeriodically;
+	private int createSampleDataStartupDelay = 30;
+	private int createSampleDataPeriod = 60;
+	private String createSampleDataOwner = "admin";
+
 	private String dataCollectionRequestTopic = "ems.client.installation.requests";
 	private String dataCollectionResponseTopic = "ems.client.installation.reports";
 	private List<String> allowedDeviceInfoKeys = new ArrayList<>(List.of("*"));
