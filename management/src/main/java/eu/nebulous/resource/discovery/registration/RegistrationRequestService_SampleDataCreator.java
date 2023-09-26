@@ -6,10 +6,11 @@ import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStat
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -18,13 +19,22 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RegistrationRequestService_SampleDataCreator implements InitializingBean {
 	private final RegistrationRequestService registrationRequestService;
+	private final TaskScheduler taskScheduler;
+	private int cnt;
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
+		// Create initial sample data
 		for (int ii=0; ii<RegistrationRequestStatus.values().length; ii++) {
 			registrationRequestService.addRequest(
 					createRegistrationRequest(ii, "user_" + (ii % 5)));
 		}
+
+		// Schedule periodic sample data creation
+		cnt = 20;
+		taskScheduler.scheduleAtFixedRate(
+				() -> registrationRequestService.addRequest(createRegistrationRequest(cnt++, "admin")),
+				Instant.now().plusSeconds(80), Duration.ofSeconds(30));
 	}
 
 	private RegistrationRequest createRegistrationRequest(int pos, String owner) {
@@ -33,9 +43,8 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 				.id(UUID.randomUUID().toString())
 				.device( createDevice(pos, owner) )
 				.requester(owner)
-				.requestDate(Instant.ofEpochMilli(
-						Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli() + pos * 86400L ))
-				.status( statuses[ pos%statuses.length ] )
+				.requestDate(Instant.now())
+				.status(RegistrationRequestStatus.NEW_REQUEST)
 				.build();
 	}
 
@@ -46,7 +55,7 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 				.owner(owner)
 				.ipAddress("10.10.0."+(100+pos))
 				.username("ubuntu_"+pos)
-				.password("saggasas".toCharArray())
+				.password("password".toCharArray())
 				.publicKey("===== PEM public key =====".toCharArray())
 				.deviceInfo(new HashMap<>())
 				.build();

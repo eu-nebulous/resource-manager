@@ -21,7 +21,7 @@ public class ResourceDiscoveryProperties {
 	private long processingPeriod = 60;
 
 	private String dataCollectionRequestTopic = "ems.client.installation.requests";
-	private String dataCollectionResponseTopic = "ems.client.installation.responses";
+	private String dataCollectionResponseTopic = "ems.client.installation.reports";
 	private List<String> allowedDeviceInfoKeys = new ArrayList<>(List.of("*"));
 
 	private String brokerUsername;
