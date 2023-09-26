@@ -102,7 +102,13 @@ function updateFormData(data) {
 
     // Update device info field
     if (data.device.deviceInfo) {
-        $(`[id="request#device#deviceInfo"]`).val( JSON.stringify(data.device.deviceInfo, null, 2) );
+        var valStr = JSON.stringify(data.device.deviceInfo, null, 2);
+        var rows = valStr.split(/\r\n|\r|\n/).length;
+        if (rows<2) rows = 2;
+        if (rows>50) rows = 50;
+        $(`[id="request#device#deviceInfo"]`).val( valStr ).attr( 'rows', rows );
+    } else {
+        $(`[id="request#device#deviceInfo"]`).val( '' ).attr( 'rows', 2 );
     }
 }
 

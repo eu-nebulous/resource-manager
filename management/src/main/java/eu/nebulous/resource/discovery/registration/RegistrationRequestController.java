@@ -102,4 +102,14 @@ public class RegistrationRequestController {
 		return registrationRequestService.authorizeRequest(id, false)
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
 	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/{id}/status/{newStatus}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public RegistrationRequest setRequestStatus(@PathVariable String id, @PathVariable String newStatus) {
+		RegistrationRequestStatus _newStatus = RegistrationRequestStatus.valueOf(newStatus);
+		RegistrationRequest request = registrationRequestService.getById(id)
+				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: " + id));
+		request.setStatus(_newStatus);
+		return registrationRequestService.update(request);
+	}
 }

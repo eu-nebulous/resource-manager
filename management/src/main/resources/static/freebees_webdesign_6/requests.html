@@ -54,12 +54,17 @@ function updateRequestsList(asAdmin) {
                                             || item.status==='PENDING_ONBOARDING')
                                ) ? `
                                 <button type="button" class="btn btn-primary btn-sm" onClick="authorizeRequest('${reqId}', true); ">
-                                    <i class="fas fa-check"></i>
+                                    <i class="fas fa-thumbs-up"></i>
                                 </button>
                                 <button type="button" class="btn btn-danger btn-sm" onClick="authorizeRequest('${reqId}', false); ">
-                                    <i class="fas fa-bomb"></i>
+                                    <i class="fas fa-thumbs-down"></i>
                                 </button>
                 ` : '';
+            adminActions += (isAdmin) ? `
+                                <a class="btn btn-outline-danger btn-sm" href="/discovery/request/${reqId}/status/NEW_REQUEST" target="_blank">
+                                    <i class="fas fa-fast-backward"></i>
+                                </a>
+            `: '';
             ii++;
             tbody.append( $(`
                         <tr class="${color}">
