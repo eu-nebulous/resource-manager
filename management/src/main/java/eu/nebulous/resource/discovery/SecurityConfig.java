@@ -1,6 +1,7 @@
 package eu.nebulous.resource.discovery;
 
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -22,7 +25,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+    private final ResourceDiscoveryProperties properties;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
@@ -37,15 +43,15 @@ public class SecurityConfig {
 
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
-        UserDetails user = User.withUsername("user")
-                .password(encoder().encode("user1"))
-                .roles("USER")
-                .build();
-        UserDetails admin = User.withUsername("admin")
-                .password(encoder().encode("admin1"))
-                .roles("ADMIN")
-                .build();
-        return new InMemoryUserDetailsManager(user, admin);
+        List<UserDetails> users = new ArrayList<>();
+        properties.getUsers().forEach(userData -> {
+            UserDetails user = User.withUsername(userData.getUsername())
+                    .password(encoder().encode(userData.getPassword()))
+                    .roles(userData.getRoles().toArray(new String[0]))
+                    .build();
+            users.add(user);
+        });
+        return new InMemoryUserDetailsManager(users.toArray(new UserDetails[0]));
     }
 
     @Bean
@@ -61,12 +67,5 @@ public class SecurityConfig {
                 return rawPassword.toString().equals(encodedPassword);
             }
         };
-    }
-
-    @Data
-    public static class UserData {
-        private final String username;
-        private final String password;
-        private final List<String> roles;
     }
 }

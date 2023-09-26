@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 @RequestMapping("/discovery")
 public class RegistrationRequestController {
 	private final RegistrationRequestService registrationRequestService;
-	private final RegistrationRequestProcessor registrationRequestProcessor;
+	private final IRegistrationRequestProcessor registrationRequestProcessor;
 
 	@GetMapping(value = "/whoami", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Map<String, Object> whoami(Authentication authentication) {

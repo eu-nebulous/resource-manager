@@ -18,53 +18,13 @@ import java.util.*;
 @Slf4j
 @Service
 public class RegistrationRequestService {
-	private final LinkedList<RegistrationRequest> requests;
-
-	public RegistrationRequestService() {
-		int ii = 0;
-		requests = new LinkedList<>( Arrays.asList(
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5)),
-				createRegistrationRequest(ii++, "user_"+(ii%5))
-		) );
-	}
-
-	private RegistrationRequest createRegistrationRequest(int pos, String owner) {
-		RegistrationRequestStatus[] statuses = RegistrationRequestStatus.values();
-		return RegistrationRequest.builder()
-				.id(UUID.randomUUID().toString())
-				.device( createDevice(pos, owner) )
-				.requester(owner)
-				.requestDate(Instant.ofEpochMilli(
-						Instant.now().minus(30, ChronoUnit.DAYS).toEpochMilli() + pos * 86400L ))
-				.status( statuses[ pos%statuses.length ] )
-				.build();
-	}
-
-	private Device createDevice(int pos, String owner) {
-		return Device.builder()
-				.deviceId( UUID.randomUUID().toString() )
-				.deviceName( "Device name #"+pos )
-				.owner(owner)
-				.ipAddress("10.10.0."+(100+pos))
-				.username("ubuntu_"+pos)
-				.password("saggasas".toCharArray())
-				.publicKey("===== PEM public key =====".toCharArray())
-				.deviceInfo(new HashMap<>())
-				.build();
-	}
+	private final LinkedList<RegistrationRequest> requests = new LinkedList<>();
 
 	// ------------------------------------------------------------------------
+
+	void addRequest(@NonNull RegistrationRequest registrationRequest) {
+		requests.add(registrationRequest);
+	}
 
 	public Optional<RegistrationRequest> getById(@NonNull String id) {
 		return requests.stream().filter(rr -> id.equals(rr.getId())).findAny();

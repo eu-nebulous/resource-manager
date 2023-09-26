@@ -8,3 +8,17 @@ spring.web.resources.static-locations: file:resource-discovery/management/src/ma
 #spring.security.user.name: user
 #spring.security.user.password: user
 #spring.security.user.roles: USER
+
+discovery:
+  brokerUsername: "aaa"
+  brokerPassword: "111"
+  brokerURL: "tcp://localhost:61616?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
+  allowedDeviceInfoKeys:
+    - '*'
+  users:
+    - username: admin
+      password: admin1
+      roles: [ ADMIN ]
+    - username: user
+      password: user1
+      roles: [ USER ]

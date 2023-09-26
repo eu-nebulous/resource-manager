@@ -15,6 +15,7 @@ public class RegistrationRequest {
     private Device device;
     private String requester;
     private Instant requestDate;
+    private long lastUpdateTimestamp;
     private RegistrationRequestStatus status;
     private List<RegistrationRequestHistoryEntry> history;
 }
