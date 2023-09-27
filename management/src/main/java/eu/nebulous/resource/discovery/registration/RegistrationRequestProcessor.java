@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EnableScheduling
 @RequiredArgsConstructor
 public class RegistrationRequestProcessor implements IRegistrationRequestProcessor, InitializingBean, MessageListener {
+	private static final String REQUEST_TYPE_DATA_COLLECTION = "DIAGNOSTICS";	// EMS task type for collecting node info
+	private static final String REQUEST_TYPE_ONBOARDING = "VM";					// EMS task type for installing EMS client
+
+	private final static List<RegistrationRequestStatus> STATUSES_TO_ARCHIVE = List.of(
+			RegistrationRequestStatus.PRE_AUTHORIZATION_REJECT,
+			RegistrationRequestStatus.PRE_AUTHORIZATION_ERROR,
+			RegistrationRequestStatus.DATA_COLLECTION_ERROR,
+			RegistrationRequestStatus.AUTHORIZATION_REJECT,
+			RegistrationRequestStatus.AUTHORIZATION_ERROR,
+			RegistrationRequestStatus.ONBOARDING_ERROR,
+			RegistrationRequestStatus.SUCCESS
+	);
+
 	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
 	private final TaskScheduler taskScheduler;
@@ -84,7 +98,9 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 			// Process requests
 			try {
-				processNewRequests(producer, objectMapper);
+				processNewRequests(producer);
+				processOnboardingRequests(producer);
+				archiveRequests();
 			} catch (Throwable t) {
 				log.error("processRequests: ERROR processing requests: ", t);
 			}
@@ -104,7 +120,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		}
 	}
 
-	private void processNewRequests(MessageProducer producer, ObjectMapper objectMapper) throws JsonProcessingException, JMSException {
+	private void processNewRequests(MessageProducer producer) throws JsonProcessingException, JMSException {
 		log.trace("processNewRequests: BEGIN: {}", producer);
 		List<RegistrationRequest> newRequests = registrationRequestService.getAll().stream()
 				.filter(r -> r.getStatus() == RegistrationRequestStatus.NEW_REQUEST).toList();
@@ -113,34 +129,80 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				newRequests.size(), newRequests.stream().map(RegistrationRequest::getId).toList());
 
 		for (RegistrationRequest registrationRequest : newRequests) {
-			registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION);
-			Map<String, String> dataCollectionRequest = new LinkedHashMap<>(Map.of(
-					"requestId", registrationRequest.getId(),
-					"deviceId", registrationRequest.getDevice().getDeviceId(),
-					"deviceOs", registrationRequest.getDevice().getDeviceOS(),
-					"deviceName", registrationRequest.getDevice().getDeviceName(),
-					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
-					"deviceUsername", registrationRequest.getDevice().getUsername(),
-					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
-					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
-			));
-			dataCollectionRequest.put("timestamp", Long.toString(Instant.now().toEpochMilli()));
-			dataCollectionRequest.put("priority", Double.toString(1.0));
-			dataCollectionRequest.put("retry", Integer.toString(1));
-
 			log.debug("processNewRequests: Requesting collection of device data for request with Id: {}", registrationRequest.getId());
+			Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_DATA_COLLECTION, registrationRequest);
 			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 			producer.send(createMessage(jsonMessage));
+			registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
 			log.debug("processNewRequests: Data collection request sent for request with Id: {}", registrationRequest.getId());
 		}
 
 		log.trace("processNewRequests: END");
 	}
 
+	private void processOnboardingRequests(MessageProducer producer) throws JsonProcessingException, JMSException {
+		log.trace("processOnboardingRequests: BEGIN: {}", producer);
+		List<RegistrationRequest> onboardingRequests = registrationRequestService.getAll().stream()
+				.filter(r -> r.getStatus() == RegistrationRequestStatus.PENDING_ONBOARDING).toList();
+
+		log.debug("processOnboardingRequests: Found {} onboarding requests: {}",
+				onboardingRequests.size(), onboardingRequests.stream().map(RegistrationRequest::getId).toList());
+
+		for (RegistrationRequest registrationRequest : onboardingRequests) {
+			log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
+			Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_ONBOARDING, registrationRequest);
+			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
+			producer.send(createMessage(jsonMessage));
+			registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
+			log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
+		}
+
+		log.trace("processOnboardingRequests: END");
+	}
+
+	private static Map<String, String> prepareRequestPayload(@NonNull String requestType, RegistrationRequest registrationRequest) {
+		Map<String, String> payload = new LinkedHashMap<>(Map.of(
+				"requestId", registrationRequest.getId(),
+				"requestType", requestType,
+				"deviceId", registrationRequest.getDevice().getDeviceId(),
+				"deviceOs", registrationRequest.getDevice().getDeviceOS(),
+				"deviceName", registrationRequest.getDevice().getDeviceName(),
+				"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
+				"deviceUsername", registrationRequest.getDevice().getUsername(),
+				"devicePassword", new String(registrationRequest.getDevice().getPassword()),
+				"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
+		));
+		payload.put("timestamp", Long.toString(Instant.now().toEpochMilli()));
+		payload.put("priority", Double.toString(1.0));
+		payload.put("retry", Integer.toString(1));
+		return payload;
+	}
+
 	protected ActiveMQMessage createMessage(String message) throws MessageNotWriteableException {
 		ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
 		textMessage.setText(message);
 		return textMessage;
+	}
+
+	private void archiveRequests() {
+		long archiveThreshold = Instant.now().minus(1, ChronoUnit.MINUTES).toEpochMilli();
+		log.trace("archiveRequests: BEGIN: archive-threshold: {}", Instant.ofEpochMilli(archiveThreshold));
+		List<RegistrationRequest> requestsForArchiving = registrationRequestService.getAll().stream()
+				.filter(r -> STATUSES_TO_ARCHIVE.contains(r.getStatus()))
+				.filter(r -> r.getLastUpdateTimestamp() < archiveThreshold)
+				.toList();
+
+		log.debug("archiveRequests: Found {} requests for archiving: {}",
+				requestsForArchiving.size(), requestsForArchiving.stream().map(RegistrationRequest::getId).toList());
+
+		for (RegistrationRequest registrationRequest : requestsForArchiving) {
+			log.debug("archiveRequests: Archiving requesting with Id: {}", registrationRequest.getId());
+			//XXX:TODO: Archive request...
+			registrationRequestService.deleteById(registrationRequest.getId());
+			log.debug("archiveRequests: Archived request with Id: {}", registrationRequest.getId());
+		}
+
+		log.trace("archiveRequests: END");
 	}
 
 	// ------------------------------------------------------------------------
@@ -184,12 +246,23 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void processResponse(@NonNull Map<String, Object> response) {
-		String requestId = response.getOrDefault("requestId", "").toString();
-		String deviceIpAddress = response.getOrDefault("deviceIpAddress", "").toString();
-		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString());
+		String requestId = response.getOrDefault("requestId", "").toString().trim();
+		String status = response.getOrDefault("status", "").toString().trim();
+		String deviceIpAddress = response.getOrDefault("deviceIpAddress", "").toString().trim();
+		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
 
 		RegistrationRequest registrationRequest = registrationRequestService.getById(requestId).orElse(null);
 		if (registrationRequest!=null) {
+			RegistrationRequestStatus currStatus = registrationRequest.getStatus();
+			RegistrationRequestStatus newStatus = switch (currStatus) {
+				case PRE_AUTHORIZATION_REQUESTED -> RegistrationRequestStatus.PRE_AUTHORIZATION_ERROR;
+				case DATA_COLLECTION_REQUESTED -> RegistrationRequestStatus.DATA_COLLECTION_ERROR;
+				case AUTHORIZATION_REQUESTED -> RegistrationRequestStatus.AUTHORIZATION_ERROR;
+				case ONBOARDING_REQUESTED -> RegistrationRequestStatus.ONBOARDING_ERROR;
+				default -> currStatus;
+			};
+			registrationRequest.setStatus(newStatus);
+
 			String ipAddress = registrationRequest.getDevice().getIpAddress();
 			if (StringUtils.equals(ipAddress, deviceIpAddress)) {
 				log.warn("processResponse: Device IP address do not match with that in request: id={}, ip-address={} != {}",
@@ -199,6 +272,10 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			if (timestamp < registrationRequest.getLastUpdateTimestamp()) {
 				log.warn("processResponse: Response timestamp is older than requests last update timestamp: id={}, timestamp={} < {}",
 						requestId, timestamp, registrationRequest.getLastUpdateTimestamp());
+				return;
+			}
+			if (! "SUCCESS".equals(status)) {
+				log.warn("processResponse: Request status is not SUCCESS: id={}, timestamp={}, status={}", requestId, timestamp, status);
 				return;
 			}
 
@@ -228,12 +305,14 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 						requestId, timestamp, processedDevInfo);
 				registrationRequest.getDevice().setDeviceInfo(processedDevInfo);
 
-				registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
+				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
+					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
+				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED)
+					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
 
 				log.debug("processResponse: Done processing response for request: id={}, timestamp={}", requestId, timestamp);
 			} else {
 				log.warn("processResponse: No device info found in message or it is of wrong type: id={}, obj={}", requestId, obj);
-				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_ERROR);
 			}
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
