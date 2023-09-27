@@ -30,6 +30,9 @@ public class ResourceDiscoveryProperties {
 	private String dataCollectionResponseTopic = "ems.client.installation.reports";
 	private List<String> allowedDeviceInfoKeys = new ArrayList<>(List.of("*"));
 
+	private boolean automaticArchivingEnabled;
+	private long archivingThreshold;				// in minutes
+
 	private String brokerUsername;
 	@ToString.Exclude
 	private String brokerPassword;

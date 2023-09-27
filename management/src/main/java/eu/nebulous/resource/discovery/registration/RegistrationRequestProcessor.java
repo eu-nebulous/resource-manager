@@ -100,7 +100,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			try {
 				processNewRequests(producer);
 				processOnboardingRequests(producer);
-				archiveRequests();
+				if (processorProperties.isAutomaticArchivingEnabled())
+					archiveRequests();
 			} catch (Throwable t) {
 				log.error("processRequests: ERROR processing requests: ", t);
 			}
@@ -185,21 +186,20 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void archiveRequests() {
-		long archiveThreshold = Instant.now().minus(1, ChronoUnit.MINUTES).toEpochMilli();
-		log.trace("archiveRequests: BEGIN: archive-threshold: {}", Instant.ofEpochMilli(archiveThreshold));
+		Instant archiveThreshold = Instant.now().minus(processorProperties.getArchivingThreshold(), ChronoUnit.MINUTES);
+		log.trace("archiveRequests: BEGIN: archive-threshold: {}", archiveThreshold);
 		List<RegistrationRequest> requestsForArchiving = registrationRequestService.getAll().stream()
 				.filter(r -> STATUSES_TO_ARCHIVE.contains(r.getStatus()))
-				.filter(r -> r.getLastUpdateTimestamp() < archiveThreshold)
+				.filter(r -> r.getLastUpdateDate().isBefore(archiveThreshold))
 				.toList();
 
 		log.debug("archiveRequests: Found {} requests for archiving: {}",
 				requestsForArchiving.size(), requestsForArchiving.stream().map(RegistrationRequest::getId).toList());
 
 		for (RegistrationRequest registrationRequest : requestsForArchiving) {
-			log.debug("archiveRequests: Archiving requesting with Id: {}", registrationRequest.getId());
-			//XXX:TODO: Archive request...
-			registrationRequestService.deleteById(registrationRequest.getId());
-			log.debug("archiveRequests: Archived request with Id: {}", registrationRequest.getId());
+			log.debug("archiveRequests: Archiving request with Id: {}", registrationRequest.getId());
+			registrationRequestService.archiveRequestBySystem(registrationRequest.getId());
+			log.info("archiveRequests: Archived request with Id: {}", registrationRequest.getId());
 		}
 
 		log.trace("archiveRequests: END");
@@ -269,9 +269,9 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 						requestId, ipAddress, deviceIpAddress);
 				return;
 			}
-			if (timestamp < registrationRequest.getLastUpdateTimestamp()) {
-				log.warn("processResponse: Response timestamp is older than requests last update timestamp: id={}, timestamp={} < {}",
-						requestId, timestamp, registrationRequest.getLastUpdateTimestamp());
+			if (timestamp < registrationRequest.getRequestDate().toEpochMilli()) {
+				log.warn("processResponse: Response timestamp is older than Request's date: id={}, timestamp={} < {}",
+						requestId, timestamp, registrationRequest.getRequestDate());
 				return;
 			}
 			if (! "SUCCESS".equals(status)) {
@@ -282,7 +282,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			Object obj = response.get("nodeInfo");
 			if (obj instanceof Map devInfo) {
 				// Update request info
-				registrationRequest.setLastUpdateTimestamp(timestamp);
+				registrationRequest.setLastUpdateDate(Instant.ofEpochMilli(timestamp));
 
 				// Process device info in response
 				log.debug("processResponse: Device info in response: id={}, device-info{}", requestId, devInfo);

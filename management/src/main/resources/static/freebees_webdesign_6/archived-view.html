@@ -27,12 +27,9 @@ $(function() {
 
     if (reqId!=='')
         refreshRequestInfo(reqId);
-    else
-        isNew = true;
     checkSameUser();
 });
 
-var isNew = false;
 var isAdmin = false;
 var username = '';
 var requestId;
@@ -45,15 +42,16 @@ function refreshRequestInfo(id) {
 
     // retrieve request info
     $.ajax({
-        url: '/discovery/request/'+id,
+        url: '/discovery/request/archived/'+id,
         dataType: 'json'
     })
     .done(function(data, status) {
         // console.log('refreshRequestInfo: OK: ', data);
         var reqId = data.id;
-        $('#page_title').html(
-            reqId=='' ? 'New Registration Request' : 'Registration Request '+reqId
-        );
+        if (reqId!=='')
+            $('#page_title').html( 'Archived Registration Request '+reqId );
+        else
+            $('#page_title').html( $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`) );
 
         requestId = data.id;
         requester = data.requester;
@@ -76,7 +74,7 @@ function refreshRequestInfo(id) {
 }
 
 function checkSameUser() {
-    if (isNew || username!=='' && requester!='' && username===requester) {
+    if (username!=='' && requester!='' && username===requester) {
         $('.sameUser').addClass('d-none');
     } else {
         $('.sameUser').removeClass('d-none');
@@ -128,133 +126,6 @@ function flattenObject(ob) {
     }
     return toReturn;
 }
-
-/****
-{
-    // Flatten data map
-    var keysArray = iterateData(request);
-    //console.log('updateFormData: keysArray: ', keysArray);
-    var keyValuesMap = {};
-    keysArray.forEach(key => {
-        keyValuesMap[key] = getValueDeep(key.split('.'), request);
-    });
-    //console.log('updateFormData: keyValuesMap: ', keyValuesMap);
-}
-
-function iterateData(obj) {
-    const isObject = val =>
-            val && typeof val === 'object' && !Array.isArray(val);
-    const addDelimiter = (a, b) =>
-            a ? `${a}.${b}` : b;
-    const paths = (obj = {}, head = '') => {
-        return Object.entries(obj)
-            .reduce(
-                (product, [key, value]) => {
-                    let fullPath = addDelimiter(head, key);
-                    return isObject(value)
-                        ? product.concat(paths(value, fullPath))
-                        : product.concat(fullPath)
-                },
-                []);
-    }
-    return paths(obj);
-}
-
-function getValueDeep(keyPart, data) {
-    //console.log('getValueDeep: ', keyPart[0], data, data[keyPart[0]]);
-    var val = data[keyPart[0]];
-    keyPart.shift();
-    return keyPart.length==0 ? val : getValueDeep(keyPart, val);
-}
-****/
-
-
-function saveRequestInfo() {
-    // Get form fields
-    var q1 = $('input[id^="request#"]');
-    var q2 = $('textarea[id^="request#"]');
-    var all = $.merge(q1, q2);
-    //console.log('saveRequestInfo: form fields: ', all);
-
-    // Collect values
-    var keyValuesMap = {};
-    all.each((index, item) => {
-        var it = $(item);
-        //console.log('saveRequestInfo: each: ', it.attr('id'), it.val());
-        keyValuesMap[ it.attr('id') ] = it.val();
-    });
-    //console.log('saveRequestInfo: keyValuesMap: ', keyValuesMap);
-
-    // Convert to object graph
-    var root = {};
-    Object.entries(keyValuesMap).forEach((entry) => {
-        //console.log('saveRequestInfo: KVM-each: ', entry);
-        var keyPart = entry[0].split("#");
-        var p = root;
-        keyPart.forEach((item, index) => {
-            //console.log('saveRequestInfo: KVM-keyPart-each: ', item, p);
-            if (! p[item]) p[item] = index+1<keyPart.length ? {} : entry[1];
-            p = p[item];
-        });
-
-    });
-    root = root['request'];
-    //console.log('saveRequestInfo: root: ', root);
-
-    // In case of new request clear any request info
-    if (requestId==='') {
-        Object.entries(root).forEach((entry) => {
-            if (typeof entry[1]==='string')
-                root[ entry[0] ] = null;
-        });
-        //console.log('saveRequestInfo: root-NEW: ', root);
-    }
-
-    // Fix device info
-    var deviceInfo = $(`[id="request#device#deviceInfo"]`).val().trim();
-    if (deviceInfo==='') deviceInfo = '{}';
-    root['device']['deviceInfo'] = JSON.parse( deviceInfo );
-
-    // Check request Id
-    if (requestId!=='' && requestId!==root.id) {
-        alert('Request id has been modified!');
-        return;
-    }
-
-    sendRequestData(root);
-}
-
-function sendRequestData(requestData) {
-    // show loading spinner
-    $('#loading-spinner').toggleClass('d-none');
-    $('#main-page').toggleClass('d-none');
-
-    // retrieve request info
-    $.ajax({
-        url:    requestId!=='' ? '/discovery/request/'+requestId : '/discovery/request',
-        method: requestId!=='' ? 'post' : 'put',
-        contentType: "application/json; charset=utf-8",
-        dataType: 'json',
-        data: JSON.stringify(requestData)
-    })
-    .done(function(data, status) {
-        //console.log('sendRequestData: OK: ', data);
-        requestId = data.id;
-        refreshRequestInfo(requestId);
-    })
-    .fail(function(xhr, status, error) {
-        console.error('sendRequestData: ERROR: ', status, error);
-        $('#page_title').html(
-            $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
-        );
-    })
-    .always(function(data, status) {
-        // hide loading spinner
-        $('#loading-spinner').toggleClass('d-none');
-        $('#main-page').toggleClass('d-none');
-    })
-    ;
-}
     </script>
 
 </head>
@@ -303,16 +174,12 @@ function sendRequestData(requestData) {
                         <i class="fa fa-home"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-primary" onClick="document.location = 'requests.html';">
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'archived.html';">
                         <i class="fa fa-arrow-left"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <button type="button" class="btn btn-primary" onClick="refreshRequestInfo(requestId);">
                         <i class="fa fa-refresh"></i>
-                    </button>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-success" onClick="saveRequestInfo();">
-                        <i class="fa fa-save"></i>
                     </button>
                     <p>&nbsp;</p>
 
@@ -356,6 +223,13 @@ function sendRequestData(requestData) {
                                 <input type="text" readonly class="form-control-plaintext" id="request#lastUpdateDate" value="-">
                             </div>
                         </div>
+                        <!-- Request archival date -->
+                        <div class="form-group row">
+                            <label for="request#archiveDate" class="col-sm-2 col-form-label"><b>Archive Date</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#archiveDate" value="-">
+                            </div>
+                        </div>
 
                         <div class="form-group row text-center bg-dark bg-opacity-25">
                             <h5>Device details</h5>
@@ -365,63 +239,63 @@ function sendRequestData(requestData) {
                         <div class="form-group row">
                             <label for="request#device#deviceId" class="col-sm-2 col-form-label"><b>Device Id</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#deviceId" value="" placeholder="Device unique id">
+                                <input type="text" readonly class="form-control" id="request#device#deviceId" value="" placeholder="Device unique id">
                             </div>
                         </div>
                         <!-- Device Name -->
                         <div class="form-group row">
                             <label for="request#device#deviceName" class="col-sm-2 col-form-label"><b>Device Name</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#deviceName" value="" placeholder="Device name">
+                                <input type="text" readonly class="form-control" id="request#device#deviceName" value="" placeholder="Device name">
                             </div>
                         </div>
                         <!-- Device OS -->
                         <div class="form-group row">
                             <label for="request#device#deviceOS" class="col-sm-2 col-form-label"><b>Device OS</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#deviceOS" value="LINUX" placeholder="Device OS">
+                                <input type="text" readonly class="form-control" id="request#device#deviceOS" value="LINUX" placeholder="Device OS">
                             </div>
                         </div>
                         <!-- Device Owner -->
                         <div class="form-group row">
                             <label for="request#device#owner" class="col-sm-2 col-form-label"><b>Device Owner</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#owner" value="" placeholder="Device Owner">
+                                <input type="text" readonly class="form-control" id="request#device#owner" value="" placeholder="Device Owner">
                             </div>
                         </div>
                         <!-- Device IP Address -->
                         <div class="form-group row">
                             <label for="request#device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#ipAddress" value="" placeholder="Device IP address">
+                                <input type="text" readonly class="form-control" id="request#device#ipAddress" value="" placeholder="Device IP address">
                             </div>
                         </div>
                         <!-- Device Username -->
                         <div class="form-group row">
                             <label for="request#device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#username" value="" placeholder="SSH username">
+                                <input type="text" readonly class="form-control" id="request#device#username" value="" placeholder="SSH username">
                             </div>
                         </div>
                         <!-- Device Password -->
                         <div class="form-group row">
-                            <label for="request#device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
+                            <label for="request#device#passwordXXX" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#password" value="" placeholder="SSH password">
+                                <input type="text" readonly class="form-control" id="request#device#passwordXXX" value="" placeholder="*** SSH password - Not exposed ***">
                             </div>
                         </div>
                         <!-- Device Public Key -->
                         <div class="form-group row">
-                            <label for="request#device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
+                            <label for="request#device#publicKeyXXX" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" id="request#device#publicKey" placeholder="SSH public key"></textarea>
+                                <textarea readonly class="form-control" id="request#device#publicKeyXXX" placeholder="*** SSH public key - Not exposed ***"></textarea>
                             </div>
                         </div>
                         <!-- Device Additional Info -->
                         <div class="form-group row">
                             <label for="request#device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" id="request#device#deviceInfo" placeholder="Additional device info"></textarea>
+                                <textarea readonly class="form-control" id="request#device#deviceInfo" placeholder="Additional device info"></textarea>
                             </div>
                         </div>
 

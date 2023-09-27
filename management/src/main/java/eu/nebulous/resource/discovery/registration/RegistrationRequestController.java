@@ -66,10 +66,7 @@ public class RegistrationRequestController {
 	}
 
 	@PutMapping(value = "/request", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest addRequest(@RequestBody RegistrationRequest registrationRequest, Authentication authentication) {
-		registrationRequest.setRequester(authentication.getName());
-		registrationRequest.setRequestDate(Instant.now());
-		registrationRequest.setStatus(RegistrationRequestStatus.NEW_REQUEST);
+	public RegistrationRequest createRequest(@RequestBody RegistrationRequest registrationRequest, Authentication authentication) {
 		return registrationRequestService.saveAsUser(registrationRequest, authentication);
 	}
 
@@ -91,16 +88,14 @@ public class RegistrationRequestController {
 
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/request/{id}/authorize", produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest authorizeRequest(@PathVariable String id) {
-		return registrationRequestService.authorizeRequest(id, true)
-				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
+	public RegistrationRequest authorizeRequest(@PathVariable String id, Authentication authentication) {
+		return registrationRequestService.authorizeRequest(id, true, authentication);
 	}
 
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/request/{id}/reject", produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest rejectRequest(@PathVariable String id) {
-		return registrationRequestService.authorizeRequest(id, false)
-				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
+	public RegistrationRequest rejectRequest(@PathVariable String id, Authentication authentication) {
+		return registrationRequestService.authorizeRequest(id, false, authentication);
 	}
 
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
@@ -111,5 +106,37 @@ public class RegistrationRequestController {
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: " + id));
 		request.setStatus(_newStatus);
 		return registrationRequestService.update(request);
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String archiveRequest(@PathVariable String id, Authentication authentication) {
+		registrationRequestService.archiveRequest(id, authentication);
+		return "ARCHIVED";
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/{id}/unarchive", produces = MediaType.APPLICATION_JSON_VALUE)
+	public RegistrationRequest unarchiveRequest(@PathVariable String id, Authentication authentication) {
+		registrationRequestService.unarchiveRequest(id, authentication);
+		return registrationRequestService.getById(id)
+				.orElseThrow(() -> new RegistrationRequestException("Failed to unarchive registration request with id: " + id));
+	}
+
+	@GetMapping(value = "/request/archived", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<RegistrationRequest> listArchivedRequests(Authentication authentication) {
+		return registrationRequestService.getArchivedAllAsUser(authentication);
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/request/archived/all", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<RegistrationRequest> listArchivedRequestsAdmin() {
+		return registrationRequestService.getArchivedAll();
+	}
+
+	@GetMapping(value = "/request/archived/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public RegistrationRequest getArchivedRequest(@PathVariable String id, Authentication authentication) {
+		return registrationRequestService.getArchivedByIdAsUser(id, authentication)
+				.orElseThrow(() -> new RegistrationRequestException("Not found archived registration request with id: "+id));
 	}
 }

@@ -31,7 +31,7 @@ function updateRequestsList(asAdmin) {
     else lastUpdateAsAdmin = asAdmin;
 
     $.ajax({
-        url: '/discovery/request' + (asAdmin ? '/all' : ''),
+        url: '/discovery/request/archived' + (asAdmin ? '/all' : ''),
         dataType: 'json'
     })
     .done(function(data, status) {
@@ -49,26 +49,10 @@ function updateRequestsList(asAdmin) {
                             + '<br/>' + Intl.DateTimeFormat().resolvedOptions().timeZone;
             var status = item.status;
             var color = getStatusColor(status);
-            var adminActions = (isAdmin && (item.status==='PENDING_AUTHORIZATION'
-                                            || item.status==='AUTHORIZATION_REJECT'
-                                            || item.status==='PENDING_ONBOARDING')
-                               ) ? `
-                                <button type="button" class="btn btn-primary btn-sm" onClick="authorizeRequest('${reqId}', true); ">
-                                    <i class="fas fa-thumbs-up"></i>
+            var adminActions = (isAdmin) ? `
+                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveRequest('${reqId}')">
+                                    <i class="fas fa-box-open"></i>
                                 </button>
-                                <button type="button" class="btn btn-danger btn-sm" onClick="authorizeRequest('${reqId}', false); ">
-                                    <i class="fas fa-thumbs-down"></i>
-                                </button>
-                ` : '';
-            adminActions += (isAdmin) ? `
-                                <button class="btn btn-warning btn-sm" onClick="archiveRequest('${reqId}')">
-                                    <i class="fas fa-box"></i>
-                                </button>
-                                <a href="/discovery/request/${reqId}/status/NEW_REQUEST" target="_blank">
-                                    <button class="btn btn-outline-danger btn-sm">
-                                        <i class="fas fa-fast-backward"></i>
-                                    </button>
-                                </a>
             `: '';
             ii++;
             tbody.append( $(`
@@ -82,11 +66,8 @@ function updateRequestsList(asAdmin) {
                             <td>${dateStr}</td>
                             <td>${status}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" onClick="if (confirm('Delete request?')) deleteRequest('${reqId}');">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                <button type="button" class="btn btn-success btn-sm" onClick="document.location='/request-edit.html?id=${reqId}'; ">
-                                    <i class="fas fa-pen"></i>
+                                <button type="button" class="btn btn-success btn-sm" onClick="document.location='/archived-view.html?id=${reqId}'; ">
+                                    <i class="fas fa-eye"></i>
                                 </button>
                                 ${adminActions}
                             </td>
@@ -109,61 +90,16 @@ function getStatusColor(status) {
     return 'table-info';
 }
 
-function deleteRequest(id) {
-    $.ajax({
-        url: '/discovery/request/'+id,
-        method: 'DELETE',
-        async: 'false'
+function unarchiveRequest(reqId) {
+    if (! confirm('Restore request?')) return;
 
-    })
+    $.ajax({ url: `/discovery/request/${reqId}/unarchive` })
     .done(function(data, status) {
-        console.log('deleteRequest: OK: ', id);
-    })
-    .fail(function(xhr, status, error) {
-        console.error('deleteRequest: ERROR: ', id, status, error);
-    })
-    .always(function(data, status) {
-        updateRequestsList();
-    })
-    ;
-}
-
-function processRequests() {
-    $.ajax({ url: '/discovery/request/process' })
-    .done(function(data, status) {
-        console.log('processRequests: OK: ', data);
-    })
-    .fail(function(xhr, status, error) {
-        console.error('processRequests: ERROR: ', status, error);
-    });
-}
-
-function authorizeRequest(reqId, authorize) {
-    var authStr = authorize ? 'authorize' : 'reject';
-    $.ajax({ url: `/discovery/request/${reqId}/${authStr}` })
-    .done(function(data, status) {
-        console.log('authorizeRequest: OK: ', data);
+        console.log('unarchiveRequest: OK: ', data);
         updateRequestsList(true);
     })
     .fail(function(xhr, status, error) {
-        console.error('authorizeRequest: ERROR: ', status, error);
-    });
-}
-
-function archiveRequest(reqId) {
-    if (! confirm('Archive request?')) return;
-
-    $.ajax({
-        url: `/discovery/request/${reqId}/archive`,
-        dataType: 'text'
-    })
-    .done(function(data, status) {
-        console.log('archiveRequest: OK: ', data);
-        updateRequestsList(true);
-        alert(data);
-    })
-    .fail(function(xhr, status, error) {
-        console.error('archiveRequest: ERROR: ', status, error);
+        console.error('unarchiveRequest: ERROR: ', status, error);
     });
 }
     </script>
@@ -197,16 +133,13 @@ function archiveRequest(reqId) {
         <section class="light-section">
             <div class="container">
                 <div class="text-center">
-                    <h2>Device Registration Requests</h2>
+                    <h2>Archived Registration Requests</h2>
                     <!--<p class="sub-header">Device registration requests</p>-->
 
                     <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
                         <i class="fa fa-home"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="adminOnly btn btn-danger d-none" onClick="processRequests()">
-                        <i class="fa fa-random"></i>
-                    </button>
                     <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
                     <button type="button" class="adminOnly btn btn-danger d-none" onClick="updateRequestsList(true)">
                         <i class="fa fa-refresh"></i>
@@ -215,10 +148,6 @@ function archiveRequest(reqId) {
 
                     <button type="button" class="btn btn-primary" onClick="updateRequestsList(false)">
                         <i class="fa fa-refresh"></i>
-                    </button>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-success" onClick="document.location = '/request-edit.html'; ">
-                        <i class="fa fa-plus"></i>
                     </button>
                 </div>
 
