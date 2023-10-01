@@ -9,6 +9,9 @@ spring.web.resources.static-locations: file:resource-discovery/management/src/ma
 #spring.security.user.password: user
 #spring.security.user.roles: USER
 
+spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
+spring.data.mongodb.database: registration_request
+
 discovery:
   brokerUsername: "aaa"
   brokerPassword: "111"
