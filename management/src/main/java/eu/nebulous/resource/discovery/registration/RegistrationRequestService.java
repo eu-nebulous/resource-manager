@@ -2,6 +2,7 @@ package eu.nebulous.resource.discovery.registration;
 
 import eu.nebulous.resource.discovery.registration.model.*;
 import eu.nebulous.resource.discovery.registration.repository.ArchivedRegistrationRequestRepository;
+import eu.nebulous.resource.discovery.registration.repository.InMemoryRegistrationRequestRepository;
 import eu.nebulous.resource.discovery.registration.repository.RegistrationRequestRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -21,24 +22,23 @@ public class RegistrationRequestService {
 	private final RegistrationRequestRepository registrationRequestRepository;
 	private final ArchivedRegistrationRequestRepository archivedRegistrationRequestRepository;
 
-//	private final LinkedList<RegistrationRequest> requests = new LinkedList<>();
-//	private final LinkedList<RegistrationRequest> archivedRequests = new LinkedList<>();
+	/*private final InMemoryRegistrationRequestRepository<RegistrationRequest>
+			registrationRequestRepository = new InMemoryRegistrationRequestRepository<>();
+	private final InMemoryRegistrationRequestRepository<ArchivedRegistrationRequest>
+			archivedRegistrationRequestRepository = new InMemoryRegistrationRequestRepository<>();*/
 
 	// ------------------------------------------------------------------------
 
 	// Used in RegistrationRequestService_SampleDataCreator to create sample requests
 	void addRequest(@NonNull RegistrationRequest registrationRequest) {
-//		requests.add(registrationRequest);
 		registrationRequestRepository.save(registrationRequest);
 	}
 
 	public Optional<RegistrationRequest> getById(@NonNull String id) {
-//		return requests.stream().filter(rr -> id.equals(rr.getId())).findAny();
 		return registrationRequestRepository.findById(id);
 	}
 
 	public List<RegistrationRequest> getAll() {
-//		return Collections.unmodifiableList(requests);
 		return Collections.unmodifiableList(registrationRequestRepository.findAll());
 	}
 
@@ -62,7 +62,6 @@ public class RegistrationRequestService {
 		registrationRequest.setRequestDate(Instant.now());
 		checkRegistrationRequest(registrationRequest);
 
-//		requests.add(registrationRequest);
 		registrationRequestRepository.save(registrationRequest);
 		return registrationRequest;
 	}
@@ -74,8 +73,6 @@ public class RegistrationRequestService {
 					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
 		checkRegistrationRequest(registrationRequest);
 
-//		int index = requests.indexOf(result.get());
-//		requests.set(index, registrationRequest);
 		registrationRequest.setLastUpdateDate(Instant.now());
 		registrationRequestRepository.save(registrationRequest);
 
@@ -107,14 +104,13 @@ public class RegistrationRequestService {
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+id);
-//		requests.remove(result.get());
 		registrationRequestRepository.delete(result.get());
 		result.get().setLastUpdateDate(Instant.now());
 	}
 
 	public void delete(@NonNull RegistrationRequest registrationRequest) {
-//		deleteById(registrationRequest.getId());
 		registrationRequestRepository.deleteById(registrationRequest.getId());
+		registrationRequest.setLastUpdateDate(Instant.now());
 	}
 
 	// ------------------------------------------------------------------------
@@ -204,7 +200,6 @@ public class RegistrationRequestService {
 	// ------------------------------------------------------------------------
 
 	public Optional<ArchivedRegistrationRequest> getArchivedById(@NonNull String id) {
-//		return archivedRequests.stream().filter(rr -> id.equals(rr.getId())).findAny();
 		return archivedRegistrationRequestRepository.findById(id);
 	}
 
@@ -215,7 +210,6 @@ public class RegistrationRequestService {
 	}
 
 	public List<ArchivedRegistrationRequest> getArchivedAll() {
-//		return Collections.unmodifiableList(archivedRequests);
 		return Collections.unmodifiableList(archivedRegistrationRequestRepository.findAll());
 	}
 
@@ -234,9 +228,7 @@ public class RegistrationRequestService {
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: " + id);
 		result.get().setArchiveDate(Instant.now());
-//		archivedRequests.add(result.get());
 		archivedRegistrationRequestRepository.save(ArchivedRegistrationRequest.fromRegistrationRequest(result.get()));
-//		requests.remove(result.get());
 		registrationRequestRepository.delete(result.get());
 	}
 
@@ -248,9 +240,7 @@ public class RegistrationRequestService {
 		checkAdmin(result.get().getId(), authentication);
 
 		result.get().setArchiveDate(null);
-//		requests.add(result.get());
 		registrationRequestRepository.save(result.get().toRegistrationRequest());
-//		archivedRequests.remove(result.get());
 		archivedRegistrationRequestRepository.deleteById(result.get().getId());
 	}
 }
