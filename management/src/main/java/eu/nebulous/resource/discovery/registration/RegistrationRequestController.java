@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.registration;
 
+import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
@@ -11,7 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -124,18 +124,18 @@ public class RegistrationRequestController {
 	}
 
 	@GetMapping(value = "/request/archived", produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<RegistrationRequest> listArchivedRequests(Authentication authentication) {
+	public List<ArchivedRegistrationRequest> listArchivedRequests(Authentication authentication) {
 		return registrationRequestService.getArchivedAllAsUser(authentication);
 	}
 
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/request/archived/all", produces = MediaType.APPLICATION_JSON_VALUE)
-	public List<RegistrationRequest> listArchivedRequestsAdmin() {
+	public List<ArchivedRegistrationRequest> listArchivedRequestsAdmin() {
 		return registrationRequestService.getArchivedAll();
 	}
 
 	@GetMapping(value = "/request/archived/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest getArchivedRequest(@PathVariable String id, Authentication authentication) {
+	public ArchivedRegistrationRequest getArchivedRequest(@PathVariable String id, Authentication authentication) {
 		return registrationRequestService.getArchivedByIdAsUser(id, authentication)
 				.orElseThrow(() -> new RegistrationRequestException("Not found archived registration request with id: "+id));
 	}

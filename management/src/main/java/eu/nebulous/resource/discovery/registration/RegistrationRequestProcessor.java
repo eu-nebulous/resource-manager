@@ -135,6 +135,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 			producer.send(createMessage(jsonMessage));
 			registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
+			registrationRequestService.update(registrationRequest);
 			log.debug("processNewRequests: Data collection request sent for request with Id: {}", registrationRequest.getId());
 		}
 
@@ -155,6 +156,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 			producer.send(createMessage(jsonMessage));
 			registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
+			registrationRequestService.update(registrationRequest);
 			log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
 		}
 
@@ -314,6 +316,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			} else {
 				log.warn("processResponse: No device info found in message or it is of wrong type: id={}, obj={}", requestId, obj);
 			}
+
+			registrationRequestService.update(registrationRequest);
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
 		}
