@@ -15,6 +15,8 @@ public class ArchivedRegistrationRequest extends RegistrationRequest {
         archivedRequest.setArchiveDate(registrationRequest.getArchiveDate());
         archivedRequest.setStatus(registrationRequest.getStatus());
         archivedRequest.setHistory(registrationRequest.getHistory());
+        archivedRequest.setNodeReference(registrationRequest.getNodeReference());
+        archivedRequest.getMessages().addAll(registrationRequest.getMessages());
         return archivedRequest;
     }
 
@@ -28,6 +30,8 @@ public class ArchivedRegistrationRequest extends RegistrationRequest {
                 .archiveDate(this.getArchiveDate())
                 .status(this.getStatus())
                 .history(this.getHistory())
+                .nodeReference(this.getNodeReference())
+                .messages(this.getMessages())
                 .build();
     }
 }

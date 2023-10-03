@@ -1,12 +1,15 @@
 package eu.nebulous.resource.discovery.registration.model;
 
+import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -23,4 +26,7 @@ public class RegistrationRequest {
     private Instant archiveDate;
     private RegistrationRequestStatus status;
     private List<RegistrationRequestHistoryEntry> history;
+    private String nodeReference;
+    @Setter(AccessLevel.NONE)
+    private List<String> messages = new ArrayList<>();
 }

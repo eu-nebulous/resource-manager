@@ -108,6 +108,17 @@ function updateFormData(data) {
     } else {
         $(`[id="request#device#deviceInfo"]`).val( '' ).attr( 'rows', 2 );
     }
+
+    // Update messages field
+    if (data.messages) {
+        var valStr = data.messages.join('\n').trim();
+        var rows = data.messages.length;
+        if (rows<2) rows = 2;
+        if (rows>50) rows = 50;
+        $(`[id="request#messages"]`).val( valStr ).attr( 'rows', rows );
+    } else {
+        $(`[id="request#messages"]`).val( '' ).attr( 'rows', 2 );
+    }
 }
 
 function flattenObject(ob) {
@@ -202,6 +213,13 @@ function flattenObject(ob) {
                                 <input type="text" readonly class="form-control-plaintext" id="request#requester" value="-">
                             </div>
                         </div>
+                        <!-- Node reference (available after onboarding) -->
+                        <div class="form-group row">
+                            <label for="request#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#nodeReference" value="-">
+                            </div>
+                        </div>
                         <!-- Request requestDate -->
                         <div class="form-group row">
                             <label for="request#requestDate" class="col-sm-2 col-form-label"><b>Request Date</b></label>
@@ -228,6 +246,13 @@ function flattenObject(ob) {
                             <label for="request#archiveDate" class="col-sm-2 col-form-label"><b>Archive Date</b></label>
                             <div class="col-sm-10">
                                 <input type="text" readonly class="form-control-plaintext" id="request#archiveDate" value="-">
+                            </div>
+                        </div>
+                        <!-- Request messages -->
+                        <div class="form-group row">
+                            <label for="request#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
+                            <div class="col-sm-10">
+                                <textarea readonly class="form-control-plaintext" id="request#messages"></textarea>
                             </div>
                         </div>
 

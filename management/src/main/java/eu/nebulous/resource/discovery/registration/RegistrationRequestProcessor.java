@@ -249,6 +249,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 	private void processResponse(@NonNull Map<String, Object> response) {
 		String requestId = response.getOrDefault("requestId", "").toString().trim();
+		String reference = response.getOrDefault("reference", "").toString().trim();
 		String status = response.getOrDefault("status", "").toString().trim();
 		String deviceIpAddress = response.getOrDefault("deviceIpAddress", "").toString().trim();
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
@@ -266,18 +267,27 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			registrationRequest.setStatus(newStatus);
 
 			String ipAddress = registrationRequest.getDevice().getIpAddress();
+			boolean isError = false;
 			if (StringUtils.equals(ipAddress, deviceIpAddress)) {
-				log.warn("processResponse: Device IP address do not match with that in request: id={}, ip-address={} != {}",
-						requestId, ipAddress, deviceIpAddress);
-				return;
+				String mesg = String.format("Device IP address do not match with that in request: id=%s, ip-address=%s != %s", requestId, ipAddress, deviceIpAddress);
+				log.warn("processResponse: {}", mesg);
+				registrationRequest.getMessages().add(mesg);
+				isError = true;
 			}
 			if (timestamp < registrationRequest.getRequestDate().toEpochMilli()) {
-				log.warn("processResponse: Response timestamp is older than Request's date: id={}, timestamp={} < {}",
-						requestId, timestamp, registrationRequest.getRequestDate());
-				return;
+				String mesg = String.format("Response timestamp is older than Request's date: id=%s, timestamp=%d < %s", requestId, timestamp, registrationRequest.getRequestDate());
+				log.warn("processResponse: {}", mesg);
+				registrationRequest.getMessages().add(mesg);
+				isError = true;
 			}
 			if (! "SUCCESS".equals(status)) {
-				log.warn("processResponse: Request status is not SUCCESS: id={}, timestamp={}, status={}", requestId, timestamp, status);
+				String mesg = String.format("Request status is not SUCCESS: id=%s, timestamp=%d, status=%s", requestId, timestamp, status);
+				log.warn("processResponse: {}", mesg);
+				registrationRequest.getMessages().add(mesg);
+				isError = true;
+			}
+			if (isError) {
+				registrationRequestService.update(registrationRequest);
 				return;
 			}
 
@@ -307,6 +317,12 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 						requestId, timestamp, processedDevInfo);
 				registrationRequest.getDevice().setDeviceInfo(processedDevInfo);
 
+				// Set node reference (meaningful only in case of Onboarding)
+				if (StringUtils.isNotBlank(reference) && currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
+					registrationRequest.setNodeReference(reference.trim());
+				}
+
+				// Set new status
 				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
 					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
 				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED)
