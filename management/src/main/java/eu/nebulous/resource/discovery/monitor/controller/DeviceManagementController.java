@@ -2,14 +2,14 @@ package eu.nebulous.resource.discovery.monitor.controller;
 
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceException;
-import eu.nebulous.resource.discovery.monitor.service.DeviceConversionService;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
-import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,10 +21,29 @@ import java.util.List;
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class DeviceManagementController {
 	private final DeviceManagementService deviceService;
-	private final DeviceConversionService deviceConversionService;
-	private final IRegistrationRequestProcessor deviceRequestProcessor;
 
-	@GetMapping(value = { "/device", "/device/all" }, produces = MediaType.APPLICATION_JSON_VALUE)
+	private boolean isAuthenticated(Authentication authentication) {
+		return authentication!=null && StringUtils.isNotBlank(authentication.getName());
+	}
+
+	private boolean isAdmin(Authentication authentication) {
+		if (isAuthenticated(authentication)) {
+			return authentication.getAuthorities().stream()
+					.map(GrantedAuthority::getAuthority)
+					.anyMatch("ROLE_ADMIN"::equals);
+		}
+		return false;
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@GetMapping(value = "/device", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<Device> listDevicesUser(Authentication authentication) {
+		return isAuthenticated(authentication)
+				? deviceService.getByOwner(authentication.getName().trim())
+				: listDevicesAll();
+	}
+
+	@GetMapping(value = "/device/all", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<Device> listDevicesAll() {
 		return deviceService.getAll();
 	}
@@ -34,10 +53,16 @@ public class DeviceManagementController {
 		return deviceService.getByOwner(owner);
 	}
 
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/device/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-	public Device getDevice(@PathVariable String id) {
-		return deviceService.getById(id)
-				.orElseThrow(() -> new DeviceException("Not found device with id: "+id));
+	public Device getDevice(@PathVariable String id, Authentication authentication) {
+		Device device = deviceService.getById(id)
+				.orElseThrow(() -> new DeviceException("Not found device with id: " + id));
+		if (isAuthenticated(authentication)
+				&& ! authentication.getName().trim().equals(device.getOwner())
+				&& ! isAdmin(authentication))
+			throw new DeviceException("Cannot retrieve device with id: " + id);
+		return device;
 	}
 
 	@GetMapping(value = "/device/ipaddress/{ipAddress}", produces = MediaType.APPLICATION_JSON_VALUE)

@@ -21,72 +21,71 @@
     <script>
 $(function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const reqId = urlParams.get('id') ?? '';
-    const readonly = urlParams.get('readonly') ?? '';
+    const devId = urlParams.get('id') ?? '';
+    const edit = urlParams.get('edit') ?? 'false';
 
-    requestId = reqId;
-    isReadonly = readonly.trim().toLowerCase()==='true';
-    if (isReadonly) makeFormReadonly();
+    deviceId = devId;
+    isReadonly = ! (edit.trim().toLowerCase()==='true');
+    if (! isReadonly)
+        makeFormEditable();
 
-    if (reqId!=='')
-        refreshRequestInfo(reqId);
-    else
-        isNew = true;
+    if (devId!=='')
+        refreshDeviceInfo(devId);
     checkSameUser();
 });
 
-var isNew = false;
 var isAdmin = false;
-var isReadonly = false;
+var isReadonly = true;
 var username = '';
-var requestId;
-var requester = '';
+var deviceId;
+var owner = '';
 
-function makeFormReadonly() {
+function makeFormEditable() {
     // Get form fields
-    var q1 = $('input[id^="request#"]');
-    var q2 = $('textarea[id^="request#"]');
+    var q1 = $('input[id^="device#"]');
+    var q2 = $('textarea[id^="device#"]');
     var all = $.merge(q1, q2);
-    //console.log('makeFormReadonly: form fields: ', all);
+    //console.log('makeFormEditable: form fields: ', all);
 
-    // Make form fields readonly
+    // Make form fields editable
     all.each((index, item) => {
         var it = $(item);
-        //console.log('makeFormReadonly: each: ', it.attr('id'), it.val());
-        it.prop('readonly', true);
-        it.removeClass('form-control');
-        it.addClass('form-control-plaintext');
+        //console.log('makeFormEditable: each: ', it.attr('id'), it.val());
+        it.prop('readonly', false);
+        it.removeClass('form-control-plaintext');
+        it.addClass('form-control');
     });
 
-    // Hide Save button
-    $('#btn-save').hide();
+    // Show Save button
+    $('#btn-save').removeClass('d-none');
 }
 
-function refreshRequestInfo(id) {
+function refreshDeviceInfo(id) {
     // show loading spinner
     $('#loading-spinner').toggleClass('d-none');
     $('#main-page').toggleClass('d-none');
 
-    // retrieve request info
+    // retrieve device info
     $.ajax({
-        url: '/discovery/request/'+id,
+        url: '/monitor/device/'+id,
         dataType: 'json'
     })
     .done(function(data, status) {
-        // console.log('refreshRequestInfo: OK: ', data);
-        var reqId = data.id;
-        $('#page_title').html(
-            reqId=='' ? 'New Registration Request' : 'Registration Request '+reqId
-        );
+        // console.log('refreshDeviceInfo: OK: ', data);
+        var devId = data.id;
+        if (devId!=='')
+            $('#page_title').html( 'Device '+devId );
+        else
+            $('#page_title').html( $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`) );
 
-        requestId = data.id;
-        requester = data.requester;
+        deviceId = data.id;
+        owner = data.owner;
         checkSameUser();
 
         updateFormData(data);
     })
     .fail(function(xhr, status, error) {
-        console.error('refreshRequestInfo: ERROR: ', status, error);
+        console.error('refreshDeviceInfo: ERROR: ', status, error);
         $('#page_title').html(
             $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
         );
@@ -100,7 +99,7 @@ function refreshRequestInfo(id) {
 }
 
 function checkSameUser() {
-    if (isNew || username!=='' && requester!='' && username===requester) {
+    if (username!=='' && owner!='' && username===owner) {
         $('.sameUser').addClass('d-none');
     } else {
         $('.sameUser').removeClass('d-none');
@@ -109,13 +108,13 @@ function checkSameUser() {
 
 function updateFormData(data) {
     // Prepare data for processing
-    var request = {
-        request: data
+    var device = {
+        device: data
     };
-    //console.log('updateFormData: request: ', request);
+    //console.log('updateFormData: device: ', device);
 
     // Flatten data map
-    var keyValuesMap = flattenObject(request);
+    var keyValuesMap = flattenObject(device);
     //console.log('updateFormData: flattenObject: ', keyValuesMap);
 
     // Update form fields
@@ -125,25 +124,25 @@ function updateFormData(data) {
     });
 
     // Update device info field
-    if (data.device.deviceInfo) {
-        var valStr = JSON.stringify(data.device.deviceInfo, null, 2);
+    if (data.deviceInfo) {
+        var valStr = JSON.stringify(data.deviceInfo, null, 2);
         var rows = valStr.split(/\r\n|\r|\n/).length;
-        if (rows<2) rows = 2;
+        if (rows<2) rows = 1;
         if (rows>50) rows = 50;
-        $(`[id="request#device#deviceInfo"]`).val( valStr ).attr( 'rows', rows );
+        $(`[id="device#deviceInfo"]`).val( valStr ).attr( 'rows', rows );
     } else {
-        $(`[id="request#device#deviceInfo"]`).val( '' ).attr( 'rows', 2 );
+        $(`[id="device#deviceInfo"]`).val( '' ).attr( 'rows', 1 );
     }
 
     // Update messages field
     if (data.messages) {
         var valStr = data.messages.join('\n').trim();
         var rows = data.messages.length;
-        if (rows<2) rows = 2;
+        if (rows<2) rows = 1;
         if (rows>50) rows = 50;
-        $(`[id="request#messages"]`).val( valStr ).attr( 'rows', rows );
+        $(`[id="device#messages"]`).val( valStr ).attr( 'rows', rows );
     } else {
-        $(`[id="request#messages"]`).val( '' ).attr( 'rows', 2 );
+        $(`[id="device#messages"]`).val( '' ).attr( 'rows', 1 );
     }
 }
 
@@ -164,126 +163,82 @@ function flattenObject(ob) {
     return toReturn;
 }
 
-/****
-{
-    // Flatten data map
-    var keysArray = iterateData(request);
-    //console.log('updateFormData: keysArray: ', keysArray);
-    var keyValuesMap = {};
-    keysArray.forEach(key => {
-        keyValuesMap[key] = getValueDeep(key.split('.'), request);
-    });
-    //console.log('updateFormData: keyValuesMap: ', keyValuesMap);
-}
+function saveDeviceInfo() {
+    // Confirm change
+    if (!confirm('Update device data?'))
+        return;
 
-function iterateData(obj) {
-    const isObject = val =>
-            val && typeof val === 'object' && !Array.isArray(val);
-    const addDelimiter = (a, b) =>
-            a ? `${a}.${b}` : b;
-    const paths = (obj = {}, head = '') => {
-        return Object.entries(obj)
-            .reduce(
-                (product, [key, value]) => {
-                    let fullPath = addDelimiter(head, key);
-                    return isObject(value)
-                        ? product.concat(paths(value, fullPath))
-                        : product.concat(fullPath)
-                },
-                []);
-    }
-    return paths(obj);
-}
-
-function getValueDeep(keyPart, data) {
-    //console.log('getValueDeep: ', keyPart[0], data, data[keyPart[0]]);
-    var val = data[keyPart[0]];
-    keyPart.shift();
-    return keyPart.length==0 ? val : getValueDeep(keyPart, val);
-}
-****/
-
-
-function saveRequestInfo() {
     // Get form fields
-    var q1 = $('input[id^="request#"]');
-    var q2 = $('textarea[id^="request#"]');
+    var q1 = $('input[id^="device#"]');
+    var q2 = $('textarea[id^="device#"]');
     var all = $.merge(q1, q2);
-    //console.log('saveRequestInfo: form fields: ', all);
+    //console.log('saveDeviceInfo: form fields: ', all);
 
     // Collect values
     var keyValuesMap = {};
     all.each((index, item) => {
         var it = $(item);
-        //console.log('saveRequestInfo: each: ', it.attr('id'), it.val());
+        //console.log('saveDeviceInfo: each: ', it.attr('id'), it.val());
         keyValuesMap[ it.attr('id') ] = it.val();
     });
-    //console.log('saveRequestInfo: keyValuesMap: ', keyValuesMap);
+    //console.log('saveDeviceInfo: keyValuesMap: ', keyValuesMap);
 
     // Convert to object graph
     var root = {};
     Object.entries(keyValuesMap).forEach((entry) => {
-        //console.log('saveRequestInfo: KVM-each: ', entry);
+        //console.log('saveDeviceInfo: KVM-each: ', entry);
         var keyPart = entry[0].split("#");
         var p = root;
         keyPart.forEach((item, index) => {
-            //console.log('saveRequestInfo: KVM-keyPart-each: ', item, p);
+            //console.log('saveDeviceInfo: KVM-keyPart-each: ', item, p);
             if (! p[item]) p[item] = index+1<keyPart.length ? {} : entry[1];
             p = p[item];
         });
 
     });
-    root = root['request'];
-    //console.log('saveRequestInfo: root: ', root);
-
-    // In case of new request clear any request info
-    if (requestId==='') {
-        Object.entries(root).forEach((entry) => {
-            if (typeof entry[1]==='string')
-                root[ entry[0] ] = null;
-        });
-        //console.log('saveRequestInfo: root-NEW: ', root);
-    }
+    root = root['device'];
+    //console.log('saveDeviceInfo: root: ', root);
 
     // Fix device info
-    var deviceInfo = $(`[id="request#device#deviceInfo"]`).val().trim();
+    var deviceInfo = $(`[id="device#deviceInfo"]`).val().trim();
     if (deviceInfo==='') deviceInfo = '{}';
-    root['device']['deviceInfo'] = JSON.parse( deviceInfo );
+    root['deviceInfo'] = JSON.parse( deviceInfo );
 
     // Fix messages
-    var messages = $(`[id="request#messages"]`).val().trim();
+    var messages = $(`[id="device#messages"]`).val().trim();
     if (messages==='') messages = '';
     root['messages'] = messages.split(/\r\n|\r|\n/);
 
-    // Check request Id
-    if (requestId!=='' && requestId!==root.id) {
-        alert('Request id has been modified!');
+    // Check device Id
+    if (deviceId!=='' && deviceId!==root.id) {
+        alert('Device id has been modified!');
         return;
     }
 
-    sendRequestData(root);
+    console.log('saveDeviceInfo: root: ', root);
+    sendDeviceData(root);
 }
 
-function sendRequestData(requestData) {
+function sendDeviceData(deviceData) {
     // show loading spinner
     $('#loading-spinner').toggleClass('d-none');
     $('#main-page').toggleClass('d-none');
 
-    // retrieve request info
+    // retrieve device info
     $.ajax({
-        url:    requestId!=='' ? '/discovery/request/'+requestId : '/discovery/request',
-        method: requestId!=='' ? 'post' : 'put',
+        url:    deviceId!=='' ? '/monitor/device/'+deviceId : '/monitor/device',
+        method: deviceId!=='' ? 'post' : 'put',
         contentType: "application/json; charset=utf-8",
         dataType: 'json',
-        data: JSON.stringify(requestData)
+        data: JSON.stringify(deviceData)
     })
     .done(function(data, status) {
-        //console.log('sendRequestData: OK: ', data);
-        requestId = data.id;
-        refreshRequestInfo(requestId);
+        //console.log('sendDeviceData: OK: ', data);
+        deviceId = data.id;
+        refreshDeviceInfo(deviceId);
     })
     .fail(function(xhr, status, error) {
-        console.error('sendRequestData: ERROR: ', status, error);
+        console.error('sendDeviceData: ERROR: ', status, error);
         $('#page_title').html(
             $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
         );
@@ -334,150 +289,139 @@ function sendRequestData(requestData) {
                 </div>
 
                 <div id="main-page" class="text-center">
-                    <h1 class="adminOnly sameUser d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A REQUEST YOU DON'T OWN  * * *</h1>
+                    <h1 class="adminOnly sameUser d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A DEVICE YOU DON'T OWN  * * *</h1>
 
-                    <h2 id="page_title">New Registration Request</h2>
-                    <!--<p class="sub-header">Device registration requests</p>-->
+                    <h2 id="page_title">Device ---</h2>
+                    <!--<p class="sub-header">Device details</p>-->
 
                     <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
                         <i class="fa fa-home"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-primary" onClick="document.location = 'requests.html';">
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'devices.html' + (isReadonly ? '' : '?edit=true');">
                         <i class="fa fa-arrow-left"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-primary" onClick="refreshRequestInfo(requestId);">
+                    <button type="button" class="btn btn-primary" onClick="refreshDeviceInfo(deviceId);">
                         <i class="fa fa-refresh"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-success" id="btn-save" onClick="saveRequestInfo();">
+                    <button type="button" class="btn btn-success d-none" id="btn-save" onClick="saveDeviceInfo();">
                         <i class="fa fa-save"></i>
                     </button>
                     <p>&nbsp;</p>
 
                     <form>
                         <div class="form-group row text-center bg-dark bg-opacity-25">
-                            <h5>Request details</h5>
-                        </div>
-
-                        <!-- Request id -->
-                        <div class="form-group row">
-                            <label for="request#id" class="col-sm-2 col-form-label"><b>Request Id</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request#id" value="-">
-                            </div>
-                        </div>
-                        <!-- Request requester -->
-                        <div class="form-group row">
-                            <label for="request#requester" class="col-sm-2 col-form-label"><b>Requester</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request#requester" value="-">
-                            </div>
-                        </div>
-                        <!-- Node reference (available after onboarding) -->
-                        <div class="form-group row">
-                            <label for="request#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request#nodeReference" value="-">
-                            </div>
-                        </div>
-                        <!-- Request requestDate -->
-                        <div class="form-group row">
-                            <label for="request#requestDate" class="col-sm-2 col-form-label"><b>Request Date</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request#requestDate" value="-">
-                            </div>
-                        </div>
-                        <!-- Request status -->
-                        <div class="form-group row">
-                            <label for="request#status" class="col-sm-2 col-form-label"><b>Request Status</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request#status" value="-">
-                            </div>
-                        </div>
-                        <!-- Request last update date -->
-                        <div class="form-group row">
-                            <label for="request#lastUpdateDate" class="col-sm-2 col-form-label"><b>Last Updated</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="request#lastUpdateDate" value="-">
-                            </div>
-                        </div>
-                        <!-- Request messages -->
-                        <div class="form-group row">
-                            <label for="request#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
-                            <div class="col-sm-10">
-                                <textarea readonly class="form-control-plaintext" id="request#messages"></textarea>
-                            </div>
-                        </div>
-
-                        <div class="form-group row text-center bg-dark bg-opacity-25">
                             <h5>Device details</h5>
                         </div>
 
                         <!-- Device id -->
                         <div class="form-group row">
-                            <label for="request#device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
+                            <label for="device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#id" value="" placeholder="Device unique id">
+                                <input type="text" readonly class="form-control-plaintext" id="device#id" value="">
+                            </div>
+                        </div>
+                        <!-- Device owner -->
+                        <div class="form-group row">
+                            <label for="device#owner" class="col-sm-2 col-form-label"><b>Owner</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="device#owner" value="">
                             </div>
                         </div>
                         <!-- Device Name -->
                         <div class="form-group row">
-                            <label for="request#device#name" class="col-sm-2 col-form-label"><b>Device Name</b></label>
+                            <label for="device#name" class="col-sm-2 col-form-label"><b>Device Name</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#name" value="" placeholder="Device name">
+                                <input type="text" readonly class="form-control-plaintext" id="device#name" value="" placeholder="Device name">
                             </div>
                         </div>
                         <!-- Device OS -->
                         <div class="form-group row">
-                            <label for="request#device#os" class="col-sm-2 col-form-label"><b>Device OS</b></label>
+                            <label for="device#os" class="col-sm-2 col-form-label"><b>Device OS</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#os" value="LINUX" placeholder="Device OS">
-                            </div>
-                        </div>
-                        <!-- Device Owner -->
-                        <div class="form-group row">
-                            <label for="request#device#owner" class="col-sm-2 col-form-label"><b>Device Owner</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#owner" value="" placeholder="Device Owner">
+                                <input type="text" readonly class="form-control-plaintext" id="device#os" value="LINUX" placeholder="Device OS">
                             </div>
                         </div>
                         <!-- Device IP Address -->
                         <div class="form-group row">
-                            <label for="request#device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
+                            <label for="device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#ipAddress" value="" placeholder="Device IP address">
+                                <input type="text" readonly class="form-control-plaintext" id="device#ipAddress" value="" placeholder="Device IP address">
                             </div>
                         </div>
                         <!-- Device Username -->
                         <div class="form-group row">
-                            <label for="request#device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
+                            <label for="device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#username" value="" placeholder="SSH username">
+                                <input type="text" readonly class="form-control-plaintext" id="device#username" value="" placeholder="SSH username">
                             </div>
                         </div>
                         <!-- Device Password -->
                         <div class="form-group row">
-                            <label for="request#device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
+                            <label for="device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#password" value="" placeholder="SSH password">
+                                <input type="password" readonly class="form-control-plaintext" id="device#password" value="" placeholder="*** SSH password - Not exposed ***">
                             </div>
                         </div>
                         <!-- Device Public Key -->
                         <div class="form-group row">
-                            <label for="request#device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
+                            <label for="device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" id="request#device#publicKey" placeholder="SSH public key"></textarea>
+                                <textarea readonly class="form-control-plaintext" id="device#publicKey" placeholder="*** SSH public key - Not exposed ***"></textarea>
                             </div>
                         </div>
+
+                        <!-- Node reference (available after onboarding) -->
+                        <div class="form-group row">
+                            <label for="device#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="device#nodeReference" value="">
+                            </div>
+                        </div>
+                        <!-- Device status -->
+                        <div class="form-group row">
+                            <label for="device#status" class="col-sm-2 col-form-label"><b>Device Status</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="device#status" value="NEW_DEVICE">
+                            </div>
+                        </div>
+                        <!-- Device creation data -->
+                        <div class="form-group row">
+                            <label for="device#creationDate" class="col-sm-2 col-form-label"><b>Creation Date</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="device#creationDate" value="">
+                            </div>
+                        </div>
+                        <!-- Device last update date -->
+                        <div class="form-group row">
+                            <label for="device#lastUpdateDate" class="col-sm-2 col-form-label"><b>Last Updated</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="device#lastUpdateDate" value="">
+                            </div>
+                        </div>
+                        <!-- Device messages -->
+                        <div class="form-group row">
+                            <label for="device#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
+                            <div class="col-sm-10">
+                                <textarea readonly class="form-control-plaintext" id="device#messages"></textarea>
+                            </div>
+                        </div>
+
                         <!-- Device Additional Info -->
                         <div class="form-group row">
-                            <label for="request#device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
+                            <label for="device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
                             <div class="col-sm-10">
-                                <textarea class="form-control" id="request#device#deviceInfo" placeholder="Additional device info"></textarea>
+                                <textarea readonly class="form-control-plaintext" id="device#deviceInfo" placeholder="Additional device info"></textarea>
                             </div>
                         </div>
+
+                        <div class="form-group row text-center bg-dark bg-opacity-25">
+                            <h5>Device metrics</h5>
+                        </div>
+
+                        ++++ TODO ++++
 
                         <!--<div class="text-center">
                             <p>&nbsp;</p>
