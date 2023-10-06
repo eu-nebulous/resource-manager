@@ -22,8 +22,11 @@
 $(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const reqId = urlParams.get('id') ?? '';
+    const readonly = urlParams.get('readonly') ?? '';
 
     requestId = reqId;
+    isReadonly = readonly.trim().toLowerCase()==='true';
+    if (isReadonly) makeFormReadonly();
 
     if (reqId!=='')
         refreshRequestInfo(reqId);
@@ -34,9 +37,30 @@ $(function() {
 
 var isNew = false;
 var isAdmin = false;
+var isReadonly = false;
 var username = '';
 var requestId;
 var requester = '';
+
+function makeFormReadonly() {
+    // Get form fields
+    var q1 = $('input[id^="request#"]');
+    var q2 = $('textarea[id^="request#"]');
+    var all = $.merge(q1, q2);
+    //console.log('makeFormReadonly: form fields: ', all);
+
+    // Make form fields readonly
+    all.each((index, item) => {
+        var it = $(item);
+        console.log('makeFormReadonly: each: ', it.attr('id'), it.val());
+        it.prop('readonly', true);
+        it.removeClass('form-control');
+        it.addClass('form-control-plaintext');
+    });
+
+    // Hide Save button
+    $('#btn-save').hide();
+}
 
 function refreshRequestInfo(id) {
     // show loading spinner
@@ -327,7 +351,7 @@ function sendRequestData(requestData) {
                         <i class="fa fa-refresh"></i>
                     </button>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                    <button type="button" class="btn btn-success" onClick="saveRequestInfo();">
+                    <button type="button" class="btn btn-success" id="btn-save" onClick="saveRequestInfo();">
                         <i class="fa fa-save"></i>
                     </button>
                     <p>&nbsp;</p>

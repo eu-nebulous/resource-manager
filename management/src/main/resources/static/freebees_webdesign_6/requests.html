@@ -48,7 +48,21 @@ function updateRequestsList(asAdmin) {
             var dateStr = date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB')
                             + '<br/>' + Intl.DateTimeFormat().resolvedOptions().timeZone;
             var status = item.status;
+
             var color = getStatusColor(status);
+            var editDelActions = (status!=='ONBOARDING_REQUESTED' && status!='SUCCESS')
+                        ? `
+                                <button type="button" class="btn btn-danger btn-sm" onClick="if (confirm('Delete request?')) deleteRequest('${reqId}');">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" onClick="document.location='/request-edit.html?id=${reqId}'; ">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                        ` : `
+                                <button type="button" class="btn btn-primary btn-sm" onClick="document.location='/request-edit.html?id=${reqId}&readonly=true'; ">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                        `;
             var adminActions = (isAdmin && (item.status==='PENDING_AUTHORIZATION'
                                             || item.status==='AUTHORIZATION_REJECT'
                                             || item.status==='PENDING_ONBOARDING')
@@ -59,17 +73,19 @@ function updateRequestsList(asAdmin) {
                                 <button type="button" class="btn btn-danger btn-sm" onClick="authorizeRequest('${reqId}', false); ">
                                     <i class="fas fa-thumbs-down"></i>
                                 </button>
-                ` : '';
-            adminActions += (isAdmin) ? `
+                        ` : '';
+            adminActions += (isAdmin && status!=='ONBOARDING_REQUESTED') ? `
                                 <button class="btn btn-warning btn-sm" onClick="archiveRequest('${reqId}')">
                                     <i class="fas fa-box"></i>
                                 </button>
+                        ` : '';
+            adminActions += (isAdmin && (status!=='ONBOARDING_REQUESTED' && status!='SUCCESS')) ? `
                                 <a href="/discovery/request/${reqId}/status/NEW_REQUEST" target="_blank">
                                     <button class="btn btn-outline-danger btn-sm">
                                         <i class="fas fa-fast-backward"></i>
                                     </button>
                                 </a>
-            `: '';
+                        `: '';
             ii++;
             tbody.append( $(`
                         <tr class="${color}">
@@ -82,12 +98,7 @@ function updateRequestsList(asAdmin) {
                             <td>${dateStr}</td>
                             <td>${status}</td>
                             <td>
-                                <button type="button" class="btn btn-danger btn-sm" onClick="if (confirm('Delete request?')) deleteRequest('${reqId}');">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                                <button type="button" class="btn btn-success btn-sm" onClick="document.location='/request-edit.html?id=${reqId}'; ">
-                                    <i class="fas fa-pen"></i>
-                                </button>
+                                ${editDelActions}
                                 ${adminActions}
                             </td>
                         </tr> `

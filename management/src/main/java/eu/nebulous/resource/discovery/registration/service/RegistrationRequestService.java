@@ -72,6 +72,7 @@ public class RegistrationRequestService {
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
 		checkRegistrationRequest(registrationRequest);
+		canEditOrDelete(result.get());
 
 		registrationRequest.setLastUpdateDate(Instant.now());
 		registrationRequestRepository.save(registrationRequest);
@@ -99,11 +100,20 @@ public class RegistrationRequestService {
 		//XXX:TODO
 	}
 
+	private void canEditOrDelete(RegistrationRequest registrationRequest) {
+		RegistrationRequestStatus status = registrationRequest.getStatus();
+		if (status==RegistrationRequestStatus.ONBOARDING_REQUESTED || status== RegistrationRequestStatus.SUCCESS)
+			throw new RegistrationRequestException(
+					"Registration request with the Id cannot be deleted due to its status: "
+							+ registrationRequest.getId() + ", status=" + status);
+	}
+
 	public void deleteById(@NonNull String id) {
 		Optional<RegistrationRequest> result = getById(id);
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+id);
+		canEditOrDelete(result.get());
 		registrationRequestRepository.delete(result.get());
 		result.get().setLastUpdateDate(Instant.now());
 	}
