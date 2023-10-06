@@ -311,125 +311,146 @@ function sendDeviceData(deviceData) {
                     </button>
                     <p>&nbsp;</p>
 
-                    <form>
-                        <div class="form-group row text-center bg-dark bg-opacity-25">
-                            <h5>Device details</h5>
+                    <div class="row">
+                        <div id="device-info-part" class="col-6 p-3">
+
+                            <form>
+                                <div class="form-group row text-center bg-dark bg-opacity-25">
+                                    <h5>Device details</h5>
+                                </div>
+
+                                <!-- Device id -->
+                                <div class="form-group row">
+                                    <label for="device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#id" value="">
+                                    </div>
+                                </div>
+                                <!-- Device owner -->
+                                <div class="form-group row">
+                                    <label for="device#owner" class="col-sm-2 col-form-label"><b>Owner</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#owner" value="">
+                                    </div>
+                                </div>
+                                <!-- Device Name -->
+                                <div class="form-group row">
+                                    <label for="device#name" class="col-sm-2 col-form-label"><b>Device Name</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#name" value="" placeholder="Device name">
+                                    </div>
+                                </div>
+                                <!-- Device OS -->
+                                <div class="form-group row">
+                                    <label for="device#os" class="col-sm-2 col-form-label"><b>Device OS</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#os" value="LINUX" placeholder="Device OS">
+                                    </div>
+                                </div>
+                                <!-- Device IP Address -->
+                                <div class="form-group row">
+                                    <label for="device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#ipAddress" value="" placeholder="Device IP address">
+                                    </div>
+                                </div>
+                                <!-- Device Username -->
+                                <div class="form-group row">
+                                    <label for="device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#username" value="" placeholder="SSH username">
+                                    </div>
+                                </div>
+                                <!-- Device Password -->
+                                <div class="form-group row">
+                                    <label for="device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="password" readonly class="form-control-plaintext" id="device#password" value="" placeholder="*** SSH password - Not exposed ***">
+                                    </div>
+                                </div>
+                                <!-- Device Public Key -->
+                                <div class="form-group row">
+                                    <label for="device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
+                                    <div class="col-sm-10">
+                                        <textarea readonly class="form-control-plaintext" id="device#publicKey" placeholder="*** SSH public key - Not exposed ***"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Node reference (available after onboarding) -->
+                                <div class="form-group row">
+                                    <label for="device#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#nodeReference" value="">
+                                    </div>
+                                </div>
+                                <!-- Device status -->
+                                <div class="form-group row">
+                                    <label for="device#status" class="col-sm-2 col-form-label"><b>Device Status</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#status" value="NEW_DEVICE">
+                                    </div>
+                                </div>
+                                <!-- Device creation data -->
+                                <div class="form-group row">
+                                    <label for="device#creationDate" class="col-sm-2 col-form-label"><b>Creation Date</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#creationDate" value="">
+                                    </div>
+                                </div>
+                                <!-- Device last update date -->
+                                <div class="form-group row">
+                                    <label for="device#lastUpdateDate" class="col-sm-2 col-form-label"><b>Last Updated</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#lastUpdateDate" value="">
+                                    </div>
+                                </div>
+                                <!-- Device messages -->
+                                <div class="form-group row">
+                                    <label for="device#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
+                                    <div class="col-sm-10">
+                                        <textarea readonly class="form-control-plaintext" id="device#messages"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Device Additional Info -->
+                                <div class="form-group row">
+                                    <label for="device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
+                                    <div class="col-sm-10">
+                                        <textarea readonly class="form-control-plaintext" id="device#deviceInfo" placeholder="Additional device info"></textarea>
+                                    </div>
+                                </div>
+
+                                <!--<div class="text-center">
+                                    <p>&nbsp;</p>
+                                    <input class="btn btn-primary" type="submit" value="Submit">
+                                    <input class="btn btn-primary" type="reset" value="Reset">
+                                </div>-->
+
+                            </form>
+
                         </div>
 
-                        <!-- Device id -->
-                        <div class="form-group row">
-                            <label for="device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#id" value="">
+                        <div id="device-metrics-part" class="text-center col-6 p-3">
+                            <div class="form-group row text-center bg-dark bg-opacity-25">
+                                <h5>Device metrics</h5>
                             </div>
-                        </div>
-                        <!-- Device owner -->
-                        <div class="form-group row">
-                            <label for="device#owner" class="col-sm-2 col-form-label"><b>Owner</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#owner" value="">
-                            </div>
-                        </div>
-                        <!-- Device Name -->
-                        <div class="form-group row">
-                            <label for="device#name" class="col-sm-2 col-form-label"><b>Device Name</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#name" value="" placeholder="Device name">
-                            </div>
-                        </div>
-                        <!-- Device OS -->
-                        <div class="form-group row">
-                            <label for="device#os" class="col-sm-2 col-form-label"><b>Device OS</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#os" value="LINUX" placeholder="Device OS">
-                            </div>
-                        </div>
-                        <!-- Device IP Address -->
-                        <div class="form-group row">
-                            <label for="device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#ipAddress" value="" placeholder="Device IP address">
-                            </div>
-                        </div>
-                        <!-- Device Username -->
-                        <div class="form-group row">
-                            <label for="device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#username" value="" placeholder="SSH username">
-                            </div>
-                        </div>
-                        <!-- Device Password -->
-                        <div class="form-group row">
-                            <label for="device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
-                            <div class="col-sm-10">
-                                <input type="password" readonly class="form-control-plaintext" id="device#password" value="" placeholder="*** SSH password - Not exposed ***">
-                            </div>
-                        </div>
-                        <!-- Device Public Key -->
-                        <div class="form-group row">
-                            <label for="device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
-                            <div class="col-sm-10">
-                                <textarea readonly class="form-control-plaintext" id="device#publicKey" placeholder="*** SSH public key - Not exposed ***"></textarea>
-                            </div>
-                        </div>
 
-                        <!-- Node reference (available after onboarding) -->
-                        <div class="form-group row">
-                            <label for="device#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#nodeReference" value="">
+                            <div class="form-group row">
+                                <label for="metric#cores" class="col-sm-2 col-form-label"><b>Cores</b></label>
+                                <div class="col-sm-10">
+                                    <input type="text" readonly class="form-control-plaintext" id="metric#cores" value="-">
+                                </div>
                             </div>
-                        </div>
-                        <!-- Device status -->
-                        <div class="form-group row">
-                            <label for="device#status" class="col-sm-2 col-form-label"><b>Device Status</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#status" value="NEW_DEVICE">
+                            <div class="form-group row">
+                                <label for="metric#ram" class="col-sm-2 col-form-label"><b>RAM</b></label>
+                                <div class="col-sm-10">
+                                    <input type="text" readonly class="form-control-plaintext" id="metric#ram" value="-">
+                                </div>
                             </div>
-                        </div>
-                        <!-- Device creation data -->
-                        <div class="form-group row">
-                            <label for="device#creationDate" class="col-sm-2 col-form-label"><b>Creation Date</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#creationDate" value="">
-                            </div>
-                        </div>
-                        <!-- Device last update date -->
-                        <div class="form-group row">
-                            <label for="device#lastUpdateDate" class="col-sm-2 col-form-label"><b>Last Updated</b></label>
-                            <div class="col-sm-10">
-                                <input type="text" readonly class="form-control-plaintext" id="device#lastUpdateDate" value="">
-                            </div>
-                        </div>
-                        <!-- Device messages -->
-                        <div class="form-group row">
-                            <label for="device#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
-                            <div class="col-sm-10">
-                                <textarea readonly class="form-control-plaintext" id="device#messages"></textarea>
-                            </div>
-                        </div>
 
-                        <!-- Device Additional Info -->
-                        <div class="form-group row">
-                            <label for="device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
-                            <div class="col-sm-10">
-                                <textarea readonly class="form-control-plaintext" id="device#deviceInfo" placeholder="Additional device info"></textarea>
-                            </div>
+                            ++++ TODO ++++
                         </div>
-
-                        <div class="form-group row text-center bg-dark bg-opacity-25">
-                            <h5>Device metrics</h5>
-                        </div>
-
-                        ++++ TODO ++++
-
-                        <!--<div class="text-center">
-                            <p>&nbsp;</p>
-                            <input class="btn btn-primary" type="submit" value="Submit">
-                            <input class="btn btn-primary" type="reset" value="Reset">
-                        </div>-->
-
-                    </form>
+                    </div>
 
                 </div>
 
