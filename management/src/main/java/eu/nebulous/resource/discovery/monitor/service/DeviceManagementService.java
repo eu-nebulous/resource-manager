@@ -43,6 +43,8 @@ public class DeviceManagementService {
 
 	public @NonNull Device save(@NonNull Device device) {
 		DeviceStatus status = device.getStatus();
+		checkDevice(device, true);
+
 		if (status == null) {
 			device.setStatus(DeviceStatus.NEW_DEVICE);
 		}
@@ -55,14 +57,14 @@ public class DeviceManagementService {
 			throw new DeviceException(
 					"New device already has an Id: " + device.getId());
 		}
-		if (getById(device.getOs()).isPresent())
+		if (getById(device.getId()).isPresent())
 			throw new DeviceException(
 					"A device with the same Id already exists in repository: "+device.getId());
 		if (getByIpAddress(device.getIpAddress()).isPresent())
 			throw new DeviceException(
 					"A device with the same IP address already exists in repository: "+device.getIpAddress());
 		device.setCreationDate(Instant.now());
-		checkDevice(device);
+		checkDevice(device, false);
 
 		deviceRepository.save(device);
 		return device;
@@ -73,7 +75,7 @@ public class DeviceManagementService {
 		if (result.isEmpty())
 			throw new DeviceException(
 					"Device with the Id does not exists in repository: "+device.getId());
-		checkDevice(device);
+		checkDevice(device, false);
 
 		device.setLastUpdateDate(Instant.now());
 		deviceRepository.save(device);
@@ -82,12 +84,18 @@ public class DeviceManagementService {
 				new DeviceException("Device update failed for Device Id: "+device.getId()));
 	}
 
-	private void checkDevice(@NonNull Device device) {
+	public void checkDevice(@NonNull Device device, boolean dryRun) {
 		List<String> errors = new ArrayList<>();
-		if (StringUtils.isBlank(device.getId())) errors.add("Null or blank Id");
+		if (!dryRun && StringUtils.isBlank(device.getId())) errors.add("Null or blank Id");
+		if (StringUtils.isBlank(device.getOs())) errors.add("Null or blank OS");
 		if (StringUtils.isBlank(device.getOwner())) errors.add("Null or blank Owner");
-		if (device.getCreationDate()==null) errors.add("Null Creation date");
-		if (device.getStatus()==null) errors.add("Null Status");
+		if (StringUtils.isBlank(device.getIpAddress())) errors.add("Null or blank IP address");
+		if (!dryRun && StringUtils.isBlank(device.getNodeReference())) errors.add("Null or blank Node reference");
+		if (!dryRun && device.getCreationDate()==null) errors.add("Null Creation date");
+		if (!dryRun && device.getStatus()==null) errors.add("Null Status");
+		if (StringUtils.isBlank(device.getUsername())) errors.add("Null or blank Username");
+		if ((device.getPassword()==null || device.getPassword().length==0) &&
+				(device.getPublicKey()==null || device.getPublicKey().length==0)) errors.add("Null or blank Password and Public Key");
 		if (!errors.isEmpty()) {
 			throw new DeviceException(
 					String.format("Device spec has errors: %s\n%s",

@@ -79,8 +79,10 @@ function updateRequestsList(asAdmin) {
                                     <i class="fas fa-box"></i>
                                 </button>
                         ` : '';
-            adminActions += (isAdmin && (status!=='ONBOARDING_REQUESTED' && status!='SUCCESS')) ? `
-                                <a href="/discovery/request/${reqId}/status/NEW_REQUEST" target="_blank">
+            adminActions += (isAdmin) ? `
+                                <a href="#" target="_blank" onClick="
+                                    this.href = '/discovery/request/${reqId}/status/'+prompt('Change status to:', 'NEW_REQUEST');
+                                ">
                                     <button class="btn btn-outline-danger btn-sm">
                                         <i class="fas fa-fast-backward"></i>
                                     </button>
@@ -142,7 +144,7 @@ function deleteRequest(id) {
 function processRequests() {
     $.ajax({ url: '/discovery/request/process' })
     .done(function(data, status) {
-        console.log('processRequests: OK: ', data);
+        //console.log('processRequests: OK: ', data);
     })
     .fail(function(xhr, status, error) {
         console.error('processRequests: ERROR: ', status, error);
@@ -153,7 +155,7 @@ function authorizeRequest(reqId, authorize) {
     var authStr = authorize ? 'authorize' : 'reject';
     $.ajax({ url: `/discovery/request/${reqId}/${authStr}` })
     .done(function(data, status) {
-        console.log('authorizeRequest: OK: ', data);
+        //console.log('authorizeRequest: OK: ', data);
         updateRequestsList(true);
     })
     .fail(function(xhr, status, error) {
@@ -171,7 +173,7 @@ function archiveRequest(reqId) {
     .done(function(data, status) {
         console.log('archiveRequest: OK: ', data);
         updateRequestsList(true);
-        alert(data);
+        //alert(data);
     })
     .fail(function(xhr, status, error) {
         console.error('archiveRequest: ERROR: ', status, error);

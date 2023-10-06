@@ -134,13 +134,19 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				newRequests.size(), newRequests.stream().map(RegistrationRequest::getId).toList());
 
 		for (RegistrationRequest registrationRequest : newRequests) {
-			log.debug("processNewRequests: Requesting collection of device data for request with Id: {}", registrationRequest.getId());
-			Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_DATA_COLLECTION, registrationRequest);
-			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
-			producer.send(createMessage(jsonMessage));
-			registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
-			registrationRequestService.update(registrationRequest);
-			log.debug("processNewRequests: Data collection request sent for request with Id: {}", registrationRequest.getId());
+			try {
+				log.debug("processNewRequests: Requesting collection of device data for request with Id: {}", registrationRequest.getId());
+				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_DATA_COLLECTION, registrationRequest);
+				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
+				producer.send(createMessage(jsonMessage));
+				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
+				registrationRequestService.update(registrationRequest);
+				log.debug("processNewRequests: Data collection request sent for request with Id: {}", registrationRequest.getId());
+			} catch (Exception e) {
+				log.warn("processNewRequests: EXCEPTION while sending data collection request for request with Id: {}\n", registrationRequest.getId(), e);
+				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_ERROR);
+				registrationRequestService.update(registrationRequest);
+			}
 		}
 
 		log.trace("processNewRequests: END");
@@ -155,13 +161,24 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				onboardingRequests.size(), onboardingRequests.stream().map(RegistrationRequest::getId).toList());
 
 		for (RegistrationRequest registrationRequest : onboardingRequests) {
-			log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
-			Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_ONBOARDING, registrationRequest);
-			String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
-			producer.send(createMessage(jsonMessage));
-			registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
-			registrationRequestService.update(registrationRequest);
-			log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
+			try {
+				log.debug("processOnboardingRequests: Checking device before requesting onboarding for request with Id: {}", registrationRequest.getId());
+				deviceManagementService.checkDevice(
+						objectMapper.convertValue(registrationRequest.getDevice(), Device.class),
+						true);
+
+				log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
+				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_ONBOARDING, registrationRequest);
+				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
+				producer.send(createMessage(jsonMessage));
+				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
+				registrationRequestService.update(registrationRequest);
+				log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
+			} catch (Exception e) {
+				log.warn("processOnboardingRequests: EXCEPTION while sending onboarding request for request with Id: {}\n", registrationRequest.getId(), e);
+				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
+				registrationRequestService.update(registrationRequest);
+			}
 		}
 
 		log.trace("processOnboardingRequests: END");
@@ -349,13 +366,19 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				log.warn("processResponse: No device info found in message or it is of wrong type: id={}, obj={}", requestId, obj);
 			}
 
+			// If request status is SUCCESS then copy Device in monitoring subsystem
+			if (registrationRequest.getStatus() == RegistrationRequestStatus.SUCCESS) {
+				try {
+					copyDeviceToMonitoring(registrationRequest);
+				} catch (Exception e) {
+					log.warn("processResponse: EXCEPTION: while copying device to monitoring subsystem: request={}\n", registrationRequest, e);
+					registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
+					registrationRequest.getMessages().add("Exception while copying device to monitoring subsystem: " + e.getMessage());
+				}
+			}
+
 			// Store changes
 			registrationRequestService.update(registrationRequest, false);
-
-			// If request status is SUCCESS then copy Device in monitoring subsystem
-			if (registrationRequest.getStatus()==RegistrationRequestStatus.SUCCESS) {
-				copyDeviceToMonitoring(registrationRequest);
-			}
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
 		}
@@ -368,6 +391,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setRequest(registrationRequest);
 		device.setRequestId(registrationRequest.getId());
 		device.getMessages().clear();
+		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
 	}
 }

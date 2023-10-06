@@ -109,7 +109,7 @@ public class RegistrationRequestService {
 		RegistrationRequestStatus status = registrationRequest.getStatus();
 		if (status==RegistrationRequestStatus.ONBOARDING_REQUESTED || status== RegistrationRequestStatus.SUCCESS)
 			throw new RegistrationRequestException(
-					"Registration request with the Id cannot be deleted due to its status: "
+					"Registration request with the Id cannot be edited or deleted due to its status: "
 							+ registrationRequest.getId() + ", status=" + status);
 	}
 
