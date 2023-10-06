@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.monitor.model.Device;
+import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
 import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
@@ -56,9 +58,10 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
+	private final DeviceManagementService deviceManagementService;
 	private final TaskScheduler taskScheduler;
+	private final ObjectMapper objectMapper;
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
-	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
@@ -165,21 +168,27 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private static Map<String, String> prepareRequestPayload(@NonNull String requestType, RegistrationRequest registrationRequest) {
-		Map<String, String> payload = new LinkedHashMap<>(Map.of(
-				"requestId", registrationRequest.getId(),
-				"requestType", requestType,
-				"deviceId", registrationRequest.getDevice().getId(),
-				"deviceOs", registrationRequest.getDevice().getOs(),
-				"deviceName", registrationRequest.getDevice().getName(),
-				"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
-				"deviceUsername", registrationRequest.getDevice().getUsername(),
-				"devicePassword", new String(registrationRequest.getDevice().getPassword()),
-				"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
-		));
-		payload.put("timestamp", Long.toString(Instant.now().toEpochMilli()));
-		payload.put("priority", Double.toString(1.0));
-		payload.put("retry", Integer.toString(1));
-		return payload;
+		try {
+			Map<String, String> payload = new LinkedHashMap<>(Map.of(
+					"requestId", registrationRequest.getId(),
+					"requestType", requestType,
+					"deviceId", registrationRequest.getDevice().getId(),
+					"deviceOs", registrationRequest.getDevice().getOs(),
+					"deviceName", registrationRequest.getDevice().getName(),
+					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
+					"deviceUsername", registrationRequest.getDevice().getUsername(),
+					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
+					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
+			));
+			payload.put("timestamp", Long.toString(Instant.now().toEpochMilli()));
+			payload.put("priority", Double.toString(1.0));
+			payload.put("retry", Integer.toString(1));
+			return payload;
+		} catch (Exception e) {
+			log.error("prepareRequestPayload: EXCEPTION: request-type={}, registration-request={}\nException: ",
+					requestType, registrationRequest, e);
+			throw e;
+		}
 	}
 
 	protected ActiveMQMessage createMessage(String message) throws MessageNotWriteableException {
@@ -267,6 +276,12 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			};
 			registrationRequest.setStatus(newStatus);
 
+			if (currStatus==RegistrationRequestStatus.SUCCESS) {
+				log.error("ERROR: received response for a request with status SUCCESS. Will ignore response: request-id={}", requestId);
+				// Discarding changes
+				return;
+			}
+
 			String ipAddress = registrationRequest.getDevice().getIpAddress();
 			boolean isError = false;
 			if (StringUtils.equals(ipAddress, deviceIpAddress)) {
@@ -334,9 +349,25 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				log.warn("processResponse: No device info found in message or it is of wrong type: id={}, obj={}", requestId, obj);
 			}
 
-			registrationRequestService.update(registrationRequest);
+			// Store changes
+			registrationRequestService.update(registrationRequest, false);
+
+			// If request status is SUCCESS then copy Device in monitoring subsystem
+			if (registrationRequest.getStatus()==RegistrationRequestStatus.SUCCESS) {
+				copyDeviceToMonitoring(registrationRequest);
+			}
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
 		}
+	}
+
+	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
+		Device device = objectMapper.convertValue(registrationRequest.getDevice(), Device.class);
+		device.setId(null);
+		device.setStatus(null);
+		device.setRequest(registrationRequest);
+		device.setRequestId(registrationRequest.getId());
+		device.getMessages().clear();
+		deviceManagementService.save(device);
 	}
 }

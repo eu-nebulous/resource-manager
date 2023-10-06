@@ -67,12 +67,17 @@ public class RegistrationRequestService {
 	}
 
 	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest) {
+		return update(registrationRequest, true);
+	}
+
+	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel) {
 		Optional<RegistrationRequest> result = getById(registrationRequest.getId());
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
 		checkRegistrationRequest(registrationRequest);
-		canEditOrDelete(result.get());
+		if (checkEditDel)
+			canEditOrDelete(result.get());
 
 		registrationRequest.setLastUpdateDate(Instant.now());
 		registrationRequestRepository.save(registrationRequest);
