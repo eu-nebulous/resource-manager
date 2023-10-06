@@ -1,8 +1,7 @@
-package eu.nebulous.resource.discovery.registration;
+package eu.nebulous.resource.discovery.registration.service;
 
 import eu.nebulous.resource.discovery.registration.model.*;
 import eu.nebulous.resource.discovery.registration.repository.ArchivedRegistrationRequestRepository;
-import eu.nebulous.resource.discovery.registration.repository.InMemoryRegistrationRequestRepository;
 import eu.nebulous.resource.discovery.registration.repository.RegistrationRequestRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +20,7 @@ import java.util.*;
 public class RegistrationRequestService {
 	private final RegistrationRequestRepository registrationRequestRepository;
 	private final ArchivedRegistrationRequestRepository archivedRegistrationRequestRepository;
+	private final RegistrationRequestConversionService registrationRequestConversionService;
 
 	/*private final InMemoryRegistrationRequestRepository<RegistrationRequest>
 			registrationRequestRepository = new InMemoryRegistrationRequestRepository<>();
@@ -30,7 +30,7 @@ public class RegistrationRequestService {
 	// ------------------------------------------------------------------------
 
 	// Used in RegistrationRequestService_SampleDataCreator to create sample requests
-	void addRequest(@NonNull RegistrationRequest registrationRequest) {
+	public void addRequest(@NonNull RegistrationRequest registrationRequest) {
 		registrationRequestRepository.save(registrationRequest);
 	}
 
@@ -228,7 +228,8 @@ public class RegistrationRequestService {
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: " + id);
 		result.get().setArchiveDate(Instant.now());
-		archivedRegistrationRequestRepository.save(ArchivedRegistrationRequest.fromRegistrationRequest(result.get()));
+		archivedRegistrationRequestRepository.save(
+				registrationRequestConversionService.toArchivedRegistrationRequest(result.get()));
 		registrationRequestRepository.delete(result.get());
 	}
 
@@ -240,7 +241,8 @@ public class RegistrationRequestService {
 		checkAdmin(result.get().getId(), authentication);
 
 		result.get().setArchiveDate(null);
-		registrationRequestRepository.save(result.get().toRegistrationRequest());
+		registrationRequestRepository.save(
+				registrationRequestConversionService.toRegistrationRequest(result.get()));
 		archivedRegistrationRequestRepository.deleteById(result.get().getId());
 	}
 }

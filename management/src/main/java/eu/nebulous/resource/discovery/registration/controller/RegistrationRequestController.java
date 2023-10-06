@@ -1,5 +1,7 @@
-package eu.nebulous.resource.discovery.registration;
+package eu.nebulous.resource.discovery.registration.controller;
 
+import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
+import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
 import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;

@@ -10,9 +10,9 @@ import java.util.Map;
 @SuperBuilder
 @NoArgsConstructor
 public class Device {
-    private String deviceId;
-    private String deviceOS;
-    private String deviceName;
+    private String id;
+    private String os;
+    private String name;
     private String owner;
     private String ipAddress;
     private String username;

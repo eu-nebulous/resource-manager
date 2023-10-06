@@ -4,6 +4,7 @@ import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.registration.model.Device;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
+import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -58,9 +59,9 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 
 	private Device createDevice(int pos, String owner) {
 		return Device.builder()
-				.deviceId( UUID.randomUUID().toString() )
-				.deviceName( "Device name #"+pos )
-				.deviceOS("LINUX")
+				.id( UUID.randomUUID().toString() )
+				.name( "Device name #"+pos )
+				.os("LINUX")
 				.owner(owner)
 				.ipAddress("10.10.0."+(100+pos))
 				.username("ubuntu_"+pos)

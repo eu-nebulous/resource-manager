@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
+import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
 import jakarta.jms.*;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -167,9 +168,9 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		Map<String, String> payload = new LinkedHashMap<>(Map.of(
 				"requestId", registrationRequest.getId(),
 				"requestType", requestType,
-				"deviceId", registrationRequest.getDevice().getDeviceId(),
-				"deviceOs", registrationRequest.getDevice().getDeviceOS(),
-				"deviceName", registrationRequest.getDevice().getDeviceName(),
+				"deviceId", registrationRequest.getDevice().getId(),
+				"deviceOs", registrationRequest.getDevice().getOs(),
+				"deviceName", registrationRequest.getDevice().getName(),
 				"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
 				"deviceUsername", registrationRequest.getDevice().getUsername(),
 				"devicePassword", new String(registrationRequest.getDevice().getPassword()),
