@@ -24,7 +24,7 @@ public class DeviceManagementController {
 	private final DeviceConversionService deviceConversionService;
 	private final IRegistrationRequestProcessor deviceRequestProcessor;
 
-	@GetMapping(value = "/device/all", produces = MediaType.APPLICATION_JSON_VALUE)
+	@GetMapping(value = { "/device", "/device/all" }, produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<Device> listDevicesAll() {
 		return deviceService.getAll();
 	}

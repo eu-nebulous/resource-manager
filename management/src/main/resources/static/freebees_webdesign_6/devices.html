@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Firmbee.com - Free Project Management Platform for remote teams"> 
+    <title>NebulOuS Resource Discovery - Management page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="https://kit.fontawesome.com/0e035b9984.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <script src="js/addshadow.js"></script>
+
+    <script>
+$(function() {
+    updateDevicesList(false);
+    setInterval(() => updateDevicesList(), 5000);
+});
+
+var isAdmin = false;
+var lastUpdateAsAdmin;
+
+function updateDevicesList(asAdmin) {
+    if (asAdmin === undefined) asAdmin = lastUpdateAsAdmin;
+    else lastUpdateAsAdmin = asAdmin;
+
+    $.ajax({
+        url: '/monitor/device' + (asAdmin ? '/all' : ''),
+        dataType: 'json'
+    })
+    .done(function(data, status) {
+        //console.log('updateDevicesList: OK: ', data);
+        var tbody = $('#devicesTable-tbody');
+        tbody.empty();
+        var ii = 0;
+        data.forEach(item => {
+            var devId = item.id;
+            var owner = item.owner;
+            var devName = item.name;
+            var ipAddress = item.ipAddress;
+            var load = 'TODO';
+            var status = item.status;
+            var color = getStatusColor(status);
+            ii++;
+            tbody.append( xx=$(`
+                        <tr class="${color}">
+                            <th scope="row">${ii}</th>
+                            <td>${owner}</td>
+                            <td class="text-start">${devName}</td>
+                            <td>${ipAddress}</td>
+                            <td>${load}</td>
+                            <td>${status}</td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-sm" onClick="if (confirm('Remove Device?')) removeDevice('${devId}');">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" onClick="document.location='/device-view.html?id=${devId}'; ">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </td>
+                        </tr> `
+            ) );
+        });
+    })
+    .fail(function(xhr, status, error) {
+        console.error('updateDevicesList: ERROR: ', status, error);
+    })
+    ;
+}
+
+function getStatusColor(status) {
+    if (status.indexOf('ERROR')>0) return 'table-danger';
+    if (status.indexOf('REJECT')>0) return 'bg-danger';
+    if (status.indexOf('PENDING')>=0) return 'table-warning';
+    if (status=='NEW_DEVICE') return '';
+    if (status=='BUSY') return 'table-success';
+    if (status=='IDLE') return 'table-warning';
+    return 'table-info';
+}
+
+function removeDevice(id) {
+    $.ajax({
+        url: '/monitor/device/'+id+'/offboard',
+        method: 'GET',
+        async: 'true'
+
+    })
+    .done(function(data, status) {
+        console.log('removeDevice: OK: ', id);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('removeDevice: ERROR: ', id, status, error);
+    })
+    .always(function(data, status) {
+        updateDevicesList();
+    })
+    ;
+}
+    </script>
+
+</head>
+<body>
+    <main>
+        <div style="position: absolute; left: 10px; top: 10px;">
+            <a href="index.html"><img src="img/nebulous-logo-basic.png" width="155px" height="155px" alt=""></a>
+        </div>
+        <div class="text-end text-secondary nowrap">
+            <img src="img/user-icon.png" width="24" height="auto">
+            <span id="whoami"><i class="fas fa-spinner fa-spin"></i></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span onClick="document.location = '/logout';">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <script>
+                $(function() {
+                    $.ajax({ url: '/discovery/whoami', dataType: 'json' })
+                        .done(function(data) {
+                            isAdmin = data.admin;
+                            data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
+                            if (isAdmin) $('.adminOnly').toggleClass('d-none');
+                        })
+                        .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
+                });
+            </script>
+        </div>
+        <section class="light-section">
+            <div class="container">
+                <div class="text-center">
+                    <h2>Device Management</h2>
+                    <!--<p class="sub-header">Device management</p>-->
+
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
+                        <i class="fa fa-home"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+                    <button type="button" class="adminOnly btn btn-danger d-none" onClick="updateDevicesList(true)">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+
+                    <button type="button" class="btn btn-primary" onClick="updateDevicesList(false)">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-success" onClick="document.location = '/device-view.html'; ">
+                        <i class="fa fa-plus"></i>
+                    </button>
+                </div>
+
+                <!-- Query server for monitored devices -->
+                <div class="table-responsive text-nowrap">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Owner</th>
+                            <th scope="col" class="w-50">Device name</th>
+                            <th scope="col">IP Address</th>
+                            <th scope="col">Load</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="devicesTable">
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+        <footer class="py-5">
+          <div class="container">
+            <div class="row">
+              <div class="footer-item col-md-8">
+                <p class="footer-item-title">Links</p>
+                <a href="">About Us</a>
+                <a href="">Portfolio</a>
+                <a href="">Blog</a>
+                <a href="">Sing In</a>
+              </div>
+              <div class="footer-item col-md-4">
+              <p class="footer-item-title">Get In Touch</p>
+                <form>
+                  <div class="mb-3 pb-3">
+                    <label for="exampleInputEmail1" class="form-label pb-3">Enter your email and we'll send you more information.</label>
+                    <input type="email" placeholder="Your Email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                  </div>
+                  <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+              </div>
+              <div class="copyright pt-4 text-center text-muted">
+                <p>&copy; 2022 YOUR-DOMAIN | Created by <a href="https://firmbee.com/solutions/to-do-list/" title="Firmbee - Free To-do list App" target="_blank">Firmbee.com</a></p>
+                <!--
+                This template is licenced under Attribution 3.0 (CC BY 3.0 PL),
+                You are free to: Share and Adapt. You must give appropriate credit, you may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+                --> 
+            </div>
+          </div>
+        </footer>
+    </main>
+    <div class="fb2022-copy">Fbee 2022 copyright</div>
+</body>
+</html>
