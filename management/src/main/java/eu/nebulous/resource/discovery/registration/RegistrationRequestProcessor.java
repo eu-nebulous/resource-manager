@@ -249,7 +249,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			conn.start();
 		} catch (Exception e) {
 			log.error("RegistrationRequestProcessor: ERROR while subscribing to Message broker for Device info announcements: ", e);
-			taskScheduler.schedule(this::initializeResultsListener, Instant.now().plusSeconds(processorProperties.getSubscriptionRetry()));
+			taskScheduler.schedule(this::initializeResultsListener, Instant.now().plusSeconds(processorProperties.getSubscriptionRetryDelay()));
 		}
 	}
 

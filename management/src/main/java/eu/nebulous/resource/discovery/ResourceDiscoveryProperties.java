@@ -14,30 +14,41 @@ import java.util.List;
 @Configuration
 @ConfigurationProperties(prefix = "discovery")
 public class ResourceDiscoveryProperties {
-	private long subscriptionStartupDelay = 10;
-	private long subscriptionRetry = 60;
-	private boolean enablePeriodicProcessing = true;
-	private long processingStartupDelay = 10;
-	private long processingPeriod = 60;
+	// Broker configuration
+	private String brokerUsername;
+	@ToString.Exclude
+	private String brokerPassword;
+	private String brokerURL;
 
+	// Subscription to Broker settings
+	private long subscriptionStartupDelay = 10;
+	private long subscriptionRetryDelay = 60;
+
+	// Sample data creation settings
 	private boolean createSampleDataAtStartup;
 	private boolean createSampleDataPeriodically;
 	private int createSampleDataStartupDelay = 30;
 	private int createSampleDataPeriod = 60;
 	private String createSampleDataOwner = "admin";
 
+	// Registration request processing settings
+	private boolean enablePeriodicProcessing = true;
+	private long processingStartupDelay = 10;
+	private long processingPeriod = 60;
+
+	// Data collection settings
 	private String dataCollectionRequestTopic = "ems.client.installation.requests";
 	private String dataCollectionResponseTopic = "ems.client.installation.reports";
 	private List<String> allowedDeviceInfoKeys = new ArrayList<>(List.of("*"));
 
+	// Device monitoring settings
+	private String deviceStatusMonitorTopic = "_ui_instance_info";	//XXX:TODO: Change Topic name. Also update EMS config.
+
+	// Archiving settings
 	private boolean automaticArchivingEnabled;
 	private long archivingThreshold;				// in minutes
 
-	private String brokerUsername;
-	@ToString.Exclude
-	private String brokerPassword;
-	private String brokerURL;
-
+	// Users
 	private List<UserData> users;
 
 	@Data
