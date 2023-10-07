@@ -252,8 +252,9 @@ function saveRequestInfo() {
 
     // Fix messages
     var messages = $(`[id="request#messages"]`).val().trim();
-    if (messages==='') messages = '';
-    root['messages'] = messages.split(/\r\n|\r|\n/);
+    root['messages'] = (messages!=='')
+            ? messages.split(/\r\n|\r|\n/)
+            : [];
 
     // Check request Id
     if (requestId!=='' && requestId!==root.id) {

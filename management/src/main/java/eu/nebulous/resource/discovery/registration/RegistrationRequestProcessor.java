@@ -162,7 +162,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 		for (RegistrationRequest registrationRequest : onboardingRequests) {
 			try {
-				log.debug("processOnboardingRequests: Checking device before requesting onboarding for request with Id: {}", registrationRequest.getId());
+				log.debug("processOnboardingRequests: Checking device data before requesting onboarding, for request with Id: {}", registrationRequest.getId());
 				deviceManagementService.checkDevice(
 						objectMapper.convertValue(registrationRequest.getDevice(), Device.class),
 						true);
@@ -177,6 +177,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			} catch (Exception e) {
 				log.warn("processOnboardingRequests: EXCEPTION while sending onboarding request for request with Id: {}\n", registrationRequest.getId(), e);
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
+				registrationRequest.getMessages().add("EXCEPTION "+e.getMessage());
 				registrationRequestService.update(registrationRequest);
 			}
 		}
