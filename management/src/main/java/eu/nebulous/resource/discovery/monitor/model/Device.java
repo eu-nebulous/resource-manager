@@ -40,4 +40,5 @@ public class Device {
     private List<String> messages = new ArrayList<>();
 
     private DeviceStatusUpdate statusUpdate;
+    private DeviceMetrics metrics;
 }

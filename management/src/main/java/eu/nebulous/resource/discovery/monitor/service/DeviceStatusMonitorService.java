@@ -38,7 +38,7 @@ public class DeviceStatusMonitorService extends AbstractMonitorService {
         }
         if (obj instanceof Map<?,?> infoMap) {
             if (infoMap.isEmpty())
-                log.debug("DeviceStatusMonitorService: Message device status map (message field) is empty: {}", dataMap);
+                log.debug("DeviceStatusMonitorService: Device status map (message field) is empty: {}", dataMap);
             else
                 updateDeviceInfo(infoMap);
         } else {
@@ -85,7 +85,7 @@ public class DeviceStatusMonitorService extends AbstractMonitorService {
             // Update device data
             device.setStatusUpdate(deviceStatusUpdate);
             deviceManagementService.update(device);
-            log.info("DeviceStatusMonitorService: Device status updated for device: id={}, ip-address={}, update={}",
+            log.debug("DeviceStatusMonitorService: Device status updated for device: id={}, ip-address={}, update={}",
                     device.getId(), device.getIpAddress(), deviceStatusUpdate);
         } catch (Exception e) {
             log.warn("DeviceStatusMonitorService: EXCEPTION while converting device status update info map to DeviceStatus object: {}\n", infoMap, e);
