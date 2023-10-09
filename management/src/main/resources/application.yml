@@ -1,6 +1,6 @@
 
 application.version: 1.0.0
-
+spring.output.ansi.enabled: ALWAYS
 spring.web.resources.static-locations: file:resource-discovery/management/src/main/resources/static/freebees_webdesign_6
 
 #security.ignored: /**
