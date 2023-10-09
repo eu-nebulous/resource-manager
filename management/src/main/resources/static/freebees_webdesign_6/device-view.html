@@ -147,9 +147,11 @@ function updateFormData(data) {
 
     // Update device metrics
     if (data.metrics) {
+        // Clear contents of 'Device metrics' form part
         var target = $('#device-metrics');
         target.html('');
 
+        // Add timestamp in 'Device metrics' form part
         var timestamp = data.metrics.timestamp;
         //console.log(`TIMESTAMP: ${timestamp}`);
         target.append(`
@@ -161,10 +163,20 @@ function updateFormData(data) {
                             </div>
         `);
 
-        for (const [key, value] of Object.entries(data.metrics.metrics)) {
+        // Order metrics by key
+        const ordered = Object.keys(data.metrics.metrics).sort().reduce(
+            (obj, key) => {
+                obj[key] = data.metrics.metrics[key];
+                return obj;
+            },
+            {}
+        );
+
+        // Append metrics in 'Device metrics' form part
+        for (const [key, value] of Object.entries(ordered)) {
             //console.log(`${key}: ${value}`);
             target.append(`
-                            <div class="form-group row">
+                            <div class="form-group row border-top">
                                 <label for="metric#metric#${key}" class="col-sm-6 col-form-label"><b>${key}</b></label>
                                 <div class="col-sm-6">
                                     <input type="text" readonly class="form-control-plaintext" id="metric#tmetric#${key}" value="${value}">
