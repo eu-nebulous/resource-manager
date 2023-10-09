@@ -56,7 +56,8 @@ function updateDevicesList(asAdmin) {
             var devName = (item.name && item.name.trim()!=='') ? item.name.trim() : `(No name - Id ${devId})`;
             var ipAddress = item.ipAddress;
             var load = 'TODO';
-            var status = item.status;
+            var status = `${ ((item.statusUpdate && item.statusUpdate.state) ? item.statusUpdate.state : 'na') }
+                            <br/> (<i><span class="small">${item.status}</span></i>) `;
             var color = getStatusColor(status);
 
             var adminActions = (isAdmin) ? `

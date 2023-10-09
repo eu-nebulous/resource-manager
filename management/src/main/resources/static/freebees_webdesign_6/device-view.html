@@ -144,6 +144,35 @@ function updateFormData(data) {
     } else {
         $(`[id="device#messages"]`).val( '' ).attr( 'rows', 1 );
     }
+
+    // Update device metrics
+    if (data.metrics) {
+        var target = $('#device-metrics');
+        target.html('');
+
+        var timestamp = data.metrics.timestamp;
+        //console.log(`TIMESTAMP: ${timestamp}`);
+        target.append(`
+                            <div class="form-group row">
+                                <label for="metric#timestamp" class="col-sm-6 col-form-label"><b>Timestamp</b></label>
+                                <div class="col-sm-6">
+                                    <input type="text" readonly class="form-control-plaintext" id="metric#timestamp" value="${timestamp}">
+                                </div>
+                            </div>
+        `);
+
+        for (const [key, value] of Object.entries(data.metrics.metrics)) {
+            //console.log(`${key}: ${value}`);
+            target.append(`
+                            <div class="form-group row">
+                                <label for="metric#metric#${key}" class="col-sm-6 col-form-label"><b>${key}</b></label>
+                                <div class="col-sm-6">
+                                    <input type="text" readonly class="form-control-plaintext" id="metric#tmetric#${key}" value="${value}">
+                                </div>
+                            </div>
+            `);
+        }
+    }
 }
 
 function flattenObject(ob) {
@@ -387,7 +416,14 @@ function sendDeviceData(deviceData) {
                                 <div class="form-group row">
                                     <label for="device#status" class="col-sm-2 col-form-label"><b>Device Status</b></label>
                                     <div class="col-sm-10">
-                                        <input type="text" readonly class="form-control-plaintext" id="device#status" value="NEW_DEVICE">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#status" value="na">
+                                    </div>
+                                </div>
+                                <!-- EMS Device status -->
+                                <div class="form-group row">
+                                    <label for="device#statusUpdate#state" class="col-sm-2 col-form-label"><b>EMS Device Status</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#statusUpdate#state" value="na">
                                     </div>
                                 </div>
                                 <!-- Device creation data -->
@@ -435,20 +471,8 @@ function sendDeviceData(deviceData) {
                                 <h5>Device metrics</h5>
                             </div>
 
-                            <div class="form-group row">
-                                <label for="metric#cores" class="col-sm-2 col-form-label"><b>Cores</b></label>
-                                <div class="col-sm-10">
-                                    <input type="text" readonly class="form-control-plaintext" id="metric#cores" value="-">
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="metric#ram" class="col-sm-2 col-form-label"><b>RAM</b></label>
-                                <div class="col-sm-10">
-                                    <input type="text" readonly class="form-control-plaintext" id="metric#ram" value="-">
-                                </div>
-                            </div>
+                            <div id="device-metrics"></div>
 
-                            ++++ TODO ++++
                         </div>
                     </div>
 
