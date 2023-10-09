@@ -1,0 +1,68 @@
+- job:
+    name: nebulous-resource-manager-build-container-images
+    parent: nebulous-build-container-images
+    dependencies:
+      - name: opendev-buildset-registry
+        soft: false
+    provides:
+      - nebulous-resource-manager-container-images
+    description: Build the container images.
+    files: &image_files
+      - ^java-spring-boot-demo/
+    vars: &image_vars
+      promote_container_image_job: nebulous-resource-manager-upload-container-images
+      container_images:
+        - context: java-spring-boot-demo
+          registry: quay.io
+          repository: quay.io/nebulous/resource-manager-java-spring-boot-demo
+          namespace: nebulous
+          repo_shortname: resource-manager-java-spring-boot-demo
+          repo_description: ""
+
+- job:
+    name: nebulous-resource-manager-upload-container-images
+    parent: nebulous-upload-container-images
+    dependencies:
+      - name: opendev-buildset-registry
+        soft: false
+    provides:
+      - nebulous-resource-manager-container-images
+    description: Build and upload the container images.
+    files: *image_files
+    vars: *image_vars
+
+- job:
+    name: nebulous-resource-manager-promote-container-images
+    parent: nebulous-promote-container-images
+    description: Promote previously uploaded container images.
+    files: *image_files
+    vars: *image_vars
+
+- job:
+    name: nebulous-resource-manager-hadolint
+    parent: nebulous-hadolint
+    description: Run Hadolint on Dockerfile(s).
+    vars:
+      dockerfiles:
+        - java-spring-boot-demo/Dockerfile
+
+- job:
+    name: nebulous-resource-manager-helm-lint
+    parent: nebulous-helm-lint
+    description: Run helm lint on Helm charts.
+    vars:
+      helm_charts:
+        - ./charts/nebulous-resource-manager
+
+- job:
+    name: nebulous-resource-manager-apply-helm-charts
+    parent: nebulous-apply-helm-charts
+    dependencies:
+      - name: opendev-buildset-registry
+        soft: false
+    requires:
+      - nebulous-resource-manager-container-images
+    description: Deploy a Kubernetes cluster and apply charts.
+    vars:
+      helm_charts:
+        nebulous-resource-manager: ./charts/nebulous-resource-manager

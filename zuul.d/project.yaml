@@ -1,0 +1,26 @@
+- project:
+    check:
+      jobs:
+        - opendev-buildset-registry
+        - nebulous-resource-manager-helm-lint
+        - nebulous-resource-manager-build-container-images
+        - nebulous-resource-manager-hadolint
+        - nebulous-platform-apply-helm-charts:
+            dependencies:
+              - name: nebulous-resource-manager-build-container-images
+                soft: true
+        - nox-linters
+    gate:
+      jobs:
+        - opendev-buildset-registry
+        - nebulous-resource-manager-helm-lint
+        - nebulous-resource-manager-upload-container-images
+        - nebulous-resource-manager-hadolint
+        - nebulous-platform-apply-helm-charts:
+            dependencies:
+              - name: nebulous-resource-manager-upload-container-images
+                soft: true
+        - nox-linters
+    promote:
+      jobs:
+        - nebulous-resource-manager-promote-container-images
