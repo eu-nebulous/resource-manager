@@ -1,14 +1,15 @@
 package eu.nebulous.resource.discovery.registration.controller;
 
 import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
-import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
 import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
+import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -140,5 +141,16 @@ public class RegistrationRequestController {
 	public ArchivedRegistrationRequest getArchivedRequest(@PathVariable String id, Authentication authentication) {
 		return registrationRequestService.getArchivedByIdAsUser(id, authentication)
 				.orElseThrow(() -> new RegistrationRequestException("Not found archived registration request with id: "+id));
+	}
+
+	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
+	@ExceptionHandler(RegistrationRequestException.class)
+	public Map<String,Object> handleRegistrationRequestException(RegistrationRequestException exception) {
+		return Map.of(
+				"status", HttpStatus.BAD_REQUEST.value(),
+				"timestamp", System.currentTimeMillis(),
+				"exception", exception.getClass().getName(),
+				"message", exception.getMessage()
+		);
 	}
 }

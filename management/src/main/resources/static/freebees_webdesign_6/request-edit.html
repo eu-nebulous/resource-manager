@@ -284,9 +284,11 @@ function sendRequestData(requestData) {
         refreshRequestInfo(requestId);
     })
     .fail(function(xhr, status, error) {
-        console.error('sendRequestData: ERROR: ', status, error);
+        var data = {};
+        try { data = JSON.parse(xhr.responseText); } catch (e) { }
+        console.log('sendRequestData: ERROR: ', status, error, xhr.responseText);
         $('#page_title').html(
-            $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
+            $(`<div class="text-warning bg-danger">Error: ${status}: ${error ?? ''} ${data ? data.message : ''}</div>`)
         );
     })
     .always(function(data, status) {
