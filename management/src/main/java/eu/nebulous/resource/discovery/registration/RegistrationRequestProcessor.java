@@ -389,9 +389,15 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		Device device = objectMapper.convertValue(registrationRequest.getDevice(), Device.class);
 		device.setId(null);
 		device.setStatus(null);
-		device.setRequest(registrationRequest);
-		device.setRequestId(registrationRequest.getId());
 		device.getMessages().clear();
+
+		// copy credentials
+		device.setPassword(registrationRequest.getDevice().getPassword());		// ignored by 'objectMapper', so we've to copy them
+		device.setPublicKey(registrationRequest.getDevice().getPublicKey());	// ignored by 'objectMapper', so we've to copy them
+
+		// fields specific to Monitoring Device
+		//device.setRequest(registrationRequest);
+		device.setRequestId(registrationRequest.getId());
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
 	}

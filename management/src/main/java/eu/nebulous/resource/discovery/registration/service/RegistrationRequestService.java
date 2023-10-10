@@ -7,6 +7,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
@@ -79,11 +80,39 @@ public class RegistrationRequestService {
 		if (checkEditDel)
 			canEditOrDelete(result.get());
 
-		registrationRequest.setLastUpdateDate(Instant.now());
-		registrationRequestRepository.save(registrationRequest);
+		// Copy submitted registration request data onto the retrieved request
+		BeanUtils.copyProperties(registrationRequest, result.get(),
+				"id", "device", "requester", "requestDate");
+		result.get().setLastUpdateDate(Instant.now());
+
+		// Check if device password/public key need update...
+		List<String> ignoreList = new ArrayList<>();
+		if (isCharArrayIsBlank(registrationRequest.getDevice().getPassword())
+				&& isCharArrayIsBlank(registrationRequest.getDevice().getPublicKey()))
+		{
+			ignoreList.add("password");
+			ignoreList.add("publicKey");
+		}
+		// ...then copy submitted request's device data onto the retrieved request's device
+		BeanUtils.copyProperties(
+				registrationRequest.getDevice(),
+				result.get().getDevice(),
+				ignoreList.toArray(new String[0]));
+
+		registrationRequestRepository.save(result.get());
 
 		return getById(registrationRequest.getId()).orElseThrow(() ->
 				new RegistrationRequestException("Request update failed for Id: "+registrationRequest.getId()));
+	}
+
+	private boolean isCharArrayIsBlank(char[] arr) {
+		if (arr==null) return true;
+		for (char c : arr)
+			if (!isWhiteSpaceChar(c)) return false;
+		return true;
+	}
+	private boolean isWhiteSpaceChar(char c) {
+		return c==' ' || c=='\t' || c=='\r' || c=='\n';
 	}
 
 	private void checkRegistrationRequest(@NonNull RegistrationRequest registrationRequest) {
