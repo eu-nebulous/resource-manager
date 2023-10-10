@@ -11,6 +11,8 @@ spring.web.resources.static-locations: file:resource-discovery/management/src/ma
 #spring.security.user.password: user
 #spring.security.user.roles: USER
 
+server.servlet.session.timeout: 120m
+
 spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
 spring.data.mongodb.database: resource_discovery
 
@@ -27,3 +29,5 @@ discovery:
     - username: user
       password: user1
       roles: [ USER ]
+
+#logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE

@@ -55,7 +55,7 @@ function updateDevicesList(asAdmin) {
             var owner = item.owner;
             var devName = (item.name && item.name.trim()!=='') ? item.name.trim() : `(No name - Id ${devId})`;
             var ipAddress = item.ipAddress;
-            var load = 'TODO';
+            var load = getLoadStr(item);
             var status = `${ ((item.statusUpdate && item.statusUpdate.state) ? item.statusUpdate.state : 'na') }
                             <br/> (<i><span class="small">${item.status}</span></i>) `;
             var color = getStatusColor(status);
@@ -91,6 +91,24 @@ function updateDevicesList(asAdmin) {
         console.error('updateDevicesList: ERROR: ', status, error);
     })
     ;
+}
+
+function getLoadStr(item) {
+    var cpu = 'cpu: -';
+    var ram = 'ram: -';
+    if (item && item.metrics && item.metrics.metrics) {
+        if (item.metrics.metrics.cpu) {
+            var val = Math.round(item.metrics.metrics.cpu);
+            var color = (val>80) ? 'bg-danger text-white' : '';
+            cpu = `<span class="${color}">cpu: ${val}%</span>`;
+        }
+        if (item.metrics.metrics.ram) {
+            var val = Math.round(item.metrics.metrics.ram);
+            var color = (val>80) ? 'bg-danger text-white' : '';
+            ram = `<span class="${color}">ram: ${val}%</span>`;
+        }
+    }
+    return `${cpu}<br/>${ram}`;
 }
 
 function getStatusColor(status) {

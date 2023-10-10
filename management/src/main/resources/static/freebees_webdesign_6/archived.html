@@ -42,7 +42,7 @@ function updateRequestsList(asAdmin) {
         data.forEach(item => {
             var reqId = item.id;
             var requester = item.requester;
-            var devName = item.device.deviceName;
+            var devName = item.device.name;
             var ipAddress = item.device.ipAddress;
             var date = new Date( Date.parse( item.requestDate ) );
             var dateStr = date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB')
