@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.registration.service;
 
+import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.*;
 import eu.nebulous.resource.discovery.registration.repository.ArchivedRegistrationRequestRepository;
 import eu.nebulous.resource.discovery.registration.repository.RegistrationRequestRepository;
@@ -22,6 +23,7 @@ public class RegistrationRequestService {
 	private final RegistrationRequestRepository registrationRequestRepository;
 	private final ArchivedRegistrationRequestRepository archivedRegistrationRequestRepository;
 	private final RegistrationRequestConversionService registrationRequestConversionService;
+	private final DeviceManagementService deviceManagementService;
 
 	/*private final InMemoryRegistrationRequestRepository<RegistrationRequest>
 			registrationRequestRepository = new InMemoryRegistrationRequestRepository<>();
@@ -41,6 +43,11 @@ public class RegistrationRequestService {
 
 	public List<RegistrationRequest> getAll() {
 		return Collections.unmodifiableList(registrationRequestRepository.findAll());
+	}
+
+	public boolean isIpAddressInUse(@NonNull String ipAddress, String excludeId) {
+		List<RegistrationRequest> result = registrationRequestRepository.findByDeviceIpAddress(ipAddress);
+		return result.stream().anyMatch(r -> !r.getId().equals(excludeId));
 	}
 
 	public @NonNull RegistrationRequest save(@NonNull RegistrationRequest registrationRequest) {
@@ -63,6 +70,9 @@ public class RegistrationRequestService {
 		registrationRequest.setRequestDate(Instant.now());
 		checkRegistrationRequest(registrationRequest);
 
+		// check IP address uniqueness
+		checkIpAddressUniqueness(registrationRequest);
+
 		registrationRequestRepository.save(registrationRequest);
 		return registrationRequest;
 	}
@@ -72,6 +82,10 @@ public class RegistrationRequestService {
 	}
 
 	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel) {
+		return update(registrationRequest, checkEditDel, false);
+	}
+
+	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel, boolean skipUniqueIpAddressCheck) {
 		Optional<RegistrationRequest> result = getById(registrationRequest.getId());
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
@@ -79,6 +93,10 @@ public class RegistrationRequestService {
 		checkRegistrationRequest(registrationRequest);
 		if (checkEditDel)
 			canEditOrDelete(result.get());
+
+		// check IP address uniqueness
+		if (!skipUniqueIpAddressCheck)
+			checkIpAddressUniqueness(registrationRequest);
 
 		// Copy submitted registration request data onto the retrieved request
 		BeanUtils.copyProperties(registrationRequest, result.get(),
@@ -132,6 +150,17 @@ public class RegistrationRequestService {
 
 	private void checkDevice(@NonNull Device device) {
 		//XXX:TODO
+	}
+
+	private void checkIpAddressUniqueness(RegistrationRequest registrationRequest) {
+		boolean exists1 = this.isIpAddressInUse(
+				registrationRequest.getDevice().getIpAddress(), registrationRequest.getId());
+		boolean exists2 = deviceManagementService.isIpAddressInUse(
+				registrationRequest.getDevice().getIpAddress());
+		if (exists1 || exists2) {
+			throw new RegistrationRequestException(
+					"The IP address is already in use by: another-registration-request="+exists1+", registered-device="+exists2);
+		}
 	}
 
 	private void canEditOrDelete(RegistrationRequest registrationRequest) {

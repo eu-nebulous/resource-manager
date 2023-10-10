@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface RegistrationRequestRepository extends MongoRepository<RegistrationRequest, String> {
 	List<RegistrationRequest> findByRequester(String requester);
+	List<RegistrationRequest> findByDeviceIpAddress(String ipAddress);
 }

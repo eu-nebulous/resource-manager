@@ -41,6 +41,10 @@ public class DeviceManagementService {
 		return deviceRepository.findByIpAddress(ipAddress);
 	}
 
+	public boolean isIpAddressInUse(@NonNull String ipAddress) {
+		return deviceRepository.findByIpAddress(ipAddress).isPresent();
+	}
+
 	public @NonNull Device save(@NonNull Device device) {
 		DeviceStatus status = device.getStatus();
 		checkDevice(device, true);
