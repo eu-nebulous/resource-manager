@@ -25,7 +25,7 @@ public class RegistrationRequest {
     private Instant lastUpdateDate;
     private Instant archiveDate;
     private RegistrationRequestStatus status;
-    private List<RegistrationRequestHistoryEntry> history;
+    private List<RegistrationRequestHistoryEntry> history = new ArrayList<>();
     private String nodeReference;
     @Setter(AccessLevel.NONE)
     private List<String> messages = new ArrayList<>();

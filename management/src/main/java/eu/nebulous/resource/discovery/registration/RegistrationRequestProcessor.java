@@ -140,6 +140,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 				producer.send(createMessage(jsonMessage));
 				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
+
+				log.debug("processNewRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
 				registrationRequestService.update(registrationRequest);
 				log.debug("processNewRequests: Data collection request sent for request with Id: {}", registrationRequest.getId());
 			} catch (Exception e) {
@@ -163,15 +165,18 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		for (RegistrationRequest registrationRequest : onboardingRequests) {
 			try {
 				log.debug("processOnboardingRequests: Checking device data before requesting onboarding, for request with Id: {}", registrationRequest.getId());
-				deviceManagementService.checkDevice(
-						objectMapper.convertValue(registrationRequest.getDevice(), Device.class),
-						true);
+				Device deviceForMonitoring = objectMapper.convertValue(registrationRequest.getDevice(), Device.class);
+				deviceForMonitoring.setPassword(registrationRequest.getDevice().getPassword());		// ignored by 'objectMapper', so we've to copy them
+				deviceForMonitoring.setPublicKey(registrationRequest.getDevice().getPublicKey());	// ignored by 'objectMapper', so we've to copy them
+				deviceManagementService.checkDevice(deviceForMonitoring, true);
 
 				log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
 				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_ONBOARDING, registrationRequest);
 				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 				producer.send(createMessage(jsonMessage));
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
+
+				log.debug("processOnboardingRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
 				registrationRequestService.update(registrationRequest);
 				log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
 			} catch (Exception e) {
@@ -321,6 +326,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				isError = true;
 			}
 			if (isError) {
+				log.debug("processResponse: Save updated request with errors: id={}, errors={}, request={}", requestId, registrationRequest.getMessages(), registrationRequest);
 				registrationRequestService.update(registrationRequest);
 				return;
 			}
@@ -379,7 +385,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			}
 
 			// Store changes
-			registrationRequestService.update(registrationRequest, false);
+			log.debug("processResponse: Save updated request: id={}, request={}", requestId, registrationRequest);
+			registrationRequestService.update(registrationRequest, false, true);
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
 		}
@@ -387,6 +394,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
 		Device device = objectMapper.convertValue(registrationRequest.getDevice(), Device.class);
+		// override values
 		device.setId(null);
 		device.setStatus(null);
 		device.getMessages().clear();
