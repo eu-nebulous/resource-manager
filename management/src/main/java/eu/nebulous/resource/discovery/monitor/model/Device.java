@@ -1,10 +1,8 @@
 package eu.nebulous.resource.discovery.monitor.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -24,11 +22,15 @@ public class Device {
     private String owner;
     private String ipAddress;
     private String username;
+    @ToString.Exclude
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private char[] password;
+    @ToString.Exclude
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private char[] publicKey;
     private Map<String, String> deviceInfo;
 
-    private RegistrationRequest request;
+    //private RegistrationRequest request;
     private String requestId;
     private Instant creationDate;
     private Instant lastUpdateDate;
