@@ -29,4 +29,14 @@ public class RegistrationRequest {
     private String nodeReference;
     @Setter(AccessLevel.NONE)
     private List<String> messages = new ArrayList<>();
+
+    // Required in order BeanUtils.copyProperties() to also copy this
+    public void setHistory(List<RegistrationRequestHistoryEntry> history) {
+        this.history = new ArrayList<>(history);
+    }
+
+    // Required in order BeanUtils.copyProperties() to also copy this
+    public void setMessages(List<String> messages) {
+        this.messages = new ArrayList<>(messages);
+    }
 }

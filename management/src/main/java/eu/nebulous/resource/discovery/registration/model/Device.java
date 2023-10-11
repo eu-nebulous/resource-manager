@@ -3,6 +3,7 @@ package eu.nebulous.resource.discovery.registration.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.util.Map;
@@ -17,8 +18,10 @@ public class Device {
     private String owner;
     private String ipAddress;
     private String username;
+    @ToString.Exclude
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private char[] password;
+    @ToString.Exclude
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private char[] publicKey;
     private Map<String, String> deviceInfo;

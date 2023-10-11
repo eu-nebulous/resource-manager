@@ -177,13 +177,13 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
 
 				log.debug("processOnboardingRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
-				registrationRequestService.update(registrationRequest);
+				registrationRequestService.update(registrationRequest, false);
 				log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
 			} catch (Exception e) {
 				log.warn("processOnboardingRequests: EXCEPTION while sending onboarding request for request with Id: {}\n", registrationRequest.getId(), e);
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
 				registrationRequest.getMessages().add("EXCEPTION "+e.getMessage());
-				registrationRequestService.update(registrationRequest);
+				registrationRequestService.update(registrationRequest, false);
 			}
 		}
 
@@ -283,7 +283,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private void processResponse(@NonNull Map<String, Object> response) {
 		String requestId = response.getOrDefault("requestId", "").toString().trim();
 		String reference = response.getOrDefault("reference", "").toString().trim();
-		String status = response.getOrDefault("status", "").toString().trim();
+		String responseStatus = response.getOrDefault("status", "").toString().trim();
 		String deviceIpAddress = response.getOrDefault("deviceIpAddress", "").toString().trim();
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
 
@@ -297,6 +297,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				case ONBOARDING_REQUESTED -> RegistrationRequestStatus.ONBOARDING_ERROR;
 				default -> currStatus;
 			};
+			log.debug("processResponse: Temporary status change: {} --> {}", currStatus, newStatus);
 			registrationRequest.setStatus(newStatus);
 
 			if (currStatus==RegistrationRequestStatus.SUCCESS) {
@@ -307,8 +308,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 			String ipAddress = registrationRequest.getDevice().getIpAddress();
 			boolean isError = false;
-			if (StringUtils.equals(ipAddress, deviceIpAddress)) {
-				String mesg = String.format("Device IP address do not match with that in request: id=%s, ip-address=%s != %s", requestId, ipAddress, deviceIpAddress);
+			if (StringUtils.isNotBlank(deviceIpAddress) && ! StringUtils.equals(ipAddress, deviceIpAddress)) {
+				String mesg = String.format("Device IP address in RESPONSE does not match with that in the request: id=%s, ip-address-response=%s != ip-address-in-request%s", requestId, deviceIpAddress, ipAddress);
 				log.warn("processResponse: {}", mesg);
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
@@ -319,15 +320,17 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
 			}
-			if (! "SUCCESS".equals(status)) {
-				String mesg = String.format("Request status is not SUCCESS: id=%s, timestamp=%d, status=%s", requestId, timestamp, status);
+			if (! "SUCCESS".equals(responseStatus)) {
+				String mesg = String.format("RESPONSE status is not SUCCESS: id=%s, timestamp=%d, status=%s", requestId, timestamp, responseStatus);
 				log.warn("processResponse: {}", mesg);
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
 			}
 			if (isError) {
-				log.debug("processResponse: Save updated request with errors: id={}, errors={}, request={}", requestId, registrationRequest.getMessages(), registrationRequest);
-				registrationRequestService.update(registrationRequest);
+				if (log.isDebugEnabled())
+					log.debug("processResponse: Save request with errors: id={}, errors={}, request={}", requestId, registrationRequest.getMessages(), registrationRequest);
+				log.warn("processResponse: Save request with errors: id={}, errors={}", requestId, registrationRequest.getMessages());
+				registrationRequestService.update(registrationRequest, false, true);
 				return;
 			}
 
