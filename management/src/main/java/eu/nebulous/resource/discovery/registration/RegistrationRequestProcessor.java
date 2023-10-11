@@ -1,6 +1,5 @@
 package eu.nebulous.resource.discovery.registration;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
@@ -64,7 +63,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
 	@Override
-	public void afterPropertiesSet() throws Exception {
+	public void afterPropertiesSet() {
 		// Initialize request processing results listener
 		taskScheduler.schedule(this::initializeResultsListener, Instant.now().plusSeconds(processorProperties.getSubscriptionStartupDelay()));
 
@@ -125,7 +124,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		}
 	}
 
-	private void processNewRequests(MessageProducer producer) throws JsonProcessingException, JMSException {
+	private void processNewRequests(MessageProducer producer) {
 		log.trace("processNewRequests: BEGIN: {}", producer);
 		List<RegistrationRequest> newRequests = registrationRequestService.getAll().stream()
 				.filter(r -> r.getStatus() == RegistrationRequestStatus.NEW_REQUEST).toList();
@@ -154,7 +153,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		log.trace("processNewRequests: END");
 	}
 
-	private void processOnboardingRequests(MessageProducer producer) throws JsonProcessingException, JMSException {
+	private void processOnboardingRequests(MessageProducer producer) {
 		log.trace("processOnboardingRequests: BEGIN: {}", producer);
 		List<RegistrationRequest> onboardingRequests = registrationRequestService.getAll().stream()
 				.filter(r -> r.getStatus() == RegistrationRequestStatus.PENDING_ONBOARDING).toList();
