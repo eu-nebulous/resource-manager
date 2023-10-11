@@ -171,9 +171,13 @@ function updateFormData(data) {
             },
             {}
         );
+        // Move 'counts' to the end
+        const countsMap = Object.entries(ordered).filter(([k, v]) => k.startsWith('count-'));
+        const othersMap = Object.entries(ordered).filter(([k, v]) => ! k.startsWith('count-'));
+        const finalMap = Object.fromEntries([...othersMap, ...countsMap]);
 
         // Append metrics in 'Device metrics' form part
-        for (const [key, value] of Object.entries(ordered)) {
+        for (const [key, value] of Object.entries(finalMap)) {
             //console.log(`${key}: ${value}`);
             target.append(`
                             <div class="form-group row border-top">
