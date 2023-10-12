@@ -2,6 +2,7 @@ package eu.nebulous.resource.discovery.registration;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.nebulous.resource.discovery.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
@@ -42,9 +43,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EnableScheduling
 @RequiredArgsConstructor
 public class RegistrationRequestProcessor implements IRegistrationRequestProcessor, InitializingBean, MessageListener {
-	private static final String REQUEST_TYPE_DATA_COLLECTION = "DIAGNOSTICS";	// EMS task type for collecting node info
-	private static final String REQUEST_TYPE_ONBOARDING = "VM";					// EMS task type for installing EMS client
-
 	private final static List<RegistrationRequestStatus> STATUSES_TO_ARCHIVE = List.of(
 			RegistrationRequestStatus.PRE_AUTHORIZATION_REJECT,
 			RegistrationRequestStatus.PRE_AUTHORIZATION_ERROR,
@@ -135,7 +133,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		for (RegistrationRequest registrationRequest : newRequests) {
 			try {
 				log.debug("processNewRequests: Requesting collection of device data for request with Id: {}", registrationRequest.getId());
-				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_DATA_COLLECTION, registrationRequest);
+				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE.DIAGNOSTICS, registrationRequest);
 				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 				producer.send(createMessage(jsonMessage));
 				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
@@ -170,7 +168,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				deviceManagementService.checkDevice(deviceForMonitoring, true);
 
 				log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
-				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE_ONBOARDING, registrationRequest);
+				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE.INSTALL, registrationRequest);
 				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
 				producer.send(createMessage(jsonMessage));
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
@@ -189,11 +187,11 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		log.trace("processOnboardingRequests: END");
 	}
 
-	private static Map<String, String> prepareRequestPayload(@NonNull String requestType, RegistrationRequest registrationRequest) {
+	private static Map<String, String> prepareRequestPayload(@NonNull REQUEST_TYPE requestType, RegistrationRequest registrationRequest) {
 		try {
 			Map<String, String> payload = new LinkedHashMap<>(Map.of(
 					"requestId", registrationRequest.getId(),
-					"requestType", requestType,
+					"requestType", requestType.name(),
 					"deviceId", registrationRequest.getDevice().getId(),
 					"deviceOs", registrationRequest.getDevice().getOs(),
 					"deviceName", registrationRequest.getDevice().getName(),

@@ -89,9 +89,25 @@ public class DeviceManagementController {
 		deviceService.deleteById(id);
 	}
 
+	@GetMapping(value = "/device/{id}/onboard")
+	public void onboardDevice(@PathVariable String id) {
+		deviceService.reinstallRequest(id);
+	}
+
+	@GetMapping(value = "/device/{id}/offboard")
+	public void offboardDevice(@PathVariable String id) {
+		deviceService.uninstallRequest(id);
+	}
+
 	@GetMapping(value = "/device/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
 	public String archiveDevice(@PathVariable String id) {
 		deviceService.archiveDevice(id);
 		return "ARCHIVED";
+	}
+
+	@GetMapping(value = "/request-update")
+	public String requestUpdate() {
+		deviceService.requestInfoUpdate();
+		return "REQUESTED-UPDATE";
 	}
 }
