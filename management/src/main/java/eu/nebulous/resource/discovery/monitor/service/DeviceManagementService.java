@@ -1,7 +1,6 @@
 package eu.nebulous.resource.discovery.monitor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.nebulous.resource.discovery.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.ArchivedDevice;
 import eu.nebulous.resource.discovery.monitor.model.Device;
@@ -9,20 +8,12 @@ import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import eu.nebulous.resource.discovery.monitor.repository.ArchivedDeviceRepository;
 import eu.nebulous.resource.discovery.monitor.repository.DeviceRepository;
-import jakarta.jms.JMSException;
-import jakarta.jms.MessageNotWriteableException;
-import jakarta.jms.MessageProducer;
-import jakarta.jms.Session;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.command.ActiveMQMessage;
-import org.apache.activemq.command.ActiveMQTextMessage;
-import org.apache.activemq.command.ActiveMQTopic;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.util.Pair;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -138,6 +129,22 @@ public class DeviceManagementService {
 
 	// ------------------------------------------------------------------------
 
+	private boolean canAccess(@NonNull Device device, Authentication authentication) {
+		return canAccess(device, authentication, false);
+	}
+
+	private boolean canAccess(@NonNull Device device, Authentication authentication, boolean sameUserOnly) {
+		String requester = device.getOwner();
+		if (requester == null && authentication.getName() == null) return true;
+		return requester != null && (
+				requester.equals(authentication.getName()) ||
+						!sameUserOnly && authentication.getAuthorities().stream()
+								.map(GrantedAuthority::getAuthority).toList().contains("ROLE_ADMIN")
+		);
+	}
+
+	// ------------------------------------------------------------------------
+
 	public List<ArchivedDevice> getArchivedAll() {
 		return Collections.unmodifiableList(archivedDeviceRepository.findAll());
 	}
@@ -145,9 +152,29 @@ public class DeviceManagementService {
 	public List<ArchivedDevice> getArchivedByOwner(@NonNull String owner) {
 		return archivedDeviceRepository.findByOwner(owner);
 	}
+	public List<ArchivedDevice> getArchivedByOwner(Authentication authentication) {
+		return getArchivedAll().stream()
+				.filter(dev -> canAccess(dev, authentication, true))
+				.toList();
+	}
+
+	public Optional<ArchivedDevice> getArchivedById(@NonNull String id, Authentication authentication) {
+		Optional<ArchivedDevice> result = getArchivedById(id);
+		if (result.isEmpty())
+			throw new DeviceException(
+					"Device with the Id does not exists in repository: " + id);
+		return canAccess(result.get(), authentication)
+				? result : Optional.empty();
+	}
 
 	public Optional<ArchivedDevice> getArchivedById(@NonNull String id) {
 		return archivedDeviceRepository.findById(id);
+	}
+
+	public List<ArchivedDevice> getArchivedByIpAddress(@NonNull String ipAddress, Authentication authentication) {
+		return getArchivedByIpAddress(ipAddress).stream()
+				.filter(dev -> canAccess(dev, authentication, true))
+				.toList();
 	}
 
 	public List<ArchivedDevice> getArchivedByIpAddress(@NonNull String ipAddress) {

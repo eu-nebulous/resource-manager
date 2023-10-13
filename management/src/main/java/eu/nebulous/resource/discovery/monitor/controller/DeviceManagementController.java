@@ -1,12 +1,15 @@
 package eu.nebulous.resource.discovery.monitor.controller;
 
+import eu.nebulous.resource.discovery.monitor.model.ArchivedDevice;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.service.DeviceLifeCycleRequestService;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
+import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,6 +17,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -91,6 +95,43 @@ public class DeviceManagementController {
 		deviceService.deleteById(id);
 	}
 
+	// ------------------------------------------------------------------------
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/device/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String archiveDevice(@PathVariable String id) {
+		deviceService.archiveDevice(id);
+		return "ARCHIVED";
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/device/{id}/unarchive", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String unarchiveDevice(@PathVariable String id) {
+		deviceService.unarchiveDevice(id);
+		return "UNARCHIVED";
+	}
+
+	// ------------------------------------------------------------------------
+
+	@GetMapping(value = "/device/archived", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<ArchivedDevice> listArchivedRequests(Authentication authentication) {
+		return deviceService.getArchivedByOwner(authentication);
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/device/archived/all", produces = MediaType.APPLICATION_JSON_VALUE)
+	public List<ArchivedDevice> listArchivedRequestsAdmin() {
+		return deviceService.getArchivedAll();
+	}
+
+	@GetMapping(value = "/device/archived/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ArchivedDevice getArchivedRequest(@PathVariable String id, Authentication authentication) {
+		return deviceService.getArchivedById(id, authentication)
+				.orElseThrow(() -> new RegistrationRequestException("Not found archived registration request with id: "+id));
+	}
+
+	// ------------------------------------------------------------------------
+
 	@GetMapping(value = "/device/{id}/onboard")
 	public void onboardDevice(@PathVariable String id) {
 		deviceLifeCycleRequestService.reinstallRequest(id);
@@ -101,15 +142,22 @@ public class DeviceManagementController {
 		deviceLifeCycleRequestService.uninstallRequest(id);
 	}
 
-	@GetMapping(value = "/device/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
-	public String archiveDevice(@PathVariable String id) {
-		deviceService.archiveDevice(id);
-		return "ARCHIVED";
-	}
-
 	@GetMapping(value = "/request-update")
 	public String requestUpdate() {
 		deviceLifeCycleRequestService.requestInfoUpdate();
 		return "REQUESTED-UPDATE";
+	}
+
+	// ------------------------------------------------------------------------
+
+	@ResponseStatus(value = HttpStatus.BAD_REQUEST)
+	@ExceptionHandler(DeviceException.class)
+	public Map<String,Object> handleRegistrationRequestException(DeviceException exception) {
+		return Map.of(
+				"status", HttpStatus.BAD_REQUEST.value(),
+				"timestamp", System.currentTimeMillis(),
+				"exception", exception.getClass().getName(),
+				"message", exception.getMessage()
+		);
 	}
 }

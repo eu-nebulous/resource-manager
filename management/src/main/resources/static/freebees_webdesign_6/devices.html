@@ -59,15 +59,24 @@ function updateDevicesList(asAdmin) {
             var status = `${ ((item.statusUpdate && item.statusUpdate.state) ? item.statusUpdate.state : 'na') }
                             <br/> (<i><span class="small">${item.status}</span></i>) `;
             var color = getStatusColor(status);
+            var isOffboarded = item.status==='OFFBOARDED' || item.status==='OFFBOARD_ERROR';
 
-            var adminActions = (isAdmin) ? `
+            var adminActions = '';
+            if (isAdmin) {
+                adminActions = (! isOffboarded)
+                        ? `
                                 <button type="button" class="btn btn-primary btn-sm" onClick="if (confirm('Onboard Device again?')) manageDevice('${devId}', 'onboard');">
                                     <i class="fas fa-redo"></i>
                                 </button>
                                 <button type="button" class="btn btn-danger btn-sm" onClick="if (confirm('Remove Device?')) manageDevice('${devId}', 'offboard');">
                                     <i class="fas fa-ban"></i>
                                 </button>
-                        ` : '';
+                        ` : `
+                                <button class="btn btn-warning btn-sm" onClick="if (confirm('Archive Device?')) archiveDevice('${devId}')">
+                                    <i class="fas fa-box"></i>
+                                </button>
+                        `;
+            }
             ii++;
             tbody.append( $(`
                         <tr class="${color}">
@@ -78,10 +87,10 @@ function updateDevicesList(asAdmin) {
                             <td>${load}</td>
                             <td>${status}</td>
                             <td>
-                                ${adminActions}
                                 <button type="button" class="btn btn-success btn-sm" onClick="document.location='/device-view.html?id=${devId}${urlAppend}'; ">
                                     <i class="fas fa-eye"></i>
                                 </button>
+                                ${adminActions}
                             </td>
                         </tr> `
             ) );
@@ -157,6 +166,20 @@ function requestUpdate() {
         updateDevicesList();
     })
     ;
+}
+
+function archiveDevice(devId) {
+    $.ajax({
+        url: `/monitor/device/${devId}/archive`,
+        dataType: 'text'
+    })
+    .done(function(data, status) {
+        console.log('archiveDevice: OK: ', devId, data);
+        updateDevicesList(true);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('archiveDevice: ERROR: ', status, error);
+    });
 }
     </script>
 
