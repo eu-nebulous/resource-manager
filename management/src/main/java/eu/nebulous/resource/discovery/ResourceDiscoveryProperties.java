@@ -45,6 +45,9 @@ public class ResourceDiscoveryProperties {
 	private String deviceStatusMonitorTopic = "_ui_instance_info";	//XXX:TODO: Change Topic name. Also update EMS config.
 	private String deviceMetricsMonitorTopic = "_client_metrics";	//XXX:TODO: Change Topic name. Also update EMS config.
 
+	private String deviceLifeCycleRequestsTopic = "ems.client.installation.requests";
+	private String deviceLifeCycleResponsesTopic = "ems.client.installation.reports";
+
 	// Archiving settings
 	private boolean automaticArchivingEnabled;
 	private long archivingThreshold;				// in minutes

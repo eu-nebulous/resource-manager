@@ -2,6 +2,7 @@ package eu.nebulous.resource.discovery.monitor.controller;
 
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceException;
+import eu.nebulous.resource.discovery.monitor.service.DeviceLifeCycleRequestService;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import java.util.List;
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class DeviceManagementController {
 	private final DeviceManagementService deviceService;
+	private final DeviceLifeCycleRequestService deviceLifeCycleRequestService;
 
 	private boolean isAuthenticated(Authentication authentication) {
 		return authentication!=null && StringUtils.isNotBlank(authentication.getName());
@@ -91,12 +93,12 @@ public class DeviceManagementController {
 
 	@GetMapping(value = "/device/{id}/onboard")
 	public void onboardDevice(@PathVariable String id) {
-		deviceService.reinstallRequest(id);
+		deviceLifeCycleRequestService.reinstallRequest(id);
 	}
 
 	@GetMapping(value = "/device/{id}/offboard")
 	public void offboardDevice(@PathVariable String id) {
-		deviceService.uninstallRequest(id);
+		deviceLifeCycleRequestService.uninstallRequest(id);
 	}
 
 	@GetMapping(value = "/device/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -107,7 +109,7 @@ public class DeviceManagementController {
 
 	@GetMapping(value = "/request-update")
 	public String requestUpdate() {
-		deviceService.requestInfoUpdate();
+		deviceLifeCycleRequestService.requestInfoUpdate();
 		return "REQUESTED-UPDATE";
 	}
 }
