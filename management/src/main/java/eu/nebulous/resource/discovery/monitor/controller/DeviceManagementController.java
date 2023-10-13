@@ -101,37 +101,37 @@ public class DeviceManagementController {
 
 	// ------------------------------------------------------------------------
 
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/device/{id}/onboard")
 	public void onboardDevice(@PathVariable String id) {
 		deviceLifeCycleRequestService.reinstallRequest(id);
 	}
 
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/device/{id}/offboard")
 	public void offboardDevice(@PathVariable String id) {
 		deviceLifeCycleRequestService.uninstallRequest(id);
 	}
 
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/request-update")
 	public String requestUpdate() {
 		deviceLifeCycleRequestService.requestInfoUpdate();
 		return "REQUESTED-UPDATE";
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/device/process")
 	public Map<String, String> processDevices() throws ExecutionException, InterruptedException {
 		Future<String> future = deviceProcessor.processRequests();
 		return Map.of("result", future.isDone() ? future.get() : "STARTED");
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/device/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
 	public String archiveDevice(@PathVariable String id) {
 		deviceService.archiveDevice(id);
 		return "ARCHIVED";
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/device/{id}/unarchive", produces = MediaType.APPLICATION_JSON_VALUE)
 	public String unarchiveDevice(@PathVariable String id) {
 		deviceService.unarchiveDevice(id);
@@ -140,17 +140,18 @@ public class DeviceManagementController {
 
 	// ------------------------------------------------------------------------
 
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/device/archived", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<ArchivedDevice> listArchivedRequests(Authentication authentication) {
 		return deviceService.getArchivedByOwner(authentication);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/device/archived/all", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<ArchivedDevice> listArchivedRequestsAdmin() {
 		return deviceService.getArchivedAll();
 	}
 
+	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
 	@GetMapping(value = "/device/archived/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ArchivedDevice getArchivedRequest(@PathVariable String id, Authentication authentication) {
 		return deviceService.getArchivedById(id, authentication)

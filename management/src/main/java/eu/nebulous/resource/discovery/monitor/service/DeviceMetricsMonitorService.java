@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceMetrics;
+import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -106,6 +107,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
 
             // Update device data
             device.setMetrics(metrics);
+            device.setStatus(DeviceStatus.ONBOARDED);
             deviceManagementService.update(device);
             log.debug("DeviceMetricsMonitorService: Device metrics updated for device: id={}, ip-address={}, update={}",
                     device.getId(), device.getIpAddress(), metrics);

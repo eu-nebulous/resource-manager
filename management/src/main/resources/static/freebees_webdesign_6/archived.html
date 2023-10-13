@@ -52,7 +52,7 @@ function updateRequestsList(asAdmin) {
             var dateStr = date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB')
                             + '<br/>' + Intl.DateTimeFormat().resolvedOptions().timeZone;
             var status = item.status;
-            var color = getStatusColor(status);
+            var color = getRequestStatusColor(status);
             var adminActions = (isAdmin) ? `
                                 <button class="btn btn-outline-primary btn-sm" onClick="unarchiveRequest('${reqId}')">
                                     <i class="fas fa-box-open"></i>
@@ -85,7 +85,7 @@ function updateRequestsList(asAdmin) {
     ;
 }
 
-function getStatusColor(status) {
+function getRequestStatusColor(status) {
     if (status.indexOf('ERROR')>0) return 'table-danger';
     if (status.indexOf('REJECT')>0) return 'bg-danger';
     if (status.indexOf('PENDING')>=0) return 'table-warning';
@@ -131,7 +131,7 @@ function updateDevicesList(asAdmin) {
             var dateStr = date.toLocaleDateString('en-GB') + ' ' + date.toLocaleTimeString('en-GB')
                             + '<br/>' + Intl.DateTimeFormat().resolvedOptions().timeZone;
             var status = item.status;
-            var color = getStatusColor(status);
+            var color = getDeviceStatusColor(status);
             var adminActions = (isAdmin) ? `
                                 <button class="btn btn-outline-primary btn-sm" onClick="unarchiveDevice('${devId}')">
                                     <i class="fas fa-box-open"></i>
@@ -164,8 +164,18 @@ function updateDevicesList(asAdmin) {
     ;
 }
 
+function getDeviceStatusColor(status) {
+    if (status.indexOf('ERROR')>0) return 'table-danger';
+    if (status.indexOf('BOARDING')>0) return 'table-warning';
+    if (status=='NEW_DEVICE') return '';
+    if (status=='ONBOARDED') return 'table-success';
+    if (status=='OFFBOARDED') return 'table-secondary';
+    return 'table-info';
+}
+
 function unarchiveDevice(devId) {
     if (! confirm('Restore device?')) return;
+    if (! confirm('You will need to manually provide Device credentials in Devices pages')) return;
 
     $.ajax({ url: `/monitor/device/${devId}/unarchive`, dataType: 'text' })
     .done(function(data, status) {
