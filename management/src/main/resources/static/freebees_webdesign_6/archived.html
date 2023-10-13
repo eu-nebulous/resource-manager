@@ -96,6 +96,7 @@ function getRequestStatusColor(status) {
 
 function unarchiveRequest(reqId) {
     if (! confirm('Restore request?')) return;
+    if (! confirm('You will need to manually provide Device credentials in Registration Requests page')) return;
 
     $.ajax({ url: `/discovery/request/${reqId}/unarchive` })
     .done(function(data, status) {
@@ -165,17 +166,20 @@ function updateDevicesList(asAdmin) {
 }
 
 function getDeviceStatusColor(status) {
-    if (status.indexOf('ERROR')>0) return 'table-danger';
-    if (status.indexOf('BOARDING')>0) return 'table-warning';
     if (status=='NEW_DEVICE') return '';
+    if (status.indexOf('ERROR')>0) return 'table-danger';
+    if (status=='FAILED') return 'table-danger';
+    if (status=='SUSPECT') return 'table-warning';
+    if (status.indexOf('BOARDING')>0) return 'table-warning';
     if (status=='ONBOARDED') return 'table-success';
-    if (status=='OFFBOARDED') return 'table-secondary';
+    if (status=='HEALTHY' || status=='BUSY' || status=='IDLE') return 'table-success';
+    if (status=='OFFBOARDED' || status=='ON_HOLD') return 'table-secondary';
     return 'table-info';
 }
 
 function unarchiveDevice(devId) {
     if (! confirm('Restore device?')) return;
-    if (! confirm('You will need to manually provide Device credentials in Devices pages')) return;
+    if (! confirm('You will need to manually provide Device credentials in Devices page')) return;
 
     $.ajax({ url: `/monitor/device/${devId}/unarchive`, dataType: 'text' })
     .done(function(data, status) {

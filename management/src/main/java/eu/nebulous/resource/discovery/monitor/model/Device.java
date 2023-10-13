@@ -1,7 +1,6 @@
 package eu.nebulous.resource.discovery.monitor.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -43,4 +42,11 @@ public class Device {
 
     private DeviceStatusUpdate statusUpdate;
     private DeviceMetrics metrics;
+
+    private Instant suspectTimestamp;
+    private int retries;
+
+    public void incrementRetries() {
+        retries++;
+    }
 }

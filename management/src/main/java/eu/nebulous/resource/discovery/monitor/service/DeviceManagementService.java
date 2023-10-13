@@ -134,10 +134,10 @@ public class DeviceManagementService {
 	}
 
 	private boolean canAccess(@NonNull Device device, Authentication authentication, boolean sameUserOnly) {
-		String requester = device.getOwner();
-		if (requester == null && authentication.getName() == null) return true;
-		return requester != null && (
-				requester.equals(authentication.getName()) ||
+		String owner = device.getOwner();
+		if (owner == null && authentication.getName() == null) return true;
+		return owner != null && (
+				owner.equals(authentication.getName()) ||
 						!sameUserOnly && authentication.getAuthorities().stream()
 								.map(GrantedAuthority::getAuthority).toList().contains("ROLE_ADMIN")
 		);
@@ -182,10 +182,10 @@ public class DeviceManagementService {
 	}
 
 	public void archiveDevice(String id) {
-		archiveRequestBySystem(id);
+		archiveDeviceBySystem(id);
 	}
 
-	public void archiveRequestBySystem(String id) {
+	public void archiveDeviceBySystem(String id) {
 		Optional<Device> result = getById(id);
 		if (result.isEmpty())
 			throw new DeviceException(

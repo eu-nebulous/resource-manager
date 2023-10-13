@@ -107,7 +107,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
 
             // Update device data
             device.setMetrics(metrics);
-            device.setStatus(DeviceStatus.ONBOARDED);
+            setHealthyStatus(device);
             deviceManagementService.update(device);
             log.debug("DeviceMetricsMonitorService: Device metrics updated for device: id={}, ip-address={}, update={}",
                     device.getId(), device.getIpAddress(), metrics);

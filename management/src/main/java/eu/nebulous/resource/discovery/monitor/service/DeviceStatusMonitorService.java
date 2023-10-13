@@ -84,6 +84,7 @@ public class DeviceStatusMonitorService extends AbstractMonitorService {
 
             // Update device data
             device.setStatusUpdate(deviceStatusUpdate);
+            setHealthyStatus(device);
             deviceManagementService.update(device);
             log.debug("DeviceStatusMonitorService: Device status updated for device: id={}, ip-address={}, update={}",
                     device.getId(), device.getIpAddress(), deviceStatusUpdate);

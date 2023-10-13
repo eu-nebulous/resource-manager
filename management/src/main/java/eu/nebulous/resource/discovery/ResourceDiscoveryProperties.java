@@ -48,6 +48,11 @@ public class ResourceDiscoveryProperties {
 	private String deviceLifeCycleRequestsTopic = "ems.client.installation.requests";
 	private String deviceLifeCycleResponsesTopic = "ems.client.installation.reports";
 
+	// Failed devices detection
+	private boolean automaticFailedDetection = true;
+	private long suspectDeviceThreshold = 5;		// in minutes
+	private long failedDeviceThreshold = 10;		// in minutes
+
 	// Archiving settings
 	private boolean automaticArchivingEnabled;
 	private long archivingThreshold;				// in minutes

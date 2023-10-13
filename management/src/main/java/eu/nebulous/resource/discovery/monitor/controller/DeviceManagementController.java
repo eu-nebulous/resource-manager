@@ -122,7 +122,7 @@ public class DeviceManagementController {
 
 	@GetMapping(value = "/device/process")
 	public Map<String, String> processDevices() throws ExecutionException, InterruptedException {
-		Future<String> future = deviceProcessor.processRequests();
+		Future<String> future = deviceProcessor.processDevices();
 		return Map.of("result", future.isDone() ? future.get() : "STARTED");
 	}
 

@@ -122,11 +122,14 @@ function getLoadStr(item) {
 }
 
 function getStatusColor(status) {
-    if (status.indexOf('ERROR')>0) return 'table-danger';
-    if (status.indexOf('BOARDING')>0) return 'table-warning';
     if (status=='NEW_DEVICE') return '';
+    if (status.indexOf('ERROR')>0) return 'table-danger';
+    if (status=='FAILED') return 'table-danger';
+    if (status=='SUSPECT') return 'table-warning';
+    if (status.indexOf('BOARDING')>0) return 'table-warning';
     if (status=='ONBOARDED') return 'table-success';
-    if (status=='OFFBOARDED') return 'table-secondary';
+    if (status=='HEALTHY' || status=='BUSY' || status=='IDLE') return 'table-success';
+    if (status=='OFFBOARDED' || status=='ON_HOLD') return 'table-secondary';
     return 'table-info';
 }
 

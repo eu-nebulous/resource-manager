@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.Device;
-import eu.nebulous.resource.discovery.monitor.model.DeviceStatusUpdate;
+import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import jakarta.jms.Message;
 import jakarta.jms.MessageConsumer;
 import jakarta.jms.MessageListener;
@@ -17,7 +17,6 @@ import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.activemq.command.ActiveMQTopic;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -86,6 +84,12 @@ public abstract class AbstractMonitorService implements InitializingBean, Messag
         } catch (Exception e) {
             log.warn("AbstractMonitorService: ERROR while processing message: {}\nException: ", message, e);
         }
+    }
+
+    public void setHealthyStatus(Device device) {
+        device.setStatus(DeviceStatus.HEALTHY);
+        device.setSuspectTimestamp(null);
+        device.setRetries(0);
     }
 
     protected abstract void processPayload(Map<?, ?> dataMap);

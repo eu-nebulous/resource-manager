@@ -28,7 +28,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EnableScheduling
 @RequiredArgsConstructor
 public class DeviceProcessor  implements InitializingBean {
+    private final static List<DeviceStatus> STATUSES_TO_EXCLUDE_FROM_SUSPECT_CHECK = List.of(
+            DeviceStatus.ON_HOLD, DeviceStatus.ONBOARDING, DeviceStatus.FAILED,
+            DeviceStatus.OFFBOARDING, DeviceStatus.OFFBOARDED, DeviceStatus.OFFBOARD_ERROR
+    );
     private final static List<DeviceStatus> STATUSES_TO_ARCHIVE = List.of(
+            DeviceStatus.FAILED,
             DeviceStatus.OFFBOARDED,
             DeviceStatus.OFFBOARD_ERROR
     );
@@ -40,10 +45,17 @@ public class DeviceProcessor  implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        // Check configuration
+        Instant suspectDeviceThreshold = Instant.now().minus(processorProperties.getSuspectDeviceThreshold(), ChronoUnit.MINUTES);
+        Instant failedDeviceThreshold = Instant.now().minus(processorProperties.getFailedDeviceThreshold(), ChronoUnit.MINUTES);
+        if (suspectDeviceThreshold.isBefore(failedDeviceThreshold))
+            throw new IllegalArgumentException("DeviceProcessor: Configuration error: suspectDeviceThreshold is before failedDeviceThreshold: "
+                    + processorProperties.getSuspectDeviceThreshold() + " < " + processorProperties.getFailedDeviceThreshold());
+
         // Initialize periodic device processing
         if (processorProperties.isEnablePeriodicProcessing()) {
             Instant firstRun;
-            taskScheduler.scheduleAtFixedRate(this::processRequests,
+            taskScheduler.scheduleAtFixedRate(this::processDevices,
                     firstRun = Instant.now().plusSeconds(processorProperties.getProcessingStartupDelay()),
                     Duration.ofSeconds(processorProperties.getProcessingPeriod()));
             log.info("DeviceProcessor: Started periodic device processing: period={}s, first-run-at={}",
@@ -53,33 +65,78 @@ public class DeviceProcessor  implements InitializingBean {
         }
     }
 
-    public Future<String> processRequests() {
+    public Future<String> processDevices() {
         try {
             // Check and set if already running
             if (!isRunning.compareAndSet(false, true)) {
-                log.warn("processRequests: Already running");
+                log.warn("processDevices: Already running");
                 return CompletableFuture.completedFuture("ALREADY RUNNING");
             }
-            log.debug("processRequests: Processing devices");
+            log.debug("processDevices: Processing devices");
 
             // Process requests
             try {
+                if (processorProperties.isAutomaticFailedDetection())
+                    processFailedDevices();
                 if (processorProperties.isAutomaticArchivingEnabled())
                     archiveDevices();
             } catch (Throwable t) {
-                log.error("processRequests: ERROR while processing devices: ", t);
+                log.error("processDevices: ERROR while processing devices: ", t);
             }
 
-            log.debug("processRequests: Processing completed");
+            log.debug("processDevices: Processing completed");
 
             return CompletableFuture.completedFuture("DONE");
         } catch (Throwable e) {
-            log.error("processRequests: EXCEPTION: ", e);
+            log.error("processDevices: EXCEPTION: ", e);
             return CompletableFuture.completedFuture("ERROR: "+e.getMessage());
         } finally {
             // Clear running flag
             isRunning.set(false);
         }
+    }
+
+    private void processFailedDevices() {
+        Instant suspectDeviceThreshold = Instant.now().minus(processorProperties.getSuspectDeviceThreshold(), ChronoUnit.MINUTES);
+        Instant failedDeviceThreshold = Instant.now().minus(processorProperties.getFailedDeviceThreshold(), ChronoUnit.MINUTES);
+        log.trace("processFailedDevices: BEGIN: suspect-threshold={}, failed-threshold={}",
+                suspectDeviceThreshold, failedDeviceThreshold);
+        List<Device> suspectDevices = deviceManagementService.getAll().stream()
+                .filter(r -> ! STATUSES_TO_EXCLUDE_FROM_SUSPECT_CHECK.contains(r.getStatus()))
+                .filter(r -> r.getStatusUpdate()==null || r.getStatusUpdate().getStateLastUpdate().isBefore(suspectDeviceThreshold))
+                .filter(r -> r.getMetrics()==null || r.getMetrics().getTimestamp().isBefore(suspectDeviceThreshold))
+                .filter(r -> r.getCreationDate().isBefore(suspectDeviceThreshold))
+                .toList();
+
+        if (log.isDebugEnabled())
+            log.debug("processFailedDevices: Found {} suspect devices: {}",
+                    suspectDevices.size(), suspectDevices.stream().map(Device::getId).toList());
+
+        for (Device device : suspectDevices) {
+            // Mark device as suspect
+            log.debug("processFailedDevices: Marking as suspect device with Id: {}", device.getId());
+            device.setStatus(DeviceStatus.SUSPECT);
+            if (device.getSuspectTimestamp()==null) {
+                device.setSuspectTimestamp(Instant.now());
+                device.setRetries(0);
+                log.info("processFailedDevices: Marked as suspect device with Id: {}", device.getId());
+            } else {
+                device.incrementRetries();
+            }
+
+            // If fail threshold exceeded the mark device as PROBLEMATIC
+            if ( (device.getStatusUpdate()==null || device.getStatusUpdate().getStateLastUpdate().isBefore(failedDeviceThreshold))
+                    && (device.getMetrics()==null || device.getMetrics().getTimestamp().isBefore(failedDeviceThreshold))
+                    && device.getCreationDate().isBefore(failedDeviceThreshold) )
+            {
+                device.setStatus(DeviceStatus.FAILED);
+                log.warn("processFailedDevices: Marked as FAILED device with Id: {}", device.getId());
+            }
+
+            deviceManagementService.update(device);
+        }
+
+        log.trace("processProblematicDevices: END");
     }
 
     private void archiveDevices() {
@@ -94,9 +151,9 @@ public class DeviceProcessor  implements InitializingBean {
                 devicesForArchiving.size(), devicesForArchiving.stream().map(Device::getId).toList());
 
         for (Device device : devicesForArchiving) {
-            log.debug("archiveDevices: Archiving request with Id: {}", device.getId());
-            deviceManagementService.archiveRequestBySystem(device.getId());
-            log.info("archiveDevices: Archived request with Id: {}", device.getId());
+            log.debug("archiveDevices: Archiving device with Id: {}", device.getId());
+            deviceManagementService.archiveDeviceBySystem(device.getId());
+            log.info("archiveDevices: Archived device with Id: {}", device.getId());
         }
 
         log.trace("archiveDevices: END");
