@@ -331,6 +331,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				return;
 			}
 
+			boolean doArchive = false;
 			Object obj = response.get("nodeInfo");
 			if (obj instanceof Map devInfo) {
 				// Update request info
@@ -365,8 +366,10 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				// Set new status
 				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
 					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
-				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED)
+				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
 					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
+					doArchive = processorProperties.isImmediatelyArchiveSuccessRequests();
+				}
 
 				log.debug("processResponse: Done processing response for request: id={}, timestamp={}", requestId, timestamp);
 			} else {
@@ -387,6 +390,11 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			// Store changes
 			log.debug("processResponse: Save updated request: id={}, request={}", requestId, registrationRequest);
 			registrationRequestService.update(registrationRequest, false, true);
+
+			// Archive success requests
+			if (doArchive) {
+				registrationRequestService.archiveRequestBySystem(registrationRequest.getId());
+			}
 		} else {
 			log.warn("processResponse: Request not found: id={}", requestId);
 		}

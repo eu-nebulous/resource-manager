@@ -168,6 +168,20 @@ function requestUpdate() {
     ;
 }
 
+function processDevices() {
+    $.ajax({ url: '/monitor/device/process' })
+    .done(function(data, status) {
+        //console.log('processDevices: OK: ', data);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('processDevices: ERROR: ', status, error);
+    })
+    .always(function(data, status) {
+        setTimeout(updateDevicesList, 500);
+    })
+    ;
+}
+
 function archiveDevice(devId) {
     $.ajax({
         url: `/monitor/device/${devId}/archive`,
@@ -227,6 +241,10 @@ function archiveDevice(devId) {
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     <button type="button" class="adminOnly btn btn-danger d-none" onClick="requestUpdate()">
                         <i class="fa fa-tachometer-alt"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="adminOnly btn btn-danger d-none" onClick="processDevices()">
+                        <i class="fa fa-random"></i>
                     </button>
                     <span class="adminOnly d-none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
                     <button type="button" class="adminOnly btn btn-danger d-none" onClick="updateDevicesList(true)">

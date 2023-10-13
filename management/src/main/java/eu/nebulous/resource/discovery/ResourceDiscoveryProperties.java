@@ -51,6 +51,8 @@ public class ResourceDiscoveryProperties {
 	// Archiving settings
 	private boolean automaticArchivingEnabled;
 	private long archivingThreshold;				// in minutes
+	private boolean immediatelyArchiveSuccessRequests = true;
+	private boolean immediatelyArchiveOffboardedDevices = true;
 
 	// Users
 	private List<UserData> users;

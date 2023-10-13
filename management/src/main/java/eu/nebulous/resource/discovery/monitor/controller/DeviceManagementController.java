@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.monitor.controller;
 
+import eu.nebulous.resource.discovery.monitor.DeviceProcessor;
 import eu.nebulous.resource.discovery.monitor.model.ArchivedDevice;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceException;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 @Slf4j
 @RestController
@@ -25,6 +28,7 @@ import java.util.Map;
 @RequestMapping("/monitor")
 @PreAuthorize("hasAuthority('ROLE_ADMIN')")
 public class DeviceManagementController {
+	private final DeviceProcessor deviceProcessor;
 	private final DeviceManagementService deviceService;
 	private final DeviceLifeCycleRequestService deviceLifeCycleRequestService;
 
@@ -97,6 +101,29 @@ public class DeviceManagementController {
 
 	// ------------------------------------------------------------------------
 
+	@GetMapping(value = "/device/{id}/onboard")
+	public void onboardDevice(@PathVariable String id) {
+		deviceLifeCycleRequestService.reinstallRequest(id);
+	}
+
+	@GetMapping(value = "/device/{id}/offboard")
+	public void offboardDevice(@PathVariable String id) {
+		deviceLifeCycleRequestService.uninstallRequest(id);
+	}
+
+	@GetMapping(value = "/request-update")
+	public String requestUpdate() {
+		deviceLifeCycleRequestService.requestInfoUpdate();
+		return "REQUESTED-UPDATE";
+	}
+
+	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@GetMapping(value = "/device/process")
+	public Map<String, String> processDevices() throws ExecutionException, InterruptedException {
+		Future<String> future = deviceProcessor.processRequests();
+		return Map.of("result", future.isDone() ? future.get() : "STARTED");
+	}
+
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
 	@GetMapping(value = "/device/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
 	public String archiveDevice(@PathVariable String id) {
@@ -128,24 +155,6 @@ public class DeviceManagementController {
 	public ArchivedDevice getArchivedRequest(@PathVariable String id, Authentication authentication) {
 		return deviceService.getArchivedById(id, authentication)
 				.orElseThrow(() -> new RegistrationRequestException("Not found archived registration request with id: "+id));
-	}
-
-	// ------------------------------------------------------------------------
-
-	@GetMapping(value = "/device/{id}/onboard")
-	public void onboardDevice(@PathVariable String id) {
-		deviceLifeCycleRequestService.reinstallRequest(id);
-	}
-
-	@GetMapping(value = "/device/{id}/offboard")
-	public void offboardDevice(@PathVariable String id) {
-		deviceLifeCycleRequestService.uninstallRequest(id);
-	}
-
-	@GetMapping(value = "/request-update")
-	public String requestUpdate() {
-		deviceLifeCycleRequestService.requestInfoUpdate();
-		return "REQUESTED-UPDATE";
 	}
 
 	// ------------------------------------------------------------------------

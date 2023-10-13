@@ -124,7 +124,7 @@ public class DeviceLifeCycleResponseService extends AbstractMonitorService {
                 newStatus, requestType, status, requestId, deviceId, ipAddress, reference, device.getNodeReference());
 
         // Archive device, if successfully off-boarded
-        if (newStatus==DeviceStatus.OFFBOARDED) {
+        if (newStatus==DeviceStatus.OFFBOARDED && monitorProperties.isImmediatelyArchiveOffboardedDevices()) {
             deviceManagementService.archiveDevice(device.getId());
             log.debug("DeviceLifeCycleResponseService: processUninstallMessage: Device ARCHIVED: id={}, ip-address={}, reference={}",
                     device.getId(), device.getIpAddress(), device.getNodeReference());
