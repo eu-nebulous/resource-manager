@@ -71,7 +71,9 @@ function updateDevicesList(asAdmin) {
                                 <button type="button" class="btn btn-danger btn-sm" onClick="if (confirm('Remove Device?')) manageDevice('${devId}', 'offboard');">
                                     <i class="fas fa-ban"></i>
                                 </button>
-                        ` : `
+                        ` : '';
+                adminActions +=
+                        `
                                 <button class="btn btn-warning btn-sm" onClick="if (confirm('Archive Device?')) archiveDevice('${devId}')">
                                     <i class="fas fa-box"></i>
                                 </button>
