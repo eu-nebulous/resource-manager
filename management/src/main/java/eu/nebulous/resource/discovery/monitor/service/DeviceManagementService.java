@@ -8,6 +8,7 @@ import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import eu.nebulous.resource.discovery.monitor.repository.ArchivedDeviceRepository;
 import eu.nebulous.resource.discovery.monitor.repository.DeviceRepository;
+import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -195,14 +196,32 @@ public class DeviceManagementService {
 		deviceRepository.delete(result.get());
 	}
 
-	public void unarchiveDevice(String id) {
+	public void unarchiveDevice(String id, Map<String,String> credentials) {
 		Optional<ArchivedDevice> result = getArchivedById(id);
 		if (result.isEmpty())
 			throw new DeviceException(
 					"Archived device with Id does not exists in repository: "+id);
+		checkCredentials(result.get().getId(), credentials);
 
 		result.get().setArchiveDate(null);
-		deviceRepository.save(deviceConversionService.toDevice(result.get()));
+		Device restoredDevice = deviceConversionService.toDevice(result.get());
+		restoredDevice.setUsername(credentials.get("username"));
+		restoredDevice.setPassword(credentials.get("password").toCharArray());
+		restoredDevice.setPublicKey(credentials.get("publicKey").toCharArray());
+		deviceRepository.save(restoredDevice);
 		archivedDeviceRepository.deleteById(result.get().getId());
+	}
+
+	private void checkCredentials(String id, Map<String, String> credentials) {
+		if (credentials==null || credentials.isEmpty())
+			throw new RegistrationRequestException(
+					"No credentials provided for un-archiving device with Id: "+id);
+		if (StringUtils.isBlank(credentials.getOrDefault("username", "")))
+			throw new RegistrationRequestException(
+					"No username provided for un-archiving device with Id: "+id);
+		if (StringUtils.isBlank(credentials.getOrDefault("password", "")) &&
+				StringUtils.isBlank(credentials.getOrDefault("publicKey", "")))
+			throw new RegistrationRequestException(
+					"No password or SSH key provided for un-archiving device with Id: "+id);
 	}
 }

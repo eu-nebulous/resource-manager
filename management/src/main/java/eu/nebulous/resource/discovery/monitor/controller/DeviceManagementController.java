@@ -132,9 +132,10 @@ public class DeviceManagementController {
 		return "ARCHIVED";
 	}
 
-	@GetMapping(value = "/device/{id}/unarchive", produces = MediaType.APPLICATION_JSON_VALUE)
-	public String unarchiveDevice(@PathVariable String id) {
-		deviceService.unarchiveDevice(id);
+	@PostMapping(value = "/device/{id}/unarchive",
+			consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public String unarchiveDevice(@PathVariable String id, @RequestBody Map<String,String> credentials) {
+		deviceService.unarchiveDevice(id, credentials);
 		return "UNARCHIVED";
 	}
 

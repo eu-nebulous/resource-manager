@@ -54,7 +54,7 @@ function updateRequestsList(asAdmin) {
             var status = item.status;
             var color = getRequestStatusColor(status);
             var adminActions = (isAdmin) ? `
-                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveRequest('${reqId}')">
+                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveRequest('${reqId}', '${ipAddress}')">
                                     <i class="fas fa-box-open"></i>
                                 </button>
             `: '';
@@ -94,11 +94,21 @@ function getRequestStatusColor(status) {
     return 'table-info';
 }
 
-function unarchiveRequest(reqId) {
+function unarchiveRequest(reqId, ipAddress) {
     if (! confirm('Restore request?')) return;
-    if (! confirm('You will need to manually provide Device credentials in Registration Requests page')) return;
+    showModal('Request: '+ipAddress+' ['+reqId+']', 'REQUEST', reqId);
+}
 
-    $.ajax({ url: `/discovery/request/${reqId}/unarchive` })
+function _unarchiveRequest(reqId, credentials) {
+    //if (! confirm('Restore request?')) return;
+    //if (! confirm('You will need to manually provide Device credentials in Registration Requests page')) return;
+
+    $.ajax({
+        type: 'post',
+        url: `/discovery/request/${reqId}/unarchive`,
+        contentType:"application/json; charset=utf-8",
+        data: credentials
+    })
     .done(function(data, status) {
         console.log('unarchiveRequest: OK: ', data);
         updateRequestsList(true);
@@ -106,6 +116,51 @@ function unarchiveRequest(reqId) {
     .fail(function(xhr, status, error) {
         console.error('unarchiveRequest: ERROR: ', status, error);
     });
+}
+
+// ----------------------------------------------------------------------------
+
+function showModal(info, type, id) {
+    // Set credentials modal data and clear form
+    $('#credentialsModal_info').html(info);
+    $(`[id="device#type"]`).val(type);
+    $(`[id="device#id"]`).val(id);
+
+    $(`[id="device#username"]`).val('');
+    $(`[id="device#password"]`).val('');
+    $(`[id="device#publicKey"]`).val('');
+
+    // Show credentials modal
+    var modal = new bootstrap.Modal(document.getElementById('credentialsModal'), {
+        //keyboard: true
+    });
+    modal.show();
+}
+
+function doRestore() {
+    // Get credentialsModal form data
+    var type = $(`[id="device#type"]`).val();
+    var id = $(`[id="device#id"]`).val();
+
+    var username = $(`[id="device#username"]`).val();
+    var password = $(`[id="device#password"]`).val();
+    var publicKey = $(`[id="device#publicKey"]`).val();
+
+    // Close credentials modal
+    var modal = bootstrap.Modal.getInstance(document.getElementById('credentialsModal'));
+    modal.hide();
+
+    // Check form input
+    if (username.trim()==='' || password.trim()==='' && publicKey.trim()==='') {
+        alert('You must provide username, and either password or SSH key');
+        return;
+    }
+
+    var credentials = JSON.stringify({ username: username, password: password, publicKey: publicKey});
+    if (type==='REQUEST')
+        _unarchiveRequest(id, credentials);
+    else
+        _unarchiveDevice(id, credentials);
 }
 
 // ----------------------------------------------------------------------------
@@ -134,7 +189,7 @@ function updateDevicesList(asAdmin) {
             var status = item.status;
             var color = getDeviceStatusColor(status);
             var adminActions = (isAdmin) ? `
-                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveDevice('${devId}')">
+                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveDevice('${devId}', '${ipAddress}')">
                                     <i class="fas fa-box-open"></i>
                                 </button>
             `: '';
@@ -177,11 +232,22 @@ function getDeviceStatusColor(status) {
     return 'table-info';
 }
 
-function unarchiveDevice(devId) {
+function unarchiveDevice(devId, ipAddress) {
     if (! confirm('Restore device?')) return;
-    if (! confirm('You will need to manually provide Device credentials in Devices page')) return;
+    showModal('Device: '+ipAddress+' ['+devId+']', 'DEVICE', devId);
+}
 
-    $.ajax({ url: `/monitor/device/${devId}/unarchive`, dataType: 'text' })
+function _unarchiveDevice(devId, credentials) {
+    //if (! confirm('Restore device?')) return;
+    //if (! confirm('You will need to manually provide Device credentials in Devices page')) return;
+
+    $.ajax({
+        type: 'post',
+        url: `/monitor/device/${devId}/unarchive`,
+        contentType:"application/json; charset=utf-8",
+        data: credentials,
+        dataType: 'text'
+    })
     .done(function(data, status) {
         console.log('unarchiveDevice: OK: ', data);
         updateDevicesList(true);
@@ -311,6 +377,45 @@ function unarchiveDevice(devId) {
 
             </div>
         </section>
+
+        <!-- Vertically centered scrollable modal -->
+        <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="credentialsModalLabel">Device Credentials</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Device credentials are not stored when a <i>device</i> or a <i>device registration request</i>
+                            is archived. In order to restore an archived device or request you will need to provide
+                            the device credentials.
+                        </p>
+                        <p><i><span id="credentialsModal_info"></span></i></p>
+                        <form>
+                            <input type="hidden" class="form-control" id="device#type">
+                            <input type="hidden" class="form-control" id="device#id">
+                            <div class="mb-3">
+                                <label for="device#username" class="col-form-label"><b>Username:</b></label>
+                                <input type="text" class="form-control" id="device#username">
+                            </div>
+                            <div class="mb-3">
+                                <label for="device#password" class="col-form-label"><b>Password:</b></label>
+                                <input type="text" class="form-control" id="device#password">
+                            </div>
+                            <div class="mb-3">
+                                <label for="device#publicKey" class="col-form-label"><b>SSH Key:</b></label>
+                                <textarea class="form-control" id="device#publicKey"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="doRestore()">Restore Device</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <footer class="py-5">
           <div class="container">

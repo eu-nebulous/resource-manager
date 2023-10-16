@@ -119,9 +119,13 @@ public class RegistrationRequestController {
 	}
 
 	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
-	@GetMapping(value = "/request/{id}/unarchive", produces = MediaType.APPLICATION_JSON_VALUE)
-	public RegistrationRequest unarchiveRequest(@PathVariable String id, Authentication authentication) {
-		registrationRequestService.unarchiveRequest(id, authentication);
+	@PostMapping(value = "/request/{id}/unarchive",
+			consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public RegistrationRequest unarchiveRequest(@PathVariable String id,
+												@RequestBody Map<String,String> credentials,
+												Authentication authentication)
+	{
+		registrationRequestService.unarchiveRequest(id, credentials, authentication);
 		return registrationRequestService.getById(id)
 				.orElseThrow(() -> new RegistrationRequestException("Failed to unarchive registration request with id: " + id));
 	}

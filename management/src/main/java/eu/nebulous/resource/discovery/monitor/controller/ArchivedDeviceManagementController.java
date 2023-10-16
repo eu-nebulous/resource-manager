@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -41,9 +42,10 @@ public class ArchivedDeviceManagementController {
 		return deviceService.getArchivedByIpAddress(ipAddress);
 	}
 
-	@GetMapping(value = "/device/{id}/unarchive", produces = MediaType.APPLICATION_JSON_VALUE)
-	public String unarchiveDevice(@PathVariable String id) {
-		deviceService.unarchiveDevice(id);
+	@PostMapping(value = "/device/{id}/unarchive",
+			consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public String unarchiveDevice(@PathVariable String id, @RequestBody Map<String,String> credentials) {
+		deviceService.unarchiveDevice(id, credentials);
 		return "UNARCHIVED";
 	}
 }

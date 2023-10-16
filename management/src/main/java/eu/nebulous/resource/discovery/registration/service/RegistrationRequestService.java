@@ -306,16 +306,34 @@ public class RegistrationRequestService {
 		registrationRequestRepository.delete(result.get());
 	}
 
-	public void unarchiveRequest(String id, Authentication authentication) {
+	public void unarchiveRequest(String id, Map<String,String> credentials, Authentication authentication) {
 		Optional<ArchivedRegistrationRequest> result = getArchivedById(id);
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Archived registration request with Id does not exists in repository: "+id);
 		checkAdmin(result.get().getId(), authentication);
+		checkCredentials(result.get().getId(), credentials);
 
 		result.get().setArchiveDate(null);
-		registrationRequestRepository.save(
-				registrationRequestConversionService.toRegistrationRequest(result.get()));
+		RegistrationRequest restoredRequest = registrationRequestConversionService.toRegistrationRequest(result.get());
+		Device device = restoredRequest.getDevice();
+		device.setUsername(credentials.get("username"));
+		device.setPassword(credentials.get("password").toCharArray());
+		device.setPublicKey(credentials.get("publicKey").toCharArray());
+		registrationRequestRepository.save(restoredRequest);
 		archivedRegistrationRequestRepository.deleteById(result.get().getId());
+	}
+
+	private void checkCredentials(String id, Map<String, String> credentials) {
+		if (credentials==null || credentials.isEmpty())
+			throw new RegistrationRequestException(
+					"No credentials provided for un-archiving request with Id: "+id);
+		if (StringUtils.isBlank(credentials.getOrDefault("username", "")))
+			throw new RegistrationRequestException(
+					"No username provided for un-archiving request with Id: "+id);
+		if (StringUtils.isBlank(credentials.getOrDefault("password", "")) &&
+				StringUtils.isBlank(credentials.getOrDefault("publicKey", "")))
+			throw new RegistrationRequestException(
+					"No password or SSH key provided for un-archiving request with Id: "+id);
 	}
 }
