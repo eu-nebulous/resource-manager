@@ -23,7 +23,7 @@ public class DeviceLifeCycleResponseService extends AbstractMonitorService {
     private final DeviceManagementService deviceManagementService;
 
     public DeviceLifeCycleResponseService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler, ObjectMapper objectMapper, DeviceManagementService deviceManagementService) {
-        super(monitorProperties, taskScheduler, objectMapper);
+        super("DeviceLifeCycleResponseService", monitorProperties, taskScheduler, objectMapper);
         this.deviceManagementService = deviceManagementService;
     }
 

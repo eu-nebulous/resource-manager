@@ -26,7 +26,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
     private final DeviceManagementService deviceManagementService;
 
     public DeviceMetricsMonitorService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler, ObjectMapper objectMapper, DeviceManagementService deviceManagementService) {
-        super(monitorProperties, taskScheduler, objectMapper);
+        super("DeviceMetricsMonitorService", monitorProperties, taskScheduler, objectMapper);
         this.deviceManagementService = deviceManagementService;
     }
 
