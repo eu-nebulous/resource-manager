@@ -31,7 +31,7 @@ public class ResourceDiscoveryProperties {
 	private int createSampleDataPeriod = 60;
 	private String createSampleDataOwner = "admin";
 
-	// Registration request processing settings
+	// Device and Registration request processing settings (DeviceProcessor, RegistrationRequestProcessor)
 	private boolean enablePeriodicProcessing = true;
 	private long processingStartupDelay = 10;
 	private long processingPeriod = 60;
@@ -52,6 +52,10 @@ public class ResourceDiscoveryProperties {
 	private boolean automaticFailedDetection = true;
 	private long suspectDeviceThreshold = 5;		// in minutes
 	private long failedDeviceThreshold = 10;		// in minutes
+
+	// Device detailed data settings
+	private String deviceInfoRequestsTopic = "ems.client.info.requests";
+	private String deviceInfoResponsesTopic = "ems.client.info.reports";
 
 	// Archiving settings
 	private boolean automaticArchivingEnabled;
