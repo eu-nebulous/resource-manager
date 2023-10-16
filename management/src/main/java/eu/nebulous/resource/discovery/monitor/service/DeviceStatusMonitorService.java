@@ -54,7 +54,7 @@ public class DeviceStatusMonitorService extends AbstractMonitorService {
             String ipAddress = deviceStatusUpdate.getIpAddress();
             Optional<Device> result = deviceManagementService.getByIpAddress(ipAddress);
             if (result.isEmpty()) {
-                log.warn("DeviceStatusMonitorService: Device status update IP address does not match any registered device: {}", infoMap);
+                log.debug("DeviceStatusMonitorService: Device status update IP address does not match any registered device: {}", infoMap);
                 return;
             }
             Device device = result.get();

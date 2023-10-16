@@ -69,7 +69,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
             // Get registered device using IP address
             Optional<Device> result = deviceManagementService.getByIpAddress(ipAddress);
             if (result.isEmpty()) {
-                log.warn("DeviceMetricsMonitorService: Device metrics IP address does not match any registered device: {}", infoMap);
+                log.debug("DeviceMetricsMonitorService: Device metrics IP address does not match any registered device: {}", infoMap);
                 return;
             }
             Device device = result.get();

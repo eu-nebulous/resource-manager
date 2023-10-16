@@ -57,7 +57,7 @@ public class DeviceLifeCycleResponseService extends AbstractMonitorService {
         // Check if we process the indicated requestType
         REQUEST_TYPE requestType = REQUEST_TYPE.valueOf(requestTypeStr);
         if (requestType!=REQUEST_TYPE.REINSTALL && requestType!=REQUEST_TYPE.UNINSTALL) {
-            log.warn("DeviceLifeCycleResponseService: Ignoring message due to its requestType: requestType={}, status={}, requestId={}, deviceId={}, ipAddress={}, reference={}",
+            log.debug("DeviceLifeCycleResponseService: Ignoring message due to its requestType: requestType={}, status={}, requestId={}, deviceId={}, ipAddress={}, reference={}",
                     requestType, status, requestId, deviceId, ipAddress, reference);
             return;
         }

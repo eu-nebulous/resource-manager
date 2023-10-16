@@ -278,6 +278,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void processResponse(@NonNull Map<String, Object> response) {
+		String requestType = response.getOrDefault("requestType", "").toString().trim();
 		String requestId = response.getOrDefault("requestId", "").toString().trim();
 		String reference = response.getOrDefault("reference", "").toString().trim();
 		String responseStatus = response.getOrDefault("status", "").toString().trim();
@@ -396,7 +397,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				registrationRequestService.archiveRequestBySystem(registrationRequest.getId());
 			}
 		} else {
-			log.warn("processResponse: Request not found: id={}", requestId);
+			log.debug("processResponse: Request not found: id={}, requestType={}", requestId, requestType);
 		}
 	}
 
