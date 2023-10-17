@@ -20,7 +20,7 @@ public class ResourceDiscoveryProperties {
 	@ToString.Exclude
 	private String brokerPassword;
 	private String brokerURL;
-	private int connectionHealthCheckPeriod = 60;	// in seconds
+	private int connectionHealthCheckPeriod = 60;			// in seconds
 	private String healthCheckTopic = "_HEALTH_CHECK";
 
 	// Subscription to Broker settings
@@ -53,8 +53,8 @@ public class ResourceDiscoveryProperties {
 
 	// Failed devices detection
 	private boolean automaticFailedDetection = true;
-	private long suspectDeviceThreshold = 5;		// in minutes
-	private long failedDeviceThreshold = 10;		// in minutes
+	private long suspectDeviceThreshold = 5;				// in minutes
+	private long failedDeviceThreshold = 10;				// in minutes
 
 	// Device detailed data settings
 	private String deviceInfoRequestsTopic = "ems.client.info.requests";
@@ -62,16 +62,15 @@ public class ResourceDiscoveryProperties {
 
 	// Archiving settings
 	private boolean automaticArchivingEnabled;
-	private long archivingThreshold;				// in minutes
+	private long archivingThreshold;						// in minutes
 	private boolean immediatelyArchiveSuccessRequests = true;
 	private boolean immediatelyArchiveOffboardedDevices = true;
 
 	// Encryption settings
-	private boolean enableEncryption;				// Set to 'true' to enable message encryption
-//	private boolean requireEncryption;
+	private boolean enableEncryption;						// Set to 'true' to enable message encryption
 	private boolean usePasswordGeneratedKey = true;
-	private String generatedKeyFile;				// NOTE: If blank, the key will be logged
-	private String keyPasswordFile;					// If provided, it will override the next settings
+	private String generatedKeyFile;						// NOTE: If blank, the key will be logged
+	private String keyPasswordFile;							// If provided, it will override the next settings
 	private char[] symmetricKeyPassword;
 	private byte[] salt;
 
