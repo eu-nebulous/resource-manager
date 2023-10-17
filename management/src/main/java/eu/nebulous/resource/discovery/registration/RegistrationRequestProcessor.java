@@ -2,7 +2,7 @@ package eu.nebulous.resource.discovery.registration;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.nebulous.resource.discovery.REQUEST_TYPE;
+import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
