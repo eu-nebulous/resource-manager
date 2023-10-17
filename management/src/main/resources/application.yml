@@ -17,9 +17,12 @@ spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
 spring.data.mongodb.database: resource_discovery
 
 discovery:
+  brokerURL: "ssl://localhost:61617?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
   brokerUsername: "aaa"
   brokerPassword: "111"
-  brokerURL: "tcp://localhost:61616?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
+  trustStoreFile: tests/config/broker-truststore.p12
+  trustStorePassword: melodic
+  trustStoreType: PKCS12
   allowedDeviceInfoKeys:
     - '*'
   # NOTE:

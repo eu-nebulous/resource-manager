@@ -10,9 +10,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQSslConnectionFactory;
 import org.apache.activemq.command.ActiveMQTextMessage;
 import org.apache.activemq.command.ActiveMQTopic;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -57,18 +58,33 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     private void initializeBrokerConnection() {
         try {
             openBrokerConnection();
-        } catch (JMSException e) {
+        } catch (Exception e) {
             log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
             taskScheduler.schedule(this::initializeBrokerConnection,
                     Instant.now().plusSeconds(properties.getSubscriptionRetryDelay()));
         }
     }
 
-    private void openBrokerConnection() throws JMSException {
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
-                properties.getBrokerUsername(), properties.getBrokerPassword(),
-                properties.getBrokerURL());
-        ActiveMQConnection conn = (ActiveMQConnection) connectionFactory.createConnection();
+    private void openBrokerConnection() throws Exception {
+        ActiveMQSslConnectionFactory cf = new ActiveMQSslConnectionFactory(properties.getBrokerURL());
+        cf.setUserName(properties.getBrokerUsername());
+        cf.setPassword(properties.getBrokerPassword());
+
+        log.debug("BrokerUtil: Keystore and Truststore settings: keystore-file={}, keystore-type={}, truststore-file={}, truststore-type={}",
+                properties.getKeyStoreFile(), properties.getKeyStoreType(), properties.getTrustStoreFile(), properties.getTrustStoreType());
+        if (StringUtils.isNotBlank(properties.getKeyStoreFile())) {
+            cf.setKeyStore(properties.getKeyStoreFile());
+            cf.setKeyStorePassword(properties.getKeyStorePassword());
+            cf.setKeyStoreType(properties.getKeyStoreType());
+        }
+        if (StringUtils.isNotBlank(properties.getTrustStoreFile())) {
+            cf.setTrustStore(properties.getTrustStoreFile());
+            cf.setTrustStorePassword(properties.getTrustStorePassword());
+            cf.setTrustStoreType(properties.getKeyStoreType());
+        }
+        cf.setWatchTopicAdvisories(true);
+
+        ActiveMQConnection conn = (ActiveMQConnection) cf.createConnection();
         Session ses = conn.createSession();
         conn.start();
         this.connection = conn;

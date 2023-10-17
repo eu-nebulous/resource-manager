@@ -16,10 +16,18 @@ import java.util.List;
 @ConfigurationProperties(prefix = "discovery")
 public class ResourceDiscoveryProperties {
 	// Broker configuration
+	private String brokerURL;
 	private String brokerUsername;
 	@ToString.Exclude
 	private String brokerPassword;
-	private String brokerURL;
+
+	private String keyStoreFile;
+	private String keyStorePassword;
+	private String keyStoreType = "PKCS12";
+	private String trustStoreFile;
+	private String trustStorePassword;
+	private String trustStoreType = "PKCS12";
+
 	private int connectionHealthCheckPeriod = 60;			// in seconds
 	private String healthCheckTopic = "_HEALTH_CHECK";
 
