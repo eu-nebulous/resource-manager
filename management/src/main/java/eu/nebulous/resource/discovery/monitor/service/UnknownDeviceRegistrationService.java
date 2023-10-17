@@ -2,16 +2,13 @@
 package eu.nebulous.resource.discovery.monitor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.common.BrokerUtil;
+import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
-import jakarta.jms.JMSException;
-import jakarta.jms.MessageProducer;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.command.ActiveMQTextMessage;
-import org.apache.activemq.command.ActiveMQTopic;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
@@ -32,8 +29,11 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
     private final Map<String, String> detectedDevices = Collections.synchronizedMap(new LinkedHashMap<>());
     private final List<Map> deviceDetailsQueue = Collections.synchronizedList(new LinkedList<>());
 
-    public UnknownDeviceRegistrationService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler, ObjectMapper objectMapper, DeviceManagementService deviceManagementService) {
-        super("UnknownDeviceRegistrationService", monitorProperties, taskScheduler, objectMapper);
+    public UnknownDeviceRegistrationService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler,
+                                            ObjectMapper objectMapper, DeviceManagementService deviceManagementService,
+                                            BrokerUtil brokerUtil)
+    {
+        super("UnknownDeviceRegistrationService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.deviceManagementService = deviceManagementService;
     }
 
@@ -135,34 +135,25 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
     }
 
     private void processUnknownDevices(LinkedHashMap<String, String> unknownDevices) {
-        try {
-            log.info("UnknownDeviceRegistrationService: Unknown devices: {}", unknownDevices);
-            MessageProducer producer = session.createProducer(
-                    new ActiveMQTopic(monitorProperties.getDeviceInfoRequestsTopic()));
+        log.info("UnknownDeviceRegistrationService: Unknown devices: {}", unknownDevices);
+        unknownDevices.forEach((ipAddress, reference) -> {
+            try {
+                // Query EMS for device info
+                log.debug("UnknownDeviceRegistrationService: Sending Node-Details-Request Message: ipAddress={}, reference={}",
+                        ipAddress, reference);
+                Map<String, String> request = new LinkedHashMap<>(Map.of(
+                        "requestType", REQUEST_TYPE.NODE_DETAILS.name(),
+                        "deviceIpAddress", ipAddress,
+                        "reference", reference
+                ));
 
-            unknownDevices.forEach((ipAddress, reference) -> {
-                try {
-                    // Query EMS for device info
-                    log.debug("UnknownDeviceRegistrationService: Sending Node-Details-Request Message: ipAddress={}, reference={}",
-                            ipAddress, reference);
-                    Map<String, String> request = new LinkedHashMap<>(Map.of(
-                            "requestType", REQUEST_TYPE.NODE_DETAILS.name(),
-                            "deviceIpAddress", ipAddress,
-                            "reference", reference
-                    ));
-                    ActiveMQTextMessage message = new ActiveMQTextMessage();
-                    message.setText(objectMapper.writeValueAsString(request));
-
-                    log.debug("UnknownDeviceRegistrationService: Sending Node-Details-Request Message: request={}", message.getText());
-                    producer.send(message);
-                    log.debug("UnknownDeviceRegistrationService: Node-Details-Request Message sent: ipAddress={}", ipAddress);
-                } catch (Exception e) {
-                    log.error("UnknownDeviceRegistrationService: ERROR while creating Node-Details-Request Message: ", e);
-                }
-            });
-        } catch (JMSException e) {
-            log.error("UnknownDeviceRegistrationService: ERROR while creating Message producer: ", e);
-        }
+                log.debug("UnknownDeviceRegistrationService: Sending Node-Details-Request Message: request={}", request);
+                brokerUtil.sendMessage(monitorProperties.getDeviceInfoRequestsTopic(), request);
+                log.debug("UnknownDeviceRegistrationService: Node-Details-Request Message sent: ipAddress={}", ipAddress);
+            } catch (Exception e) {
+                log.error("UnknownDeviceRegistrationService: ERROR while creating Node-Details-Request Message: ", e);
+            }
+        });
     }
 
     private void processDeviceDetailsResponses() {

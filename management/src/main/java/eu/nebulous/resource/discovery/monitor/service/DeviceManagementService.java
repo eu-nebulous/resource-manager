@@ -1,6 +1,5 @@
 package eu.nebulous.resource.discovery.monitor.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.ArchivedDevice;
 import eu.nebulous.resource.discovery.monitor.model.Device;
@@ -28,7 +27,6 @@ public class DeviceManagementService {
 	private final DeviceRepository deviceRepository;
 	private final ArchivedDeviceRepository archivedDeviceRepository;
 	private final DeviceConversionService deviceConversionService;
-	private final ObjectMapper objectMapper;
 
 	// ------------------------------------------------------------------------
 

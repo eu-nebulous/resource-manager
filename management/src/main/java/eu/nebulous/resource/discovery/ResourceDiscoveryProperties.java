@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +20,8 @@ public class ResourceDiscoveryProperties {
 	@ToString.Exclude
 	private String brokerPassword;
 	private String brokerURL;
+	private int connectionHealthCheckPeriod = 60;	// in seconds
+	private String healthCheckTopic = "_HEALTH_CHECK";
 
 	// Subscription to Broker settings
 	private long subscriptionStartupDelay = 10;
@@ -62,6 +65,15 @@ public class ResourceDiscoveryProperties {
 	private long archivingThreshold;				// in minutes
 	private boolean immediatelyArchiveSuccessRequests = true;
 	private boolean immediatelyArchiveOffboardedDevices = true;
+
+	// Encryption settings
+	private boolean enableEncryption;				// Set to 'true' to enable message encryption
+//	private boolean requireEncryption;
+	private boolean usePasswordGeneratedKey = true;
+	private String generatedKeyFile;				// NOTE: If blank, the key will be logged
+	private String keyPasswordFile;					// If provided, it will override the next settings
+	private char[] symmetricKeyPassword;
+	private byte[] salt;
 
 	// Users
 	private List<UserData> users;

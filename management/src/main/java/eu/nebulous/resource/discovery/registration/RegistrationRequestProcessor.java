@@ -1,23 +1,17 @@
 package eu.nebulous.resource.discovery.registration;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.common.BrokerUtil;
+import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
 import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
-import jakarta.jms.*;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.command.ActiveMQMessage;
-import org.apache.activemq.command.ActiveMQTextMessage;
-import org.apache.activemq.command.ActiveMQTopic;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
@@ -42,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @EnableAsync
 @EnableScheduling
 @RequiredArgsConstructor
-public class RegistrationRequestProcessor implements IRegistrationRequestProcessor, InitializingBean, MessageListener {
+public class RegistrationRequestProcessor implements IRegistrationRequestProcessor, InitializingBean, BrokerUtil.Listener {
 	private final static List<RegistrationRequestStatus> STATUSES_TO_ARCHIVE = List.of(
 			RegistrationRequestStatus.PRE_AUTHORIZATION_REJECT,
 			RegistrationRequestStatus.PRE_AUTHORIZATION_ERROR,
@@ -58,6 +52,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private final DeviceManagementService deviceManagementService;
 	private final TaskScheduler taskScheduler;
 	private final ObjectMapper objectMapper;
+	private final BrokerUtil brokerUtil;
 	private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
 	@Override
@@ -88,27 +83,15 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			}
 			log.debug("processRequests: Processing registration requests");
 
-			// Connect to Message broker
-			ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
-					processorProperties.getBrokerUsername(), processorProperties.getBrokerPassword(),
-					processorProperties.getBrokerURL());
-			ActiveMQConnection conn = (ActiveMQConnection) connectionFactory.createConnection();
-			Session session = conn.createSession();
-			MessageProducer producer = session.createProducer(
-					new ActiveMQTopic(processorProperties.getDataCollectionRequestTopic()));
-
 			// Process requests
 			try {
-				processNewRequests(producer);
-				processOnboardingRequests(producer);
+				processNewRequests();
+				processOnboardingRequests();
 				if (processorProperties.isAutomaticArchivingEnabled())
 					archiveRequests();
 			} catch (Throwable t) {
 				log.error("processRequests: ERROR processing requests: ", t);
 			}
-
-			// Close connection to Message broker
-			conn.close();
 
 			log.debug("processRequests: Processing completed");
 
@@ -122,8 +105,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		}
 	}
 
-	private void processNewRequests(MessageProducer producer) {
-		log.trace("processNewRequests: BEGIN: {}", producer);
+	private void processNewRequests() {
+		log.trace("processNewRequests: BEGIN");
 		List<RegistrationRequest> newRequests = registrationRequestService.getAll().stream()
 				.filter(r -> r.getStatus() == RegistrationRequestStatus.NEW_REQUEST).toList();
 
@@ -134,8 +117,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			try {
 				log.debug("processNewRequests: Requesting collection of device data for request with Id: {}", registrationRequest.getId());
 				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE.DIAGNOSTICS, registrationRequest);
-				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
-				producer.send(createMessage(jsonMessage));
+				brokerUtil.sendMessage(processorProperties.getDataCollectionRequestTopic(), dataCollectionRequest);
 				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
 
 				log.debug("processNewRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
@@ -151,8 +133,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		log.trace("processNewRequests: END");
 	}
 
-	private void processOnboardingRequests(MessageProducer producer) {
-		log.trace("processOnboardingRequests: BEGIN: {}", producer);
+	private void processOnboardingRequests() {
+		log.trace("processOnboardingRequests: BEGIN");
 		List<RegistrationRequest> onboardingRequests = registrationRequestService.getAll().stream()
 				.filter(r -> r.getStatus() == RegistrationRequestStatus.PENDING_ONBOARDING).toList();
 
@@ -169,8 +151,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 				log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
 				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE.INSTALL, registrationRequest);
-				String jsonMessage = objectMapper.writer().writeValueAsString(dataCollectionRequest);
-				producer.send(createMessage(jsonMessage));
+				brokerUtil.sendMessage(processorProperties.getDataCollectionRequestTopic(), dataCollectionRequest);
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
 
 				log.debug("processOnboardingRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
@@ -211,12 +192,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		}
 	}
 
-	protected ActiveMQMessage createMessage(String message) throws MessageNotWriteableException {
-		ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
-		textMessage.setText(message);
-		return textMessage;
-	}
-
 	private void archiveRequests() {
 		Instant archiveThreshold = Instant.now().minus(processorProperties.getArchivingThreshold(), ChronoUnit.MINUTES);
 		log.trace("archiveRequests: BEGIN: archive-threshold: {}", archiveThreshold);
@@ -241,40 +216,15 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 	protected void initializeResultsListener() {
 		try {
-			ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
-					processorProperties.getBrokerUsername(), processorProperties.getBrokerPassword(), processorProperties.getBrokerURL());
-			ActiveMQConnection conn = (ActiveMQConnection) connectionFactory.createConnection();
-			Session session = conn.createSession();
-			MessageConsumer consumer = session.createConsumer(
-					new ActiveMQTopic(processorProperties.getDataCollectionResponseTopic()));
-			consumer.setMessageListener(this);
-			conn.start();
+			brokerUtil.subscribe(processorProperties.getDataCollectionResponseTopic(), this);
 		} catch (Exception e) {
 			log.error("RegistrationRequestProcessor: ERROR while subscribing to Message broker for Device info announcements: ", e);
 			taskScheduler.schedule(this::initializeResultsListener, Instant.now().plusSeconds(processorProperties.getSubscriptionRetryDelay()));
 		}
 	}
 
-	@Override
-	public void onMessage(Message message) {
-		try {
-			log.debug("RegistrationRequestProcessor: Received a JMS message: {}", message);
-			if (message instanceof ActiveMQTextMessage textMessage) {
-				String payload = textMessage.getText();
-				log.trace("RegistrationRequestProcessor: Message payload: {}", payload);
-				TypeReference<Map<String,Object>> typeRef = new TypeReference<>() { };
-				Object obj = objectMapper.readerFor(typeRef).readValue(payload);
-				if (obj instanceof Map response) {
-					processResponse(response);
-				} else {
-					log.debug("RegistrationRequestProcessor: Message payload is not recognized. Expected Map: type={}, object={}", obj.getClass().getName(), obj);
-				}
-			} else {
-				log.debug("RegistrationRequestProcessor: Message type is not supported: {}", message);
-			}
-		} catch (Exception e) {
-			log.warn("RegistrationRequestProcessor: ERROR while processing message: {}\nException: ", message, e);
-		}
+	public void onMessage(Map message) {
+		processResponse(message);
 	}
 
 	private void processResponse(@NonNull Map<String, Object> response) {

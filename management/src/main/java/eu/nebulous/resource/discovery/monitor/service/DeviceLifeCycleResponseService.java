@@ -2,6 +2,7 @@
 package eu.nebulous.resource.discovery.monitor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.nebulous.resource.discovery.common.BrokerUtil;
 import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.monitor.model.Device;
@@ -22,8 +23,11 @@ import java.util.stream.Collectors;
 public class DeviceLifeCycleResponseService extends AbstractMonitorService {
     private final DeviceManagementService deviceManagementService;
 
-    public DeviceLifeCycleResponseService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler, ObjectMapper objectMapper, DeviceManagementService deviceManagementService) {
-        super("DeviceLifeCycleResponseService", monitorProperties, taskScheduler, objectMapper);
+    public DeviceLifeCycleResponseService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler,
+                                          ObjectMapper objectMapper, DeviceManagementService deviceManagementService,
+                                          BrokerUtil brokerUtil)
+    {
+        super("DeviceLifeCycleResponseService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.deviceManagementService = deviceManagementService;
     }
 

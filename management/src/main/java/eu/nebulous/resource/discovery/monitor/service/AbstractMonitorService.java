@@ -1,19 +1,14 @@
 
 package eu.nebulous.resource.discovery.monitor.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.common.BrokerUtil;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
-import jakarta.jms.*;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.command.ActiveMQTextMessage;
-import org.apache.activemq.command.ActiveMQTopic;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -29,13 +24,12 @@ import java.util.Map;
 @EnableAsync
 @EnableScheduling
 @RequiredArgsConstructor
-public abstract class AbstractMonitorService implements InitializingBean, MessageListener {
+public abstract class AbstractMonitorService implements InitializingBean, BrokerUtil.Listener {
     @NonNull protected final String name;
     protected final ResourceDiscoveryProperties monitorProperties;
     protected final TaskScheduler taskScheduler;
     protected final ObjectMapper objectMapper;
-    protected ActiveMQConnection connection;
-    protected Session session;
+    protected final BrokerUtil brokerUtil;
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -45,53 +39,24 @@ public abstract class AbstractMonitorService implements InitializingBean, Messag
     }
 
     private void initializeDeviceStatusListener() {
-        try {
-            openBrokerConnection();
-            getTopicsToMonitor().forEach(topic -> {
-                try {
-                    MessageConsumer consumer = session.createConsumer(new ActiveMQTopic(topic));
-                    consumer.setMessageListener(this);
-                    log.debug("{}: Subscribed to topic: {}", name, topic);
-                } catch (Exception e) {
-                    log.error("{}: ERROR while subscribing to topic: {}\n", name, topic, e);
-                    taskScheduler.schedule(this::initializeDeviceStatusListener, Instant.now().plusSeconds(monitorProperties.getSubscriptionRetryDelay()));
-                }
-            });
-        } catch (JMSException e) {
-            log.error("{}: ERROR while opening connection to Message broker: ", name, e);
-            taskScheduler.schedule(this::initializeDeviceStatusListener, Instant.now().plusSeconds(monitorProperties.getSubscriptionRetryDelay()));
-        }
-    }
-
-    private void openBrokerConnection() throws JMSException {
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
-                monitorProperties.getBrokerUsername(), monitorProperties.getBrokerPassword(), monitorProperties.getBrokerURL());
-        ActiveMQConnection conn = (ActiveMQConnection) connectionFactory.createConnection();
-        Session ses = conn.createSession();
-        this.connection = conn;
-        this.session = ses;
-        connection.start();
+        getTopicsToMonitor().forEach(topic -> {
+            try {
+                brokerUtil.subscribe(topic, this);
+                log.debug("{}: Subscribed to topic: {}", name, topic);
+            } catch (Exception e) {
+                log.error("{}: ERROR while subscribing to topic: {}\n", name, topic, e);
+                taskScheduler.schedule(this::initializeDeviceStatusListener, Instant.now().plusSeconds(monitorProperties.getSubscriptionRetryDelay()));
+            }
+        });
     }
 
     protected abstract @NonNull List<String> getTopicsToMonitor();
 
     @Override
-    public void onMessage(Message message) {
+    public void onMessage(Map message) {
         try {
-            log.debug("{}: Received a JMS message: {}", name, message);
-            if (message instanceof ActiveMQTextMessage textMessage) {
-                String payload = textMessage.getText();
-                log.trace("{}: Message payload: {}", name, payload);
-                TypeReference<Map<String,Object>> typeRef = new TypeReference<>() { };
-                Object obj = objectMapper.readerFor(typeRef).readValue(payload);
-                if (obj instanceof Map<?,?> dataMap) {
-                    processPayload(dataMap);
-                } else {
-                    log.debug("{}: Message payload is not recognized. Expected Map but got: type={}, object={}", name, obj.getClass().getName(), obj);
-                }
-            } else {
-                log.debug("{}: Message type is not supported: {}", name, message);
-            }
+            log.debug("{}: Received a message: {}", name, message);
+            processPayload(message);
         } catch (Exception e) {
             log.warn("{}: ERROR while processing message: {}\nException: ", name, message, e);
         }

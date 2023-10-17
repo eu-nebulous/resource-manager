@@ -3,6 +3,7 @@ package eu.nebulous.resource.discovery.monitor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.common.BrokerUtil;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatusUpdate;
 import lombok.NonNull;
@@ -20,8 +21,11 @@ import java.util.Optional;
 public class DeviceStatusMonitorService extends AbstractMonitorService {
     private final DeviceManagementService deviceManagementService;
 
-    public DeviceStatusMonitorService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler, ObjectMapper objectMapper, DeviceManagementService deviceManagementService) {
-        super("DeviceStatusMonitorService", monitorProperties, taskScheduler, objectMapper);
+    public DeviceStatusMonitorService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler,
+                                      ObjectMapper objectMapper, DeviceManagementService deviceManagementService,
+                                      BrokerUtil brokerUtil)
+    {
+        super("DeviceStatusMonitorService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.deviceManagementService = deviceManagementService;
     }
 

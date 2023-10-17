@@ -1,28 +1,20 @@
 package eu.nebulous.resource.discovery.monitor.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.common.BrokerUtil;
+import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
-import jakarta.jms.JMSException;
-import jakarta.jms.MessageNotWriteableException;
-import jakarta.jms.MessageProducer;
-import jakarta.jms.Session;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.command.ActiveMQMessage;
-import org.apache.activemq.command.ActiveMQTextMessage;
-import org.apache.activemq.command.ActiveMQTopic;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -30,7 +22,7 @@ import java.util.*;
 public class DeviceLifeCycleRequestService {
 	private final ResourceDiscoveryProperties properties;
 	private final DeviceManagementService deviceManagementService;
-	private final ObjectMapper objectMapper;
+	private final BrokerUtil brokerUtil;
 
 	// ------------------------------------------------------------------------
 
@@ -46,17 +38,10 @@ public class DeviceLifeCycleRequestService {
 			// Prepare request
 			log.debug("reinstallRequest: Requesting device re-onboarding with Id: {}", device.getId());
 			Map<String, String> onboardingRequest = prepareRequestPayload(REQUEST_TYPE.REINSTALL, device);
-			String jsonMessage = objectMapper.writer().writeValueAsString(onboardingRequest);
-
-			// Connect to Message broker
-			Pair<ActiveMQConnection, MessageProducer> connAndProducer = connectToBroker();
 
 			// Send request
-			connAndProducer.getSecond().send(createMessage(jsonMessage));
+			brokerUtil.sendMessage(properties.getDeviceLifeCycleRequestsTopic(), onboardingRequest);
 			device.setStatus(DeviceStatus.ONBOARDING);
-
-			// Close connection to Message broker
-			connAndProducer.getFirst().close();
 
 			log.debug("reinstallRequest: Save updated device: id={}, device={}", device.getId(), device);
 			deviceManagementService.update(device);
@@ -83,17 +68,10 @@ public class DeviceLifeCycleRequestService {
 			// Prepare request
 			log.debug("uninstallRequest: Requesting device off-onboarding with Id: {}", device.getId());
 			Map<String, String> offboardingRequest = prepareRequestPayload(REQUEST_TYPE.UNINSTALL, device);
-			String jsonMessage = objectMapper.writer().writeValueAsString(offboardingRequest);
-
-			// Connect to Message broker
-			Pair<ActiveMQConnection, MessageProducer> connAndProducer = connectToBroker();
 
 			// Send request
-			connAndProducer.getSecond().send(createMessage(jsonMessage));
+			brokerUtil.sendMessage(properties.getDeviceLifeCycleRequestsTopic(), offboardingRequest);
 			device.setStatus(DeviceStatus.OFFBOARDING);
-
-			// Close connection to Message broker
-			connAndProducer.getFirst().close();
 
 			log.debug("uninstallRequest: Save updated device: id={}, device={}", device.getId(), device);
 			deviceManagementService.update(device);
@@ -113,16 +91,9 @@ public class DeviceLifeCycleRequestService {
 			// Prepare request
 			log.debug("requestInfoUpdate: Requesting device info and metrics update");
 			Map<String, String> updateRequest = prepareRequestPayload(REQUEST_TYPE.INFO, null);
-			String jsonMessage = objectMapper.writer().writeValueAsString(updateRequest);
-
-			// Connect to Message broker
-			Pair<ActiveMQConnection, MessageProducer> connAndProducer = connectToBroker();
 
 			// Send request
-			connAndProducer.getSecond().send(createMessage(jsonMessage));
-
-			// Close connection to Message broker
-			connAndProducer.getFirst().close();
+			brokerUtil.sendMessage(properties.getDeviceLifeCycleRequestsTopic(), updateRequest);
 
 			log.debug("requestInfoUpdate: Update request sent");
 		} catch (Exception e) {
@@ -162,22 +133,5 @@ public class DeviceLifeCycleRequestService {
 					requestType, device, e);
 			throw e;
 		}
-	}
-
-	protected Pair<ActiveMQConnection, MessageProducer> connectToBroker() throws JMSException {
-		ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(
-				properties.getBrokerUsername(), properties.getBrokerPassword(),
-				properties.getBrokerURL());
-		ActiveMQConnection conn = (ActiveMQConnection) connectionFactory.createConnection();
-		Session session = conn.createSession();
-		MessageProducer producer = session.createProducer(
-				new ActiveMQTopic( properties.getDeviceLifeCycleRequestsTopic() ));
-		return Pair.of(conn, producer);
-	}
-
-	protected ActiveMQMessage createMessage(String message) throws MessageNotWriteableException {
-		ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
-		textMessage.setText(message);
-		return textMessage;
 	}
 }
