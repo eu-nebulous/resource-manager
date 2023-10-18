@@ -18,6 +18,7 @@
 
 	<properties>
 		<java.version>17</java.version>
+		<imageName>${project.groupId}:${project.version}</imageName>
 	</properties>
 
 	<dependencies>
@@ -88,6 +89,16 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>build-image</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<imageName>${imageName}</imageName>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
