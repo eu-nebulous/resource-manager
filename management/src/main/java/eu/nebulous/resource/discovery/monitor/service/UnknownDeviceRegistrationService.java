@@ -7,6 +7,8 @@ import eu.nebulous.resource.discovery.common.BrokerUtil;
 import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
+import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
+import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -25,15 +27,17 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
             REQUEST_TYPE.INSTALL.name(),
             REQUEST_TYPE.REINSTALL.name()
     );
+    private final RegistrationRequestService registrationRequestService;
     private final DeviceManagementService deviceManagementService;
     private final Map<String, String> detectedDevices = Collections.synchronizedMap(new LinkedHashMap<>());
     private final List<Map> deviceDetailsQueue = Collections.synchronizedList(new LinkedList<>());
 
     public UnknownDeviceRegistrationService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler,
                                             ObjectMapper objectMapper, DeviceManagementService deviceManagementService,
-                                            BrokerUtil brokerUtil)
+                                            RegistrationRequestService registrationRequestService, BrokerUtil brokerUtil)
     {
         super("UnknownDeviceRegistrationService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
+        this.registrationRequestService = registrationRequestService;
         this.deviceManagementService = deviceManagementService;
     }
 
@@ -115,16 +119,26 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
         map.forEach((ipAddress, reference) -> {
             log.trace("UnknownDeviceRegistrationService: Processing device data: ipAddress={}, reference={}", ipAddress, reference);
 
-            // Check if device is registered
-            Optional<Device> device = deviceManagementService.getByIpAddress(ipAddress.trim());
-            if (device.isEmpty() || !reference.equalsIgnoreCase(device.get().getNodeReference())) {
-                // Device is not registered
-                log.trace("UnknownDeviceRegistrationService: Unknown device: ipAddress={}, reference={}, device={}", ipAddress, reference, device.orElse(null));
-                unknownDevices.put(ipAddress, reference);
+            // Check if there is a registration request for the device
+            List<RegistrationRequest> requests = registrationRequestService.getByDeviceIpAddress(ipAddress.trim());
+            if (requests.isEmpty()) {
+                // No registration request found with this IP address
+
+                // Check if device is registered
+                Optional<Device> device = deviceManagementService.getByIpAddress(ipAddress.trim());
+                if (device.isEmpty() || ! reference.equalsIgnoreCase(device.get().getNodeReference())) {
+                    // Device is not registered
+                    log.trace("UnknownDeviceRegistrationService: Unknown device: ipAddress={}, reference={}, device={}", ipAddress, reference, device.orElse(null));
+                    unknownDevices.put(ipAddress, reference);
+                } else {
+                    // Device is already registered
+                    log.trace("UnknownDeviceRegistrationService: Device is already registered: ipAddress={}, device={}",
+                            ipAddress, device.get());
+                }
             } else {
-                // Device is already registered
-                log.trace("UnknownDeviceRegistrationService: Device is already registered: ipAddress={}, device={}",
-                        ipAddress, device.get());
+                // There is a registration request for Device
+                log.trace("UnknownDeviceRegistrationService: Device is already registered: ipAddress={}, request-id={}",
+                        ipAddress, requests.stream().map(RegistrationRequest::getId).toList());
             }
         });
 

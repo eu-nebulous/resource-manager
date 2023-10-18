@@ -41,6 +41,10 @@ public class RegistrationRequestService {
 		return registrationRequestRepository.findById(id);
 	}
 
+	public List<RegistrationRequest> getByDeviceIpAddress(@NonNull String ipAddress) {
+		return registrationRequestRepository.findByDeviceIpAddress(ipAddress);
+	}
+
 	public List<RegistrationRequest> getAll() {
 		return Collections.unmodifiableList(registrationRequestRepository.findAll());
 	}
