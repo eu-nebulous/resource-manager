@@ -1,6 +1,7 @@
 package eu.nebulous.resource.discovery.registration.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.nebulous.resource.discovery.common.DeviceLocation;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -17,6 +18,7 @@ public class Device {
     private String name;
     private String owner;
     private String ipAddress;
+    private DeviceLocation location;
     private String username;
     @ToString.Exclude
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

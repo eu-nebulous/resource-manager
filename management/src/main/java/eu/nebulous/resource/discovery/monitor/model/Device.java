@@ -1,6 +1,7 @@
 package eu.nebulous.resource.discovery.monitor.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.nebulous.resource.discovery.common.DeviceLocation;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -20,6 +21,7 @@ public class Device {
     private String name;
     private String owner;
     private String ipAddress;
+    private DeviceLocation location;
     private String username;
     @ToString.Exclude
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

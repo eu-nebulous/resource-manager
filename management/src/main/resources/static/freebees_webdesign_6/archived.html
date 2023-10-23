@@ -130,6 +130,8 @@ function showModal(info, type, id) {
     $(`[id="device#password"]`).val('');
     $(`[id="device#publicKey"]`).val('');
 
+    $('#btn-restore-req-or-dev').html(type==='REQUEST' ? 'Restore Request' : 'Restore Device');
+
     // Show credentials modal
     var modal = new bootstrap.Modal(document.getElementById('credentialsModal'), {
         //keyboard: true
@@ -411,7 +413,7 @@ function _unarchiveDevice(devId, credentials) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="doRestore()">Restore Device</button>
+                        <button type="button" class="btn btn-primary" id="btn-restore-req-or-dev" onclick="doRestore()">Restore Device</button>
                     </div>
                 </div>
             </div>
