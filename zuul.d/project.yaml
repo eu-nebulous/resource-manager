@@ -5,10 +5,7 @@
         - nebulous-resource-manager-helm-lint
         - nebulous-resource-manager-build-container-images
         - nebulous-resource-manager-hadolint
-        - nebulous-platform-apply-helm-charts:
-            dependencies:
-              - name: nebulous-resource-manager-build-container-images
-                soft: true
+        - nebulous-platform-apply-helm-charts
         - nox-linters
     gate:
       jobs:
@@ -16,10 +13,7 @@
         - nebulous-resource-manager-helm-lint
         - nebulous-resource-manager-upload-container-images
         - nebulous-resource-manager-hadolint
-        - nebulous-platform-apply-helm-charts:
-            dependencies:
-              - name: nebulous-resource-manager-upload-container-images
-                soft: true
+        - nebulous-platform-apply-helm-charts
         - nox-linters
     promote:
       jobs:
