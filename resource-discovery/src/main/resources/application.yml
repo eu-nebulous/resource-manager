@@ -1,0 +1,38 @@
+
+application.version: @project.version@
+spring.output.ansi.enabled: ALWAYS
+spring.web.resources.static-locations: file:resource-discovery/management/src/main/resources/static/freebees_webdesign_6, classpath:/static/freebees_webdesign_6/
+
+#security.ignored: /**
+#security.basic.enable: false
+#spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+#spring.security.user.name: user
+#spring.security.user.password: user
+#spring.security.user.roles: USER
+
+server.servlet.session.timeout: 120m
+
+spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
+spring.data.mongodb.database: resource_discovery
+
+discovery:
+  brokerURL: "ssl://localhost:61617?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
+  brokerUsername: "aaa"
+  brokerPassword: "111"
+  trustStoreFile: tests/config/broker-truststore.p12
+  trustStorePassword: melodic
+  trustStoreType: PKCS12
+  allowedDeviceInfoKeys:
+    - '*'
+  # NOTE:
+  # To generate BCrypt encrypted passwords you can use:  https://bcrypt-generator.com/
+  users:
+    - username: admin
+      password: '$2a$10$5jzrhbVKq.W2J1PMGYeHyeydQtlw71PoVgryzDP0VZ.88FsPlq1ne'    # admin1  (BCrypt; 10 iterations)
+      roles: [ ADMIN ]
+    - username: user
+      password: '$2a$10$I6GSOKiY5n4/Ql0LA7Js0.4HT4UXVCNaNpGv5UdZt/brEdv/F.ttG'    # user1   (BCrypt; 10 iterations)
+      roles: [ USER ]
+
+#logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Firmbee.com - Free Project Management Platform for remote teams"> 
+    <title>NebulOuS Resource Discovery - Management page</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="https://kit.fontawesome.com/0e035b9984.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <script src="js/addshadow.js"></script>
+
+    <script>
+$(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reqId = urlParams.get('id') ?? '';
+
+    requestId = reqId;
+
+    if (reqId!=='')
+        refreshRequestInfo(reqId);
+    checkSameUser();
+});
+
+var isAdmin = false;
+var username = '';
+var requestId;
+var requester = '';
+
+function refreshRequestInfo(id) {
+    // show loading spinner
+    $('#loading-spinner').toggleClass('d-none');
+    $('#main-page').toggleClass('d-none');
+
+    // retrieve request info
+    $.ajax({
+        url: '/discovery/request/archived/'+id,
+        dataType: 'json'
+    })
+    .done(function(data, status) {
+        // console.log('refreshRequestInfo: OK: ', data);
+        var reqId = data.id;
+        if (reqId!=='')
+            $('#page_title').html( 'Archived Registration Request '+reqId );
+        else
+            $('#page_title').html( $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`) );
+
+        requestId = data.id;
+        requester = data.requester;
+        checkSameUser();
+
+        updateFormData(data);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('refreshRequestInfo: ERROR: ', status, error);
+        $('#page_title').html(
+            $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
+        );
+    })
+    .always(function(data, status) {
+        // hide loading spinner
+        $('#loading-spinner').toggleClass('d-none');
+        $('#main-page').toggleClass('d-none');
+    })
+    ;
+}
+
+function checkSameUser() {
+    if (username!=='' && requester!='' && username===requester) {
+        $('.sameUser').addClass('d-none');
+    } else {
+        $('.sameUser').removeClass('d-none');
+    }
+}
+
+function updateFormData(data) {
+    // Prepare data for processing
+    var request = {
+        request: data
+    };
+    //console.log('updateFormData: request: ', request);
+
+    // Flatten data map
+    var keyValuesMap = flattenObject(request);
+    //console.log('updateFormData: flattenObject: ', keyValuesMap);
+
+    // Update form fields
+    Object.entries(keyValuesMap).forEach((entry) => {
+        //console.log('updateFormData: Form Update: ', entry[0], entry[1]);
+        $(`[id="${entry[0]}"]`).val( entry[1] );
+    });
+
+    // Update device info field
+    if (data.device.deviceInfo) {
+        var valStr = JSON.stringify(data.device.deviceInfo, null, 2);
+        var rows = valStr.split(/\r\n|\r|\n/).length;
+        if (rows<2) rows = 2;
+        if (rows>50) rows = 50;
+        $(`[id="request#device#deviceInfo"]`).val( valStr ).attr( 'rows', rows );
+    } else {
+        $(`[id="request#device#deviceInfo"]`).val( '' ).attr( 'rows', 2 );
+    }
+
+    // Update messages field
+    if (data.messages) {
+        var valStr = data.messages.join('\n').trim();
+        var rows = data.messages.length;
+        if (rows<2) rows = 2;
+        if (rows>50) rows = 50;
+        $(`[id="request#messages"]`).val( valStr ).attr( 'rows', rows );
+    } else {
+        $(`[id="request#messages"]`).val( '' ).attr( 'rows', 2 );
+    }
+}
+
+function flattenObject(ob) {
+    var toReturn = {};
+    for (var i in ob) {
+        if (!ob.hasOwnProperty(i)) continue;
+        if ((typeof ob[i]) == 'object' && ob[i] !== null) {
+            var flatObject = flattenObject(ob[i]);
+            for (var x in flatObject) {
+                if (!flatObject.hasOwnProperty(x)) continue;
+                toReturn[i + '#' + x] = flatObject[x];
+            }
+        } else {
+            toReturn[i] = ob[i];
+        }
+    }
+    return toReturn;
+}
+    </script>
+
+</head>
+<body>
+    <main>
+        <div style="position: absolute; left: 10px; top: 10px;">
+            <a href="index.html"><img src="img/nebulous-logo-basic.png" width="155px" height="155px" alt=""></a>
+        </div>
+        <div class="text-end text-secondary nowrap">
+            <a href="requests.html"><img src="img/icon/Group 1802.svg" width="32px" height="32px" /></a>
+            <a href="devices.html"><img src="img/icon/Group 1953.svg" width="32px" height="32px" /></a>
+            <a href="archived.html"><img src="img/icon/Group 1954.svg" width="32px" height="32px" /></a>
+            <a xxxhref="#" style="-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */ filter: grayscale(100%);"><img src="img/icon/Group 1955.svg" width="32px" height="32px" /></a>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <img src="img/user-icon.png" width="24" height="auto">
+            <span id="whoami"><i class="fas fa-spinner fa-spin"></i></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span onClick="document.location = '/logout';">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <script>
+                $(function() {
+                    $.ajax({ url: '/discovery/whoami', dataType: 'json' })
+                        .done(function(data) {
+                            isAdmin = data.admin;
+                            username = data.user;
+                            data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
+                            if (isAdmin) $('.adminOnly').toggleClass('d-none');
+
+                            checkSameUser();
+                        })
+                        .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
+                });
+            </script>
+        </div>
+        <section class="light-section">
+            <div class="container">
+
+                <div id="loading-spinner" class="fa-5x text-secondary text-center d-none">
+                    <i class="fas fa-sync fa-spin fa-5x"></i>
+                </div>
+
+                <div id="main-page" class="text-center">
+                    <h1 class="adminOnly sameUser d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A REQUEST YOU DON'T OWN  * * *</h1>
+
+                    <h2 id="page_title">New Registration Request</h2>
+                    <!--<p class="sub-header">Device registration requests</p>-->
+
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
+                        <i class="fa fa-home"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'archived.html';">
+                        <i class="fa fa-arrow-left"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary" onClick="refreshRequestInfo(requestId);">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    <p>&nbsp;</p>
+
+                    <form>
+                        <div class="form-group row text-center bg-dark bg-opacity-25">
+                            <h5>Request details</h5>
+                        </div>
+
+                        <!-- Request id -->
+                        <div class="form-group row">
+                            <label for="request#id" class="col-sm-2 col-form-label"><b>Request Id</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#id" value="-">
+                            </div>
+                        </div>
+                        <!-- Request requester -->
+                        <div class="form-group row">
+                            <label for="request#requester" class="col-sm-2 col-form-label"><b>Requester</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#requester" value="-">
+                            </div>
+                        </div>
+                        <!-- Node reference (available after onboarding) -->
+                        <div class="form-group row">
+                            <label for="request#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#nodeReference" value="-">
+                            </div>
+                        </div>
+                        <!-- Request requestDate -->
+                        <div class="form-group row">
+                            <label for="request#requestDate" class="col-sm-2 col-form-label"><b>Request Date</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#requestDate" value="-">
+                            </div>
+                        </div>
+                        <!-- Request status -->
+                        <div class="form-group row">
+                            <label for="request#status" class="col-sm-2 col-form-label"><b>Request Status</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#status" value="-">
+                            </div>
+                        </div>
+                        <!-- Request last update date -->
+                        <div class="form-group row">
+                            <label for="request#lastUpdateDate" class="col-sm-2 col-form-label"><b>Last Updated</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#lastUpdateDate" value="-">
+                            </div>
+                        </div>
+                        <!-- Request archival date -->
+                        <div class="form-group row">
+                            <label for="request#archiveDate" class="col-sm-2 col-form-label"><b>Archive Date</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#archiveDate" value="-">
+                            </div>
+                        </div>
+                        <!-- Request messages -->
+                        <div class="form-group row">
+                            <label for="request#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
+                            <div class="col-sm-10">
+                                <textarea readonly class="form-control-plaintext" id="request#messages"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-group row text-center bg-dark bg-opacity-25">
+                            <h5>Device details</h5>
+                        </div>
+
+                        <!-- Device id -->
+                        <div class="form-group row">
+                            <label for="request#device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#id" value="" placeholder="Device unique id">
+                            </div>
+                        </div>
+                        <!-- Device Name -->
+                        <div class="form-group row">
+                            <label for="request#device#name" class="col-sm-2 col-form-label"><b>Device Name</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#name" value="" placeholder="Device name">
+                            </div>
+                        </div>
+                        <!-- Device OS -->
+                        <div class="form-group row">
+                            <label for="request#device#os" class="col-sm-2 col-form-label"><b>Device OS</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#os" value="LINUX" placeholder="Device OS">
+                            </div>
+                        </div>
+                        <!-- Device Owner -->
+                        <div class="form-group row">
+                            <label for="request#device#owner" class="col-sm-2 col-form-label"><b>Device Owner</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#owner" value="" placeholder="Device Owner">
+                            </div>
+                        </div>
+                        <!-- Device IP Address -->
+                        <div class="form-group row">
+                            <label for="request#device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#ipAddress" value="" placeholder="Device IP address">
+                            </div>
+                        </div>
+                        <!-- Device Location -->
+                        <div class="form-group row">
+                            <label for="request#device#location#name" class="col-sm-2 col-form-label"><b>Location</b></label>
+                            <div class="col-sm-4">
+                                <input type="text" readonly class="form-control" id="request#device#location#name" value="" placeholder="Device Location">
+                            </div>
+                            <label for="request#device#location#latitude" class="col-sm-1 col-form-label">Latitude</label>
+                            <div class="col-sm-2">
+                                <input type="text" readonly class="form-control" id="request#device#location#latitude" value="" placeholder="Device Latitude">
+                            </div>
+                            <label for="request#device#location#longitude" class="col-sm-1 col-form-label">Longitude</label>
+                            <div class="col-sm-2">
+                                <input type="text" readonly class="form-control" id="request#device#location#longitude" value="" placeholder="Device Longitude">
+                            </div>
+                        </div>
+                        <!-- Device Username -->
+                        <div class="form-group row">
+                            <label for="request#device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#username" value="" placeholder="SSH username">
+                            </div>
+                        </div>
+                        <!-- Device Password -->
+                        <div class="form-group row">
+                            <label for="request#device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#password" value="" placeholder="*** SSH password - Not exposed ***">
+                            </div>
+                        </div>
+                        <!-- Device Public Key -->
+                        <div class="form-group row">
+                            <label for="request#device#publicKeyXXX" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
+                            <div class="col-sm-10">
+                                <textarea readonly class="form-control" id="request#device#publicKeyXXX" placeholder="*** SSH public key - Not exposed ***"></textarea>
+                            </div>
+                        </div>
+                        <!-- Device Additional Info -->
+                        <div class="form-group row">
+                            <label for="request#device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
+                            <div class="col-sm-10">
+                                <textarea readonly class="form-control" id="request#device#deviceInfo" placeholder="Additional device info"></textarea>
+                            </div>
+                        </div>
+
+                        <!--<div class="text-center">
+                            <p>&nbsp;</p>
+                            <input class="btn btn-primary" type="submit" value="Submit">
+                            <input class="btn btn-primary" type="reset" value="Reset">
+                        </div>-->
+
+                    </form>
+
+                </div>
+
+            </div>
+        </section>
+        <footer class="py-5">
+          <div class="container">
+            <div class="row">
+              <div class="footer-item col-md-8">
+                <p class="footer-item-title">Links</p>
+                <a href="">About Us</a>
+                <a href="">Portfolio</a>
+                <a href="">Blog</a>
+                <a href="">Sing In</a>
+              </div>
+              <div class="footer-item col-md-4">
+              <p class="footer-item-title">Get In Touch</p>
+                <form>
+                  <div class="mb-3 pb-3">
+                    <label for="exampleInputEmail1" class="form-label pb-3">Enter your email and we'll send you more information.</label>
+                    <input type="email" placeholder="Your Email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                  </div>
+                  <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+              </div>
+              <div class="copyright pt-4 text-center text-muted">
+                <p>&copy; 2022 YOUR-DOMAIN | Created by <a href="https://firmbee.com/solutions/to-do-list/" title="Firmbee - Free To-do list App" target="_blank">Firmbee.com</a></p>
+                <!--
+                This template is licenced under Attribution 3.0 (CC BY 3.0 PL),
+                You are free to: Share and Adapt. You must give appropriate credit, you may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+                --> 
+            </div>
+          </div>
+        </footer>
+    </main>
+    <div class="fb2022-copy">Fbee 2022 copyright</div>
+</body>
+</html>

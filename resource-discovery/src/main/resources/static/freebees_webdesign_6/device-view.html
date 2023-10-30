@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Firmbee.com - Free Project Management Platform for remote teams"> 
+    <title>NebulOuS Resource Discovery - Management page</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KyZXEAg3QhqLMpG8r+8fhAXLRk2vvoC2f3B09zVXn8CA5QIVfZOJ3BCsw2P0p/We" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="https://kit.fontawesome.com/0e035b9984.js" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-U1DAWAznBHeqEIlVSCgzq+c9gqGAJn5c/t99JyeKa9xxaYpSvHU5awsuZVVFIhvj" crossorigin="anonymous"></script>
+    <script src="js/addshadow.js"></script>
+
+    <script>
+$(function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const devId = urlParams.get('id') ?? '';
+    const edit = urlParams.get('edit') ?? 'false';
+
+    deviceId = devId;
+    isReadonly = ! (edit.trim().toLowerCase()==='true');
+    if (! isReadonly)
+        makeFormEditable();
+
+    if (devId!=='')
+        refreshDeviceInfo(devId);
+    checkSameUser();
+});
+
+var isAdmin = false;
+var isReadonly = true;
+var username = '';
+var deviceId;
+var owner = '';
+
+function makeFormEditable() {
+    // Get form fields
+    var q1 = $('input[id^="device#"]');
+    var q2 = $('textarea[id^="device#"]');
+    var all = $.merge(q1, q2);
+    //console.log('makeFormEditable: form fields: ', all);
+
+    // Make form fields editable
+    all.each((index, item) => {
+        var it = $(item);
+        //console.log('makeFormEditable: each: ', it.attr('id'), it.val());
+        it.prop('readonly', false);
+        it.removeClass('form-control-plaintext');
+        it.addClass('form-control');
+    });
+
+    // Show Save button
+    $('#btn-save').removeClass('d-none');
+}
+
+function refreshDeviceInfo(id) {
+    // show loading spinner
+    $('#loading-spinner').toggleClass('d-none');
+    $('#main-page').toggleClass('d-none');
+
+    // retrieve device info
+    $.ajax({
+        url: '/monitor/device/'+id,
+        dataType: 'json'
+    })
+    .done(function(data, status) {
+        // console.log('refreshDeviceInfo: OK: ', data);
+        var devId = data.id;
+        if (devId!=='')
+            $('#page_title').html( 'Device '+devId );
+        else
+            $('#page_title').html( $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`) );
+
+        deviceId = data.id;
+        owner = data.owner;
+        checkSameUser();
+
+        updateFormData(data);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('refreshDeviceInfo: ERROR: ', status, error);
+        $('#page_title').html(
+            $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
+        );
+    })
+    .always(function(data, status) {
+        // hide loading spinner
+        $('#loading-spinner').toggleClass('d-none');
+        $('#main-page').toggleClass('d-none');
+    })
+    ;
+}
+
+function checkSameUser() {
+    if (username!=='' && owner!='' && username===owner) {
+        $('.sameUser').addClass('d-none');
+    } else {
+        $('.sameUser').removeClass('d-none');
+    }
+}
+
+function updateFormData(data) {
+    // Prepare data for processing
+    var device = {
+        device: data
+    };
+    //console.log('updateFormData: device: ', device);
+
+    // Flatten data map
+    var keyValuesMap = flattenObject(device);
+    //console.log('updateFormData: flattenObject: ', keyValuesMap);
+
+    // Update form fields
+    Object.entries(keyValuesMap).forEach((entry) => {
+        //console.log('updateFormData: Form Update: ', entry[0], entry[1]);
+        $(`[id="${entry[0]}"]`).val( entry[1] );
+    });
+
+    // Update device info field
+    if (data.deviceInfo) {
+        var valStr = JSON.stringify(data.deviceInfo, null, 2);
+        var rows = valStr.split(/\r\n|\r|\n/).length;
+        if (rows<2) rows = 1;
+        if (rows>50) rows = 50;
+        $(`[id="device#deviceInfo"]`).val( valStr ).attr( 'rows', rows );
+    } else {
+        $(`[id="device#deviceInfo"]`).val( '' ).attr( 'rows', 1 );
+    }
+
+    // Update messages field
+    if (data.messages) {
+        var valStr = data.messages.join('\n').trim();
+        var rows = data.messages.length;
+        if (rows<2) rows = 1;
+        if (rows>50) rows = 50;
+        $(`[id="device#messages"]`).val( valStr ).attr( 'rows', rows );
+    } else {
+        $(`[id="device#messages"]`).val( '' ).attr( 'rows', 1 );
+    }
+
+    // Update device metrics
+    if (data.metrics) {
+        // Clear contents of 'Device metrics' form part
+        var target = $('#device-metrics');
+        target.html('');
+
+        // Add timestamp in 'Device metrics' form part
+        var timestamp = data.metrics.timestamp;
+        //console.log(`TIMESTAMP: ${timestamp}`);
+        target.append(`
+                            <div class="form-group row">
+                                <label for="metric#timestamp" class="col-sm-6 col-form-label"><b>Timestamp</b></label>
+                                <div class="col-sm-6">
+                                    <input type="text" readonly class="form-control-plaintext" id="metric#timestamp" value="${timestamp}">
+                                </div>
+                            </div>
+        `);
+
+        // Order metrics by key
+        const ordered = Object.keys(data.metrics.metrics).sort().reduce(
+            (obj, key) => {
+                obj[key] = data.metrics.metrics[key];
+                return obj;
+            },
+            {}
+        );
+        // Move 'counts' to the end
+        const countsMap = Object.entries(ordered).filter(([k, v]) => k.startsWith('count-'));
+        const othersMap = Object.entries(ordered).filter(([k, v]) => ! k.startsWith('count-'));
+        const finalMap = Object.fromEntries([...othersMap, ...countsMap]);
+
+        // Append metrics in 'Device metrics' form part
+        for (const [key, value] of Object.entries(finalMap)) {
+            //console.log(`${key}: ${value}`);
+            target.append(`
+                            <div class="form-group row border-top">
+                                <label for="metric#metric#${key}" class="col-sm-6 col-form-label"><b>${key}</b></label>
+                                <div class="col-sm-6">
+                                    <input type="text" readonly class="form-control-plaintext" id="metric#tmetric#${key}" value="${value}">
+                                </div>
+                            </div>
+            `);
+        }
+    }
+}
+
+function flattenObject(ob) {
+    var toReturn = {};
+    for (var i in ob) {
+        if (!ob.hasOwnProperty(i)) continue;
+        if ((typeof ob[i]) == 'object' && ob[i] !== null) {
+            var flatObject = flattenObject(ob[i]);
+            for (var x in flatObject) {
+                if (!flatObject.hasOwnProperty(x)) continue;
+                toReturn[i + '#' + x] = flatObject[x];
+            }
+        } else {
+            toReturn[i] = ob[i];
+        }
+    }
+    return toReturn;
+}
+
+function saveDeviceInfo() {
+    // Confirm change
+    if (!confirm('Update device data?'))
+        return;
+
+    // Get form fields
+    var q1 = $('input[id^="device#"]');
+    var q2 = $('textarea[id^="device#"]');
+    var all = $.merge(q1, q2);
+    //console.log('saveDeviceInfo: form fields: ', all);
+
+    // Collect values
+    var keyValuesMap = {};
+    all.each((index, item) => {
+        var it = $(item);
+        //console.log('saveDeviceInfo: each: ', it.attr('id'), it.val());
+        keyValuesMap[ it.attr('id') ] = it.val();
+    });
+    //console.log('saveDeviceInfo: keyValuesMap: ', keyValuesMap);
+
+    // Convert to object graph
+    var root = {};
+    Object.entries(keyValuesMap).forEach((entry) => {
+        //console.log('saveDeviceInfo: KVM-each: ', entry);
+        var keyPart = entry[0].split("#");
+        var p = root;
+        keyPart.forEach((item, index) => {
+            //console.log('saveDeviceInfo: KVM-keyPart-each: ', item, p);
+            if (! p[item]) p[item] = index+1<keyPart.length ? {} : entry[1];
+            p = p[item];
+        });
+
+    });
+    root = root['device'];
+    //console.log('saveDeviceInfo: root: ', root);
+
+    // Fix device info
+    var deviceInfo = $(`[id="device#deviceInfo"]`).val().trim();
+    if (deviceInfo==='') deviceInfo = '{}';
+    root['deviceInfo'] = JSON.parse( deviceInfo );
+
+    // Fix messages
+    var messages = $(`[id="device#messages"]`).val().trim();
+    if (messages==='') messages = '';
+    root['messages'] = messages.split(/\r\n|\r|\n/);
+
+    // Check device Id
+    if (deviceId!=='' && deviceId!==root.id) {
+        alert('Device id has been modified!');
+        return;
+    }
+
+    console.log('saveDeviceInfo: root: ', root);
+    sendDeviceData(root);
+}
+
+function sendDeviceData(deviceData) {
+    // show loading spinner
+    $('#loading-spinner').toggleClass('d-none');
+    $('#main-page').toggleClass('d-none');
+
+    // retrieve device info
+    $.ajax({
+        url:    deviceId!=='' ? '/monitor/device/'+deviceId : '/monitor/device',
+        method: deviceId!=='' ? 'post' : 'put',
+        contentType: "application/json; charset=utf-8",
+        dataType: 'json',
+        data: JSON.stringify(deviceData)
+    })
+    .done(function(data, status) {
+        //console.log('sendDeviceData: OK: ', data);
+        deviceId = data.id;
+        refreshDeviceInfo(deviceId);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('sendDeviceData: ERROR: ', status, error);
+        $('#page_title').html(
+            $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`)
+        );
+    })
+    .always(function(data, status) {
+        // hide loading spinner
+        $('#loading-spinner').toggleClass('d-none');
+        $('#main-page').toggleClass('d-none');
+    })
+    ;
+}
+    </script>
+
+</head>
+<body>
+    <main>
+        <div style="position: absolute; left: 10px; top: 10px;">
+            <a href="index.html"><img src="img/nebulous-logo-basic.png" width="155px" height="155px" alt=""></a>
+        </div>
+        <div class="text-end text-secondary nowrap">
+            <a href="requests.html"><img src="img/icon/Group 1802.svg" width="32px" height="32px" /></a>
+            <a href="devices.html"><img src="img/icon/Group 1953.svg" width="32px" height="32px" /></a>
+            <a href="archived.html"><img src="img/icon/Group 1954.svg" width="32px" height="32px" /></a>
+            <a xxxhref="#" style="-webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */ filter: grayscale(100%);"><img src="img/icon/Group 1955.svg" width="32px" height="32px" /></a>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <img src="img/user-icon.png" width="24" height="auto">
+            <span id="whoami"><i class="fas fa-spinner fa-spin"></i></span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <span onClick="document.location = '/logout';">
+                <i class="fas fa-sign-out-alt"></i>
+            </span>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <script>
+                $(function() {
+                    $.ajax({ url: '/discovery/whoami', dataType: 'json' })
+                        .done(function(data) {
+                            isAdmin = data.admin;
+                            username = data.user;
+                            data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
+                            if (isAdmin) $('.adminOnly').toggleClass('d-none');
+
+                            checkSameUser();
+                        })
+                        .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
+                });
+            </script>
+        </div>
+        <section class="light-section">
+            <div class="container">
+
+                <div id="loading-spinner" class="fa-5x text-secondary text-center d-none">
+                    <i class="fas fa-sync fa-spin fa-5x"></i>
+                </div>
+
+                <div id="main-page" class="text-center">
+                    <h1 class="adminOnly sameUser d-none text-danger fw-bold">* * *  CAUTION: YOU'RE VIEWING A DEVICE YOU DON'T OWN  * * *</h1>
+
+                    <h2 id="page_title">Device ---</h2>
+                    <!--<p class="sub-header">Device details</p>-->
+
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'index.html';">
+                        <i class="fa fa-home"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary" onClick="document.location = 'devices.html' + (isReadonly ? '' : '?edit=true');">
+                        <i class="fa fa-arrow-left"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-primary" onClick="refreshDeviceInfo(deviceId);">
+                        <i class="fa fa-refresh"></i>
+                    </button>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <button type="button" class="btn btn-success d-none" id="btn-save" onClick="saveDeviceInfo();">
+                        <i class="fa fa-save"></i>
+                    </button>
+                    <p>&nbsp;</p>
+
+                    <div class="row">
+                        <div id="device-info-part" class="col-8 p-3">
+
+                            <form>
+                                <div class="form-group row text-center bg-dark bg-opacity-25">
+                                    <h5>Device details</h5>
+                                </div>
+
+                                <!-- Device id -->
+                                <div class="form-group row">
+                                    <label for="device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#id" value="">
+                                    </div>
+                                </div>
+                                <!-- Device owner -->
+                                <div class="form-group row">
+                                    <label for="device#owner" class="col-sm-2 col-form-label"><b>Owner</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#owner" value="">
+                                    </div>
+                                </div>
+                                <!-- Device Name -->
+                                <div class="form-group row">
+                                    <label for="device#name" class="col-sm-2 col-form-label"><b>Device Name</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#name" value="" placeholder="Device name">
+                                    </div>
+                                </div>
+                                <!-- Device OS -->
+                                <div class="form-group row">
+                                    <label for="device#os" class="col-sm-2 col-form-label"><b>Device OS</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#os" value="LINUX" placeholder="Device OS">
+                                    </div>
+                                </div>
+                                <!-- Device IP Address -->
+                                <div class="form-group row">
+                                    <label for="device#ipAddress" class="col-sm-2 col-form-label"><b>IP address</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#ipAddress" value="" placeholder="Device IP address">
+                                    </div>
+                                </div>
+                                <!-- Device Location -->
+                                <div class="form-group row">
+                                    <label for="device#location#name" class="col-sm-2 col-form-label"><b>Location</b></label>
+                                    <div class="col-sm-4">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#location#name" value="" placeholder="Device Location">
+                                    </div>
+                                    <label for="device#location#latitude" class="col-sm-1 col-form-label"><b>Lat.:</b></label>
+                                    <div class="col-sm-2">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#location#latitude" value="" placeholder="Device Latitude">
+                                    </div>
+                                    <label for="device#location#longitude" class="col-sm-1 col-form-label"><b>Long.:</b></label>
+                                    <div class="col-sm-2">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#location#longitude" value="" placeholder="Device Longitude">
+                                    </div>
+                                </div>
+                                <!-- Device Username -->
+                                <div class="form-group row">
+                                    <label for="device#username" class="col-sm-2 col-form-label"><b>SSH Username</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#username" value="" placeholder="SSH username">
+                                    </div>
+                                </div>
+                                <!-- Device Password -->
+                                <div class="form-group row">
+                                    <label for="device#password" class="col-sm-2 col-form-label"><b>SSH Password</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="password" readonly class="form-control-plaintext" id="device#password" value="" placeholder="*** SSH password - Not exposed ***">
+                                    </div>
+                                </div>
+                                <!-- Device Public Key -->
+                                <div class="form-group row">
+                                    <label for="device#publicKey" class="col-sm-2 col-form-label"><b>SSH Public Key</b></label>
+                                    <div class="col-sm-10">
+                                        <textarea readonly class="form-control-plaintext" id="device#publicKey" placeholder="*** SSH public key - Not exposed ***"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Node reference (available after onboarding) -->
+                                <div class="form-group row">
+                                    <label for="device#nodeReference" class="col-sm-2 col-form-label"><b>Node Reference</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#nodeReference" value="">
+                                    </div>
+                                </div>
+                                <!-- Device status -->
+                                <div class="form-group row">
+                                    <label for="device#status" class="col-sm-2 col-form-label"><b>Device Status</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#status" value="na">
+                                    </div>
+                                </div>
+                                <!-- EMS Device status -->
+                                <div class="form-group row">
+                                    <label for="device#statusUpdate#state" class="col-sm-2 col-form-label"><b>EMS Device Status</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#statusUpdate#state" value="na">
+                                    </div>
+                                </div>
+                                <!-- Device creation data -->
+                                <div class="form-group row">
+                                    <label for="device#creationDate" class="col-sm-2 col-form-label"><b>Creation Date</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#creationDate" value="">
+                                    </div>
+                                </div>
+                                <!-- Device last update date -->
+                                <div class="form-group row">
+                                    <label for="device#lastUpdateDate" class="col-sm-2 col-form-label"><b>Last Updated</b></label>
+                                    <div class="col-sm-10">
+                                        <input type="text" readonly class="form-control-plaintext" id="device#lastUpdateDate" value="">
+                                    </div>
+                                </div>
+                                <!-- Device messages -->
+                                <div class="form-group row">
+                                    <label for="device#messages" class="col-sm-2 col-form-label"><b>Messages</b></label>
+                                    <div class="col-sm-10">
+                                        <textarea readonly class="form-control-plaintext" id="device#messages"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Device Additional Info -->
+                                <div class="form-group row">
+                                    <label for="device#deviceInfo" class="col-sm-2 col-form-label"><b>Additional Info</b></label>
+                                    <div class="col-sm-10">
+                                        <textarea readonly class="form-control-plaintext" id="device#deviceInfo" placeholder="Additional device info"></textarea>
+                                    </div>
+                                </div>
+
+                                <!--<div class="text-center">
+                                    <p>&nbsp;</p>
+                                    <input class="btn btn-primary" type="submit" value="Submit">
+                                    <input class="btn btn-primary" type="reset" value="Reset">
+                                </div>-->
+
+                            </form>
+
+                        </div>
+
+                        <div id="device-metrics-part" class="text-center col-4 p-3">
+                            <div class="form-group row text-center bg-dark bg-opacity-25">
+                                <h5>Device metrics</h5>
+                            </div>
+
+                            <div id="device-metrics"></div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+        <footer class="py-5">
+          <div class="container">
+            <div class="row">
+              <div class="footer-item col-md-8">
+                <p class="footer-item-title">Links</p>
+                <a href="">About Us</a>
+                <a href="">Portfolio</a>
+                <a href="">Blog</a>
+                <a href="">Sing In</a>
+              </div>
+              <div class="footer-item col-md-4">
+              <p class="footer-item-title">Get In Touch</p>
+                <form>
+                  <div class="mb-3 pb-3">
+                    <label for="exampleInputEmail1" class="form-label pb-3">Enter your email and we'll send you more information.</label>
+                    <input type="email" placeholder="Your Email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                  </div>
+                  <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+              </div>
+              <div class="copyright pt-4 text-center text-muted">
+                <p>&copy; 2022 YOUR-DOMAIN | Created by <a href="https://firmbee.com/solutions/to-do-list/" title="Firmbee - Free To-do list App" target="_blank">Firmbee.com</a></p>
+                <!--
+                This template is licenced under Attribution 3.0 (CC BY 3.0 PL),
+                You are free to: Share and Adapt. You must give appropriate credit, you may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
+                --> 
+            </div>
+          </div>
+        </footer>
+    </main>
+    <div class="fb2022-copy">Fbee 2022 copyright</div>
+</body>
+</html>
