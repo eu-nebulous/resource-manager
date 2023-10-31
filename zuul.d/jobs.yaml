@@ -8,15 +8,15 @@
       - nebulous-resource-manager-container-images
     description: Build the container images.
     files: &image_files
-      - ^java-spring-boot-demo/
+      - ^resource-discovery/
     vars: &image_vars
       promote_container_image_job: nebulous-resource-manager-upload-container-images
       container_images:
-        - context: java-spring-boot-demo
+        - context: resource-discovery
           registry: quay.io
-          repository: quay.io/nebulous/resource-manager-java-spring-boot-demo
+          repository: quay.io/nebulous/resource-manager
           namespace: nebulous
-          repo_shortname: resource-manager-java-spring-boot-demo
+          repo_shortname: resource-manager
           repo_description: ""
 
 - job:
@@ -44,7 +44,7 @@
     description: Run Hadolint on Dockerfile(s).
     vars:
       dockerfiles:
-        - java-spring-boot-demo/Dockerfile
+        - resource-discovery/Dockerfile
 
 - job:
     name: nebulous-resource-manager-helm-lint
