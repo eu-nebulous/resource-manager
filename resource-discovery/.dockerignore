@@ -1,0 +1,6 @@
+.mvn
+src/
+target/
+!target/resource-discovery-*.jar
+mvn*
+pom.xml

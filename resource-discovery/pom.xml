@@ -89,6 +89,16 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+
+	<!-- Creating Docker image with BUILDPACKS -->
+	<!--<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
 				<executions>
 					<execution>
 						<goals>
@@ -106,6 +116,6 @@
 				</configuration>
 			</plugin>
 		</plugins>
-	</build>
+	</build>-->
 
 </project>
