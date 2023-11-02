@@ -1,6 +1,6 @@
 
-ARG BUILDER_IMAGE=eclipse-temurin:17.0.8.1_1-jre
-ARG RUN_IMAGE=eclipse-temurin:17.0.8.1_1-jre
+ARG BUILDER_IMAGE=docker.io/eclipse-temurin:17.0.8.1_1-jre
+ARG RUN_IMAGE=docker.io/eclipse-temurin:17.0.8.1_1-jre
 
 # ----------------- Builder image -----------------
 FROM $BUILDER_IMAGE as rd-builder
