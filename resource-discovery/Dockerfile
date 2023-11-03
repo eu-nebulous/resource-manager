@@ -1,12 +1,16 @@
 
-ARG BUILDER_IMAGE=docker.io/eclipse-temurin:17.0.8.1_1-jre
-ARG RUN_IMAGE=docker.io/eclipse-temurin:17.0.8.1_1-jre
+ARG BUILDER_IMAGE=docker.io/library/maven:3.9.5-eclipse-temurin-17
+ARG RUN_IMAGE=docker.io/library/eclipse-temurin:17.0.8.1_1-jre
 
 # ----------------- Builder image -----------------
 FROM $BUILDER_IMAGE as rd-builder
-WORKDIR /app
-COPY target/resource-discovery-*.jar .
-RUN java -Djarmode=layertools -jar resource-discovery-*.jar extract
+ENV BASEDIR /app
+WORKDIR ${BASEDIR}
+COPY src        ${BASEDIR}/src
+COPY pom.xml    ${BASEDIR}/
+COPY run.sh     ${BASEDIR}/
+RUN mvn -f ${BASEDIR}/pom.xml -DskipTests clean install
+RUN java -Djarmode=layertools -jar ${BASEDIR}/target/resource-discovery-*.jar extract
 
 # -----------------   Runtime image   -----------------
 FROM $RUN_IMAGE
@@ -39,9 +43,7 @@ COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/dependencies          
 COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/spring-boot-loader    ${BASEDIR}
 COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/snapshot-dependencies ${BASEDIR}
 COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/application           ${BASEDIR}
-
-# Copy entrypoint script
-COPY --chown=${RD_USER}:${RD_USER} run.sh ${BASEDIR}
+COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/run.sh                ${BASEDIR}
 
 EXPOSE 8080
 
