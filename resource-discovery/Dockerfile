@@ -9,8 +9,8 @@ WORKDIR ${BASEDIR}
 COPY src        ${BASEDIR}/src
 COPY pom.xml    ${BASEDIR}/
 COPY run.sh     ${BASEDIR}/
-RUN mvn -f ${BASEDIR}/pom.xml -DskipTests clean install
-RUN java -Djarmode=layertools -jar ${BASEDIR}/target/resource-discovery-*.jar extract
+RUN mvn -f ${BASEDIR}/pom.xml -DskipTests clean install && \
+    java -Djarmode=layertools -jar ${BASEDIR}/target/resource-discovery-*.jar extract
 
 # -----------------   Runtime image   -----------------
 FROM $RUN_IMAGE
@@ -20,18 +20,19 @@ ENV BASEDIR /opt/resource-discovery
 ENV RD_HOME ${BASEDIR}
 
 # Install required and optional packages
-RUN apt-get update && apt-get install -y \
-    dumb-init \
-    netcat \
-    vim \
-    iputils-ping \
-    && rm -rf /var/lib/apt/lists/*
+RUN wget  --progress=dot:giga -O /usr/local/bin/dumb-init \
+          https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_x86_64 && \
+    chmod +x /usr/local/bin/dumb-init
+
+#RUN apt-get update && \
+#    apt-get install -y netcat vim iputils-ping && \
+#    rm -rf /var/lib/apt/lists/*
 
 # Add RD user
 ARG RD_USER=rd
-RUN mkdir ${RD_HOME} ; \
-    addgroup ${RD_USER} ; \
-    adduser --home ${RD_HOME} --no-create-home --ingroup ${RD_USER} --disabled-password ${RD_USER} ; \
+RUN mkdir ${RD_HOME} && \
+    addgroup ${RD_USER} && \
+    adduser --home ${RD_HOME} --no-create-home --ingroup ${RD_USER} --disabled-password ${RD_USER} && \
     chown ${RD_USER}:${RD_USER} ${RD_HOME}
 
 # Set User and Workdir
