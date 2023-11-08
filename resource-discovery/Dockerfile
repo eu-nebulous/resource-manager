@@ -45,6 +45,7 @@ COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/spring-boot-loader    
 COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/snapshot-dependencies ${BASEDIR}
 COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/application           ${BASEDIR}
 COPY --chown=${RD_USER}:${RD_USER} --from=rd-builder /app/run.sh                ${BASEDIR}
+RUN chmod +x run.sh
 
 EXPOSE 8080
 
