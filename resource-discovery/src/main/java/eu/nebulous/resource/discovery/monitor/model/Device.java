@@ -40,6 +40,7 @@ public class Device {
 
     private String nodeReference;
     @Setter(AccessLevel.NONE)
+    @Builder.Default
     private List<String> messages = new ArrayList<>();
 
     private DeviceStatusUpdate statusUpdate;
