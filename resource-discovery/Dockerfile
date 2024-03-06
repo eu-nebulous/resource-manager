@@ -2,7 +2,7 @@
 ARG BUILDER_IMAGE=docker.io/library/maven
 ARG BUILDER_IMAGE_TAG=3.9.6-eclipse-temurin-21
 ARG RUN_IMAGE=docker.io/library/eclipse-temurin
-ARG RUN_IMAGE=21.0.1_12-jre
+ARG RUN_IMAGE_TAG=21.0.1_12-jre
 
 # ----------------- Builder image -----------------
 FROM $BUILDER_IMAGE:$BUILDER_IMAGE_TAG as rd-builder
