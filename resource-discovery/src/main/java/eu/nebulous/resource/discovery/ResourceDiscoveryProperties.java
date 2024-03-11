@@ -85,6 +85,12 @@ public class ResourceDiscoveryProperties {
 	// Users
 	private List<UserData> users;
 
+	// Nebulous broker subscription details
+	private String nebulous_broker_ip_address;
+	private String nebulous_broker_username;
+	private String lost_device_topic;
+	private String nebulous_broker_password;
+
 	@Data
 	public static class UserData {
 		private final String username;

@@ -9,6 +9,7 @@ import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
 import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
+import eu.nebulous.resource.discovery.registration.service.SALRegistrationService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
 	private final DeviceManagementService deviceManagementService;
+	private final SALRegistrationService salRegistrationService;
 	private final TaskScheduler taskScheduler;
 	private final ObjectMapper objectMapper;
 	private final BrokerUtil brokerUtil;
@@ -367,5 +369,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setRequestId(registrationRequest.getId());
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
+		salRegistrationService.register(device);
 	}
 }

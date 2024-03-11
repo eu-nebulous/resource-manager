@@ -7,6 +7,7 @@ import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.service.DeviceLifeCycleRequestService;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
+import eu.nebulous.resource.discovery.registration.service.SALRegistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -31,6 +32,7 @@ public class DeviceManagementController {
 	private final DeviceProcessor deviceProcessor;
 	private final DeviceManagementService deviceService;
 	private final DeviceLifeCycleRequestService deviceLifeCycleRequestService;
+	private final SALRegistrationService salRegistrationService;
 
 	private boolean isAuthenticated(Authentication authentication) {
 		return authentication!=null && StringUtils.isNotBlank(authentication.getName());
@@ -83,6 +85,8 @@ public class DeviceManagementController {
 
 	@PutMapping(value = "/device", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Device createDevice(@RequestBody Device device) {
+
+		salRegistrationService.register(device);
 		return deviceService.save(device);
 	}
 

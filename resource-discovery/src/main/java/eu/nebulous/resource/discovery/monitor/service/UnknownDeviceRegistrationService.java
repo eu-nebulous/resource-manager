@@ -9,6 +9,7 @@ import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
+import eu.nebulous.resource.discovery.registration.service.SALRegistrationService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -29,16 +30,18 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
     );
     private final RegistrationRequestService registrationRequestService;
     private final DeviceManagementService deviceManagementService;
+    private final SALRegistrationService salRegistrationService;
     private final Map<String, String> detectedDevices = Collections.synchronizedMap(new LinkedHashMap<>());
     private final List<Map> deviceDetailsQueue = Collections.synchronizedList(new LinkedList<>());
 
     public UnknownDeviceRegistrationService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler,
                                             ObjectMapper objectMapper, DeviceManagementService deviceManagementService,
-                                            RegistrationRequestService registrationRequestService, BrokerUtil brokerUtil)
+                                            RegistrationRequestService registrationRequestService, BrokerUtil brokerUtil, SALRegistrationService salRegistrationService)
     {
         super("UnknownDeviceRegistrationService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.registrationRequestService = registrationRequestService;
         this.deviceManagementService = deviceManagementService;
+        this.salRegistrationService = salRegistrationService;
     }
 
     @Override
@@ -243,6 +246,11 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
                         .build();
                 newDevice = deviceManagementService.save(newDevice);
                 log.info("UnknownDeviceRegistrationService: Registered device: {}", newDevice);
+
+                log.info("Registering the device {} to SAL...",newDevice);
+                salRegistrationService.register(newDevice);
+
+
             } catch (Exception e) {
                 log.warn("UnknownDeviceRegistrationService: EXCEPTION while processing device details response: {}\nException: ", map, e);
             }

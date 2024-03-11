@@ -22,6 +22,14 @@
 	</properties>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>eu.nebulouscloud</groupId>
+			<artifactId>exn-connector-java</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
@@ -72,6 +80,11 @@
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>gr.ntua.imu.morphemic</groupId>
+			<artifactId>amq-message-java-library</artifactId>
+			<version>4.0.0-SNAPSHOT</version>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
@@ -92,6 +105,18 @@
 			</plugin>
 		</plugins>
 	</build>
+
+
+	<repositories>
+		<repository>
+			<id>maven-central</id>
+			<url>https://repo1.maven.org/maven2/</url>
+		</repository>
+		<repository>
+			<id>nexus-nebulous</id>
+			<url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+		</repository>
+	</repositories>
 
 	<!-- Creating Docker image with BUILDPACKS -->
 	<!--<build>

@@ -2,11 +2,14 @@
 package eu.nebulous.resource.discovery.monitor;
 
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.broker_communication.BrokerPublisher;
+import java.time.Clock;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -17,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -130,6 +134,12 @@ public class DeviceProcessor  implements InitializingBean {
                     && device.getCreationDate().isBefore(failedDeviceThreshold) )
             {
                 device.setStatus(DeviceStatus.FAILED);
+                JSONObject lost_device_message = new JSONObject();
+                lost_device_message.put("device_name",device.getName());
+                Clock clock = Clock.systemUTC();
+                lost_device_message.put("timestamp",(int)(clock.millis()/1000));
+                BrokerPublisher device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                device_lost_publisher.publish(lost_device_message.toJSONString(), Collections.singleton(""));
                 log.warn("processFailedDevices: Marked as FAILED device with Id: {}", device.getId());
             }
 
