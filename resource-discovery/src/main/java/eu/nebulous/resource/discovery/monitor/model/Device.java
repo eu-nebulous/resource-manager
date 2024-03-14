@@ -21,6 +21,7 @@ public class Device {
     private String name;
     private String owner;
     private String ipAddress;
+    private int port;
     private DeviceLocation location;
     private String username;
     @ToString.Exclude

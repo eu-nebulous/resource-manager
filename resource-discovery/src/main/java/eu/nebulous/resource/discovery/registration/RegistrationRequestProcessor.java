@@ -177,6 +177,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 					"deviceOs", registrationRequest.getDevice().getOs(),
 					"deviceName", registrationRequest.getDevice().getName(),
 					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
+					"devicePort", Integer.toString( registrationRequest.getDevice().getPort() ),
 					"deviceUsername", registrationRequest.getDevice().getUsername(),
 					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
 					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
