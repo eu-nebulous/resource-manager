@@ -179,6 +179,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 					"deviceOs", registrationRequest.getDevice().getOs(),
 					"deviceName", registrationRequest.getDevice().getName(),
 					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
+					"devicePort", Integer.toString( registrationRequest.getDevice().getPort() ),
 					"deviceUsername", registrationRequest.getDevice().getUsername(),
 					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
 					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
@@ -259,7 +260,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			String ipAddress = registrationRequest.getDevice().getIpAddress();
 			boolean isError = false;
 			if (StringUtils.isNotBlank(deviceIpAddress) && ! StringUtils.equals(ipAddress, deviceIpAddress)) {
-				String mesg = String.format("Device IP address in RESPONSE does not match with that in the request: id=%s, ip-address-response=%s != ip-address-in-request%s", requestId, deviceIpAddress, ipAddress);
+				String mesg = String.format("Device IP address in RESPONSE does not match with that in the request: id=%s, ip-address-response=%s != ip-address-in-request=%s", requestId, deviceIpAddress, ipAddress);
 				log.warn("processResponse: {}", mesg);
 				registrationRequest.getMessages().add(mesg);
 				isError = true;

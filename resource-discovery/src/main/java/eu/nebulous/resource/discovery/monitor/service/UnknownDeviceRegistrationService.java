@@ -14,14 +14,14 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.TaskScheduler;
-import org.springframework.stereotype.Service;
+//import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
 @Slf4j
-@Service
+//@Service
 public class UnknownDeviceRegistrationService extends AbstractMonitorService {
     private final static List<String> MONITORED_REQUEST_TYPES = List.of(
             REQUEST_TYPE.INFO.name(),

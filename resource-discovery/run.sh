@@ -43,7 +43,7 @@ ${JRE} \
     $JAVA_ADD_OPENS \
     -Djasypt.encryptor.password=$JASYPT_PASSWORD \
     -Djava.security.egd=file:/dev/urandom \
-    org.springframework.boot.loader.JarLauncher \
+    org.springframework.boot.loader.launch.JarLauncher \
     $* &
 
 # Get PID and wait it to exit
