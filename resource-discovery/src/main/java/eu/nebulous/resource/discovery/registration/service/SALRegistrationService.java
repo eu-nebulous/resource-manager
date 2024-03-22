@@ -1,7 +1,6 @@
 package eu.nebulous.resource.discovery.registration.service;
 
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
-import eu.nebulous.resource.discovery.broker_communication.BrokerPublisher;
 import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import lombok.extern.slf4j.Slf4j;
@@ -48,9 +47,12 @@ public class SALRegistrationService {
 
         Integer cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
         Integer ram_gb = Integer.parseInt(device_info.get("RAM_TOTAL_KB"))/1000000;
-        Integer disk_gb = Integer.parseInt(device_info.get("DISK_TOTAL"))/1000000;
+        Integer disk_gb = Integer.parseInt(device_info.get("DISK_TOTAL_KB"))/1000000;
         String external_ip_address = device.getIpAddress();
-
+        String device_username = device.getUsername();
+        String device_password = new String(device.getPassword());
+        String device_pub_key = new String(device.getPublicKey()); //TODO get here private key instead and pass this to device registration
+        //TODO implement provider here: String provider = device.getProvider();
         //String network_rx =device_info.get("RX");
         //String network_tx = device_info.get("TX");
 
@@ -59,15 +61,16 @@ public class SALRegistrationService {
         JSONObject register_device_message = new JSONObject();
         register_device_message.put("device_name",device_name);
         register_device_message.put("timestamp",(int)(clock.millis()/1000));
-        get_device_registration_json("./src/main/java/eu/nebulous/resource/discovery/broker_communication/sal_device_registration_base_payload.json","10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece");
-        String sal_running_applications_reply = request_running_applications_AMQP(); //TODO handle the response inside the called function
-        ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
-        for (String application_name:applications) {
+        get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
+        //String sal_running_applications_reply = request_running_applications_AMQP();
+        //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
+        //for (String application_name:applications) {
+            String application_name = "";
             SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             //TODO handle the response here
             Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(""));
             log.info("The response received while trying to register device "+device_name);
-        }
+        //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
         CurrDateTime: 1709207141

@@ -6,13 +6,13 @@ import eu.nebulouscloud.exn.core.Context;
 import eu.nebulouscloud.exn.core.Publisher;
 import eu.nebulouscloud.exn.handlers.ConnectorHandler;
 import eu.nebulouscloud.exn.settings.ExnConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.util.CustomObjectInputStream;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+@Slf4j
 public class ExtendedConnector extends Connector {
     private CustomConnectorHandler handler;
 
@@ -45,7 +45,7 @@ public class ExtendedConnector extends Connector {
             Context context = ((CustomConnectorHandler)handler).getContext();
             context.unregisterConsumer(key);
         }catch (ClassCastException c){
-            Logger.getAnonymousLogger().log(Level.WARNING,"Could not unregister consumer, as the handler of the Connector it belongs to is not a CustomConnectorHandler");
+            log.warn("Could not unregister consumer, as the handler of the Connector it belongs to is not a CustomConnectorHandler");
         }
     }
 
@@ -54,7 +54,7 @@ public class ExtendedConnector extends Connector {
             Context context = ((CustomConnectorHandler)handler).getContext();
             context.unregisterPublisher(key);
         }catch (ClassCastException c){
-            Logger.getAnonymousLogger().log(Level.WARNING,"Could not unregister consumer, as the handler of the Connector it belongs to is not a CustomConnectorHandler");
+            log.warn("Could not unregister consumer, as the handler of the Connector it belongs to is not a CustomConnectorHandler");
         }
     }
 
@@ -63,7 +63,7 @@ public class ExtendedConnector extends Connector {
         try {
             ((CustomConnectorHandler)handler).getContext().registerConsumer(newConsumer);
         }catch (ClassCastException c){
-            Logger.getAnonymousLogger().log(Level.WARNING,"Could not register consumer, as the handler of the Connector it belongs to is not a CustomConnectorHandler");
+            log.warn("Could not register consumer, as the handler of the Connector it belongs to is not a CustomConnectorHandler");
         }
     }
 

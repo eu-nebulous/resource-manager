@@ -4,32 +4,31 @@ import eu.nebulouscloud.exn.core.Consumer;
 import eu.nebulouscloud.exn.core.Context;
 import eu.nebulouscloud.exn.core.Handler;
 import eu.nebulouscloud.exn.settings.StaticExnConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.qpid.protonj2.client.Message;
 import org.json.simple.JSONValue;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static eu.nebulous.resource.discovery.broker_communication.BrokerPublisher.EMPTY;
-import static java.util.logging.Level.INFO;
 
+@Slf4j
 public class BrokerSubscriber {
 
     private class MessageProcessingHandler extends Handler {
         private BrokerSubscriptionDetails broker_details;
         private static final BiFunction temporary_function = (Object o, Object o2) -> {
             //System.out.println("");
-            Logger.getGlobal().log(INFO, "REPLACE_TEMPORARY_HANDLING_FUNCTIONALITY");
+            log.info("REPLACE_TEMPORARY_HANDLING_FUNCTIONALITY");
             return "IN_PROCESSING";
         };
         private BiFunction<BrokerSubscriptionDetails, String, String> processing_function;
 
         @Override
         public void onMessage(String key, String address, Map body, Message message, Context context) {
-            Logger.getGlobal().log(INFO, "Handling message for address " + address);
+            log.info("Handling message for address " + address);
             processing_function.apply(broker_details, JSONValue.toJSONString(body));
         }
 
@@ -70,7 +69,7 @@ public class BrokerSubscriber {
             } catch (Exception e) {
                 String message = "Topic is " + topic + " broker ip is " + broker_ip + " broker username/pass are " + brokerUsername + "," + brokerPassword;
 
-                Logger.getGlobal().log(INFO, message);
+                log.info(message);
                 throw new RuntimeException(e);
             }
         }
@@ -98,11 +97,11 @@ public class BrokerSubscriber {
         if (subscriber_configuration_changed) {
             Consumer current_consumer;
             if (application_name != null && !application_name.equals(EMPTY)) { //Create a consumer for one application
-                Logger.getGlobal().log(INFO, "APP level subscriber " + topic);
+                log.info("APP level subscriber " + topic);
                 current_consumer = new Consumer(topic, topic, new MessageProcessingHandler(broker_details), application_name, true, true);
             } else { //Allow the consumer to get information from any publisher
                 current_consumer = new Consumer(topic, topic, new MessageProcessingHandler(broker_details), true, true);
-                Logger.getGlobal().log(INFO, "HIGH level subscriber " + topic);
+                log.info("HIGH level subscriber " + topic);
             }
             active_consumers_per_topic_per_broker_ip.get(broker_ip).put(topic, current_consumer);
 
@@ -152,7 +151,7 @@ public class BrokerSubscriber {
 
     public int subscribe(BiFunction function, String application_name, AtomicBoolean stop_signal) {
         int exit_status = -1;
-        Logger.getGlobal().log(INFO, "ESTABLISHING SUBSCRIPTION for " + topic);
+        log.info("ESTABLISHING SUBSCRIPTION for " + topic);
         //First remove any leftover consumer
         if (active_consumers_per_topic_per_broker_ip.containsKey(broker_ip)) {
             active_consumers_per_topic_per_broker_ip.get(broker_ip).remove(topic);
@@ -172,17 +171,17 @@ public class BrokerSubscriber {
         active_consumers_per_topic_per_broker_ip.get(broker_ip).put(topic, new_consumer);
         add_topic_consumer_to_broker_connector(new_consumer);
 
-        Logger.getGlobal().log(INFO, "ESTABLISHED SUBSCRIPTION to topic " + topic);
+        log.info("ESTABLISHED SUBSCRIPTION to topic " + topic);
         synchronized (stop_signal) {
             while (!stop_signal.get()) {
                 try {
                     stop_signal.wait();
                 } catch (Exception e) {
-                    Logger.getGlobal().log(Level.WARNING, e.toString() + " in thread " + Thread.currentThread().getName());
+                    log.warn( e.toString() + " in thread " + Thread.currentThread().getName());
                     break;
                 }
             }
-            Logger.getGlobal().log(INFO, "Stopping subscription for broker " + broker_ip + " and topic " + topic + "at thread " + Thread.currentThread().getName());
+            log.info("Stopping subscription for broker " + broker_ip + " and topic " + topic + "at thread " + Thread.currentThread().getName());
             stop_signal.set(false);
         }
         active_consumers_per_topic_per_broker_ip.get(broker_ip).remove(topic);

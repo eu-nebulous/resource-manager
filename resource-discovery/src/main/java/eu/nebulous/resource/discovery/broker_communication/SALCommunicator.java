@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.broker_communication;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -23,12 +24,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  * Assuming that only one SALCommunicator will exist - otherwise some variables should have their characterization as 'static' be removed
  */
+@Slf4j
 public class SALCommunicator {
 
     private static String sal_host = "localhost";
@@ -50,7 +51,7 @@ public class SALCommunicator {
         authentication_map.put("username",sal_username);
         authentication_map.put("password",sal_password);
         String sessionID = sendPOSTRequest("http://"+sal_host+":"+sal_port+"/sal/pagateway/connect", new HashMap<>(), authentication_map);
-        Logger.getGlobal().log(Level.INFO,"Retrieved session id "+sessionID);
+        log.info("Retrieved session id "+sessionID);
         return sessionID;
     }
 
@@ -62,11 +63,11 @@ public class SALCommunicator {
         //String contentType = "application/json";
 
         String sessionID = get_connection_id("localhost",9000,"admin","admin");
-        Logger.getGlobal().log(Level.INFO,"The session id is "+sessionID);
+        log.info("The session id is "+sessionID);
         ArrayList<String> applications = get_running_applications(request_running_applications_REST(sessionID));
-        Logger.getGlobal().log(Level.INFO,"The running apps are "+applications.toString());
+        log.info("The running apps are "+applications.toString());
 
-        register_devices("./src/main/java/eu/nebulous/resource/discovery/broker_communication/sal_device_registration_base_payload.json", sessionID, applications,"10.100.100","100.100.100.",10,10,10,"test12","test_provider","Athens","Greece",1);
+        register_devices("./src/main/resources/sal_device_registration_base_payload.json", sessionID, applications,"10.100.100","100.100.100.",10,10,10,"test12","test_provider","Athens","Greece",100);
         // Request 4
         //String payload4 = "{\"key3\": \"value3\"}";
         //sendRequest("https://api.example.com/endpoint3", sessionID, contentType, payload4);
@@ -79,13 +80,13 @@ public class SALCommunicator {
         return null;
     }
 
-        private static String request_running_applications_REST(String sessionID) {
+    private static String request_running_applications_REST(String sessionID) {
 
         // Request 2 - Get available jobs
         String get_jobs_payload = "{\"sessionid\": \""+sessionID+"\"}";
         HashMap<String,String> session_id_headers = new HashMap<>();
         session_id_headers.put("sessionid",sessionID);
-        Logger.getGlobal().log(Level.INFO,"Using temporary \"job\" endpoint to get the jobs from SAL...");
+        log.info("Using temporary \"job\" endpoint to get the jobs from SAL...");
         String get_jobs_string = sendGETRequest("http://localhost:9000/sal/job/",session_id_headers );
         return  get_jobs_string;
     }
@@ -141,21 +142,73 @@ public class SALCommunicator {
     }
 
 
-    public static String get_device_registration_json(String request_body_file,String internal_ip_address, String external_ip_address, int cpu_cores, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name) {
+    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int cpu_cores, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, String device_username, String device_password) {
 
-            JSONObject json = JsonFileParser.parse(request_body_file);
-            json.put("name", device_name);
-            ((JSONObject) ((JSONArray) json.get("ipAddresses")).get(0)).put("value", internal_ip_address);
-            ((JSONObject) ((JSONArray) json.get("ipAddresses")).get(1)).put("value", external_ip_address);
-            ((JSONObject) json.get("nodeProperties")).put("disk", disk_gb);
-            ((JSONObject) json.get("nodeProperties")).put("memory", ram_gb);
-            ((JSONObject) json.get("nodeProperties")).put("providerId", provider_id);
-            ((JSONObject) json.get("nodeProperties")).put("numberOfCores", cpu_cores);
-            ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("country", country_name);
-            ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("city", city_name);
-            ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
-            ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("longitude", new Random().nextFloat(-90, 90));
-            return(json.toJSONString());
+            JSONObject root_json_object = new JSONObject();
+            JSONObject loginCredential = new JSONObject();
+            JSONObject ipAddress1 = new JSONObject();
+            JSONObject ipAddress2 = new JSONObject();
+            JSONObject operatingSystem = new JSONObject();
+            JSONObject geoLocation = new JSONObject();
+            JSONObject nodeProperties = new JSONObject();
+
+            loginCredential.put("username", device_username);
+            loginCredential.put("password", device_password);
+            loginCredential.put("privateKey", "");
+
+
+            ipAddress1.put("IpAddressType", "PUBLIC_IP");
+            ipAddress1.put("IpVersion", "V4");
+            ipAddress1.put("value", external_ip_address);
+
+            ipAddress2.put("IpAddressType", "PRIVATE_IP");
+            ipAddress2.put("IpVersion", "V4");
+            ipAddress2.put("value", internal_ip_address);
+
+
+            operatingSystem.put("operatingSystemFamily", "UBUNTU");
+            operatingSystem.put("operatingSystemArchitecture", "ARMv8");
+            operatingSystem.put("operatingSystemVersion", 1804);
+
+            geoLocation.put("city", city_name);
+            geoLocation.put("country", country_name);
+            geoLocation.put("latitude", new Random().nextFloat(-90, 90));
+            geoLocation.put("longitude", new Random().nextFloat(-90, 90));
+
+            nodeProperties.put("providerId", provider_id);
+            nodeProperties.put("numberOfCores", cpu_cores);
+            nodeProperties.put("memory", ram_gb);
+            nodeProperties.put("disk", disk_gb);
+            nodeProperties.put("operatingSystem", operatingSystem);
+            nodeProperties.put("geoLocation", geoLocation);
+
+            root_json_object.put("name", device_name);
+            root_json_object.put("loginCredential", loginCredential);
+
+            JSONArray ipAddresses = new JSONArray();
+            ipAddresses.add(ipAddress1);
+            ipAddresses.add(ipAddress2);
+            root_json_object.put("ipAddresses", ipAddresses);
+
+            root_json_object.put("nodeProperties", nodeProperties);
+            root_json_object.put("systemArch", "ARMv8");
+            root_json_object.put("scriptURL", "https://www.google.com");
+            root_json_object.put("jarURL", "https://www.activeeon.com/public_content/7cde3381417ff3784639dc41fa7e7cd0544a5234-morphemic-7bulls/node_13.1.0-SNAPSHOT_armv8.jar");
+
+
+            //JSONObject root_json_object = JsonFileParser.parse(request_body_file);
+            //root_json_object.put("name", device_name);
+            //((JSONObject) ((JSONArray) root_json_object.get("ipAddresses")).get(0)).put("value", internal_ip_address);
+            //((JSONObject) ((JSONArray) root_json_object.get("ipAddresses")).get(1)).put("value", external_ip_address);
+            //((JSONObject) root_json_object.get("nodeProperties")).put("disk", disk_gb);
+            //((JSONObject) root_json_object.get("nodeProperties")).put("memory", ram_gb);
+            //((JSONObject) root_json_object.get("nodeProperties")).put("providerId", provider_id);
+            //((JSONObject) root_json_object.get("nodeProperties")).put("numberOfCores", cpu_cores);
+            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("country", country_name);
+            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("city", city_name);
+            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
+            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("longitude", new Random().nextFloat(-90, 90));
+            return(root_json_object.toJSONString());
     }
 
 
@@ -177,7 +230,7 @@ public class SALCommunicator {
             }
         }catch (Exception e){
             e.printStackTrace();
-            System.out.println("This is the input json jobs string\n\n\n\n");
+            System.out.println("This is the input json jobs string\n\n");
             System.out.println(running_jobs_string);
         }
         return  applications;

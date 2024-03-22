@@ -7,15 +7,13 @@ import eu.nebulouscloud.exn.settings.StaticExnConfig;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.*;
 
 
+@Slf4j
 public class BrokerPublisher {
     public static String EMPTY="";
     private static HashMap<String, HashSet<String>> broker_and_topics_to_publish_to = new HashMap<>();
@@ -51,8 +49,10 @@ public class BrokerPublisher {
 
         if (publisher_configuration_changed){
 //            for (String current_broker_ip : broker_and_topics_to_publish_to.keySet()){
-            Logger.getGlobal().log(Level.INFO,"Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
-            active_connector.stop(new ArrayList<>(),publishers);
+            log.info("Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
+            if (active_connector!=null) {
+                active_connector.stop(new ArrayList<>(), publishers);
+            }
             publishers.clear();
             for (String broker_topic : broker_and_topics_to_publish_to.get(broker_ip)){
                 //ArrayList<Publisher> publishers = new ArrayList<>();
@@ -82,14 +82,12 @@ public class BrokerPublisher {
                     )
             );
             active_connector.start();
-            //Logger.getGlobal().log(INFO,"Sending from EXTERIOR");
-            //private_publisher_instance.send(new JSONObject());
 
         }
     }
 
     //TODO The methods below assume that the only content to be sent is json-like
-    public void publish (String json_string_content, Iterable<String> application_names){
+    public void publish (String json_string_content, Collection<String> application_names){
 
         for (String application_name : application_names) {
             JSONParser parser = new JSONParser();
@@ -97,12 +95,13 @@ public class BrokerPublisher {
             try {
                 json_object = (JSONObject) parser.parse(json_string_content);
             } catch (ParseException p) {
-                Logger.getGlobal().log(Level.WARNING, "Could not parse the string content to be published to the broker as json, which is the following: "+json_string_content);
+                log.warn( "Could not parse the string content to be published to the broker as json, which is the following: "+json_string_content);
             }
             if (private_publisher_instance != null) {
                 private_publisher_instance.send(json_object);
+                log.info("Sent new message\n"+json_object.toJSONString());
             } else {
-                Logger.getGlobal().log(Level.SEVERE, "Could not send message to AMQP broker, as the broker ip to be used has not been specified");
+                log.error( "Could not send message to AMQP broker, as the broker ip to be used has not been specified");
             }
         }
     }
