@@ -100,9 +100,7 @@ public class SALRegistrationService implements InitializingBean {
                 processorProperties.getNebulous_broker_ip_address()!=null
         ){
             log.info("Successful setting of properties for communication with SAL");
-            properties_set =true;
         }else{
-            log.error("topic is "+get_registration_topic_name(application_name));
             log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
             log.error("username is "+processorProperties.getNebulous_broker_username());
             log.error("password is "+processorProperties.getNebulous_broker_password());
