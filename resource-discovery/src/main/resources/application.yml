@@ -21,6 +21,8 @@ discovery:
   brokerUsername: "aaa"
   brokerPassword: "111"
   nebulous_broker_ip_address: "nebulous-activemq"
+  nebulous_broker_username: "admin"
+  nebulous_broker_password: "admin"
   sal_host: "localhost"
   sal_port: 8080
   lost_device_topic: "eu.nebulouscloud.monitoring.device_lost"
