@@ -3,8 +3,10 @@ package eu.nebulous.resource.discovery.registration.service;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.monitor.model.Device;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -16,12 +18,10 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 
 @Slf4j
 @Service
-public class SALRegistrationService {
+@RequiredArgsConstructor
+public class SALRegistrationService implements InitializingBean {
     private final ResourceDiscoveryProperties processorProperties;
-
-    public SALRegistrationService(ResourceDiscoveryProperties processorProperties) {
-        this.processorProperties = processorProperties;
-    }
+    private String  application_name = "";
 
     public void register(Device device) {
 
@@ -65,7 +65,6 @@ public class SALRegistrationService {
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-            String application_name = "";
             SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             //TODO handle the response here
             Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(""));
@@ -88,5 +87,20 @@ public class SALRegistrationService {
     private String get_registration_topic_name(String application_name) {
         return "eu.nebulouscloud.exn.sal.node.put";
         //return ("eu.nebulouscloud.exn.sal.edge." + application_name);
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        if (    processorProperties.getNebulous_broker_password()!=null &&
+                processorProperties.getNebulous_broker_username()!=null &&
+                processorProperties.getNebulous_broker_ip_address()!=null
+        ){
+            log.info("Successful setting of properties for communication with SAL");
+        }else{
+            log.error("topic is "+get_registration_topic_name(application_name));
+            log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
+            log.error("username is "+processorProperties.getNebulous_broker_username());
+            log.error("password is "+processorProperties.getNebulous_broker_password());
+        }
     }
 }

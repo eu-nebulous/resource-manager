@@ -23,11 +23,6 @@ public class SynchronousBrokerPublisher {
     private String broker_ip;
 
     public SynchronousBrokerPublisher(String topic, String broker_ip, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
-        log.error("SynchronousBrokerPublisherParams");
-        log.error("topic is "+topic);
-        log.error("broker ip is "+broker_ip);
-        log.error("username is "+brokerUsername);
-        log.error("password is "+brokerPassword);
 
         boolean able_to_initialize_BrokerPublisher = topic!=null && broker_ip!=null && brokerUsername!=null && brokerPassword!=null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
