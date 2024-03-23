@@ -21,11 +21,10 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 @RequiredArgsConstructor
 public class SALRegistrationService implements InitializingBean {
     private final ResourceDiscoveryProperties processorProperties;
-    private String  application_name = "";
-    private boolean properties_set = false;
 
     public void register(Device device) {
 
+        String  application_name = ""; //TODO decide on this
         Map<String,String> device_info = device.getDeviceInfo();
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
@@ -63,17 +62,17 @@ public class SALRegistrationService implements InitializingBean {
         register_device_message.put("device_name",device_name);
         register_device_message.put("timestamp",(int)(clock.millis()/1000));
         get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
+        log.error("topic is "+get_registration_topic_name(application_name));
+        log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
+        log.error("username is "+processorProperties.getNebulous_broker_username());
+        log.error("password is "+processorProperties.getNebulous_broker_password());
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-            if (properties_set) {
                 SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 //TODO handle the response here
                 Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(""));
                 log.info("The response received while trying to register device " + device_name);
-            }else{
-                log.error("The necessary properties for the initialization of the SynchronousBrokerPublisher have not been set");
-            }
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
