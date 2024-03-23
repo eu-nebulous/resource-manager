@@ -3,6 +3,7 @@ package eu.nebulous.resource.discovery.registration.service;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.monitor.model.Device;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.stereotype.Service;
@@ -16,12 +17,9 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SALRegistrationService {
     private final ResourceDiscoveryProperties processorProperties;
-
-    public SALRegistrationService(ResourceDiscoveryProperties processorProperties) {
-        this.processorProperties = processorProperties;
-    }
 
     public void register(Device device) {
 
