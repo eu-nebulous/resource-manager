@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -18,9 +19,13 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SALRegistrationService implements InitializingBean {
+    @Autowired
     private final ResourceDiscoveryProperties processorProperties;
+
+    public SALRegistrationService(ResourceDiscoveryProperties processorProperties) {
+        this.processorProperties = processorProperties;
+    }
 
     public void register(Device device) {
 
