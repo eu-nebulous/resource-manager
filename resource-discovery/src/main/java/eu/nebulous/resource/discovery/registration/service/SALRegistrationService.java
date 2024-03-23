@@ -22,6 +22,7 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 public class SALRegistrationService implements InitializingBean {
     private final ResourceDiscoveryProperties processorProperties;
     private String  application_name = "";
+    private boolean properties_set = false;
 
     public void register(Device device) {
 
@@ -65,10 +66,14 @@ public class SALRegistrationService implements InitializingBean {
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-            SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
-            //TODO handle the response here
-            Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(""));
-            log.info("The response received while trying to register device "+device_name);
+            if (properties_set) {
+                SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                //TODO handle the response here
+                Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(""));
+                log.info("The response received while trying to register device " + device_name);
+            }else{
+                log.error("The necessary properties for the initialization of the SynchronousBrokerPublisher have not been set");
+            }
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
@@ -96,11 +101,13 @@ public class SALRegistrationService implements InitializingBean {
                 processorProperties.getNebulous_broker_ip_address()!=null
         ){
             log.info("Successful setting of properties for communication with SAL");
+            properties_set =true;
         }else{
             log.error("topic is "+get_registration_topic_name(application_name));
             log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
             log.error("username is "+processorProperties.getNebulous_broker_username());
             log.error("password is "+processorProperties.getNebulous_broker_password());
+            throw new Exception("Required data is null");
         }
     }
 }
