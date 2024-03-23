@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -18,13 +19,17 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SALRegistrationService implements InitializingBean {
+    @Autowired
     private final ResourceDiscoveryProperties processorProperties;
+
+    public SALRegistrationService(ResourceDiscoveryProperties processorProperties) {
+        this.processorProperties = processorProperties;
+    }
 
     public void register(Device device) {
 
-        String  application_name = ""; //TODO decide on this
+        String  application_name = "default-app"; //TODO decide on this
         Map<String,String> device_info = device.getDeviceInfo();
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
@@ -71,7 +76,7 @@ public class SALRegistrationService implements InitializingBean {
         //for (String application_name:applications) {
                 SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 //TODO handle the response here
-                Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(""));
+                Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(application_name));
                 log.info("The response received while trying to register device " + device_name);
         //}
 
@@ -104,7 +109,7 @@ public class SALRegistrationService implements InitializingBean {
             log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
             log.error("username is "+processorProperties.getNebulous_broker_username());
             log.error("password is "+processorProperties.getNebulous_broker_password());
-            throw new Exception("Required data is null");
+            throw new Exception("Required data is null - broker ip is "+processorProperties.getNebulous_broker_ip_address()+" username is "+processorProperties.getNebulous_broker_username()+" password is "+processorProperties.getNebulous_broker_password());
         }
     }
 }
