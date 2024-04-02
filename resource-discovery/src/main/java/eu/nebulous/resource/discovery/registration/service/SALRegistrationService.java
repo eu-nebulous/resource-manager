@@ -63,10 +63,11 @@ public class SALRegistrationService implements InitializingBean {
 
         Clock clock = Clock.systemUTC();
 
-        JSONObject register_device_message = new JSONObject();
-        register_device_message.put("device_name",device_name);
-        register_device_message.put("timestamp",(int)(clock.millis()/1000));
-        get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
+        //JSONObject register_device_message = new JSONObject();
+        //register_device_message.put("device_name",device_name);
+        //register_device_message.put("timestamp",(int)(clock.millis()/1000));
+
+        String register_device_message_string = get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
         log.error("topic is "+get_registration_topic_name(application_name));
         log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
         log.error("broker port is "+processorProperties.getNebulous_broker_port());
@@ -77,7 +78,7 @@ public class SALRegistrationService implements InitializingBean {
         //for (String application_name:applications) {
                 SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 //TODO handle the response here
-                Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(application_name));
+                Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
                 log.info("The response received while trying to register device " + device_name);
         //}
 
