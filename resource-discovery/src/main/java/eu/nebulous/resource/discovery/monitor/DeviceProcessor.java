@@ -138,7 +138,7 @@ public class DeviceProcessor  implements InitializingBean {
                 lost_device_message.put("device_name",device.getName());
                 Clock clock = Clock.systemUTC();
                 lost_device_message.put("timestamp",(int)(clock.millis()/1000));
-                BrokerPublisher device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                BrokerPublisher device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(),processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 device_lost_publisher.publish(lost_device_message.toJSONString(), Collections.singleton(""));
                 log.warn("processFailedDevices: Marked as FAILED device with Id: {}", device.getId());
             }

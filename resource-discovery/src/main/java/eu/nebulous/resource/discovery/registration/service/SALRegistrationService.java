@@ -74,7 +74,7 @@ public class SALRegistrationService implements InitializingBean {
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-                SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 //TODO handle the response here
                 Map response = register_device_publisher.publish_for_response(register_device_message.toJSONString(), Collections.singleton(application_name));
                 log.info("The response received while trying to register device " + device_name);

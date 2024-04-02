@@ -56,11 +56,12 @@ public class BrokerSubscriber {
     private static HashMap<String, ExtendedConnector> current_connectors = new HashMap<>();
     private String topic;
     private String broker_ip;
+    private int broker_port;
     private String brokerUsername;
     private String brokerPassword;
     BrokerSubscriptionDetails broker_details;
 
-    public BrokerSubscriber(String topic, String broker_ip, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation, String application_name) {
+    public BrokerSubscriber(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation, String application_name) {
         boolean able_to_initialize_BrokerSubscriber = topic != null && broker_ip != null && brokerUsername != null && brokerPassword != null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
         if (!able_to_initialize_BrokerSubscriber) {
@@ -73,7 +74,7 @@ public class BrokerSubscriber {
                 throw new RuntimeException(e);
             }
         }
-        broker_details = new BrokerSubscriptionDetails(broker_ip, brokerUsername, brokerPassword, application_name, topic);
+        broker_details = new BrokerSubscriptionDetails(broker_ip, broker_port, brokerUsername, brokerPassword, application_name, topic);
         boolean subscriber_configuration_changed;
         if (!broker_and_topics_to_subscribe_to.containsKey(broker_ip)) {
             HashSet<String> topics_to_subscribe_to = new HashSet<>();
@@ -107,6 +108,7 @@ public class BrokerSubscriber {
 
             this.topic = topic;
             this.broker_ip = broker_ip;
+            this.broker_port = broker_port;
             this.brokerUsername = brokerUsername;
             this.brokerPassword = brokerPassword;
             add_topic_consumer_to_broker_connector(current_consumer);
@@ -131,7 +133,7 @@ public class BrokerSubscriber {
                     false,
                     new StaticExnConfig(
                             broker_ip,
-                            5672,
+                            broker_port,
                             brokerUsername,
                             brokerPassword,
                             60,

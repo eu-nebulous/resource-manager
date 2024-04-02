@@ -23,8 +23,9 @@ public class BrokerPublisher {
     private ExtendedConnector active_connector;
     private String topic;
     private String broker_ip;
+    private int broker_port;
 
-    public BrokerPublisher(String topic, String broker_ip, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
+    public BrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
         boolean able_to_initialize_BrokerPublisher = topic!=null && broker_ip!=null && brokerUsername!=null && brokerPassword!=null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
         if (!able_to_initialize_BrokerPublisher){
@@ -62,6 +63,7 @@ public class BrokerPublisher {
                     this.private_publisher_instance = publishers.get(publishers.size()-1);
                     this.topic = broker_topic;
                     this.broker_ip = broker_ip;
+                    this.broker_port = broker_port;
                 }
             }
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
@@ -74,7 +76,7 @@ public class BrokerPublisher {
                     false,
                     new StaticExnConfig(
                             broker_ip,
-                            5672,
+                            broker_port,
                             brokerUsername,
                             brokerPassword,
                             60,

@@ -6,11 +6,13 @@ public class BrokerSubscriptionDetails {
     String broker_username = "admin";
     String broker_password = "admin";
     String broker_ip = "localhost";
+    int broker_port = 5672;
     String application_name = "default_application";
     String topic = EMPTY;
 
-    public BrokerSubscriptionDetails(String broker_ip, String broker_username, String broker_password,String application_name, String topic) {
+    public BrokerSubscriptionDetails(String broker_ip, int broker_port, String broker_username, String broker_password,String application_name, String topic) {
         this.broker_ip = broker_ip;
+        this.broker_port = broker_port;
         this.broker_username = broker_username;
         this.broker_password = broker_password;
         this.topic = topic;
@@ -65,5 +67,13 @@ public class BrokerSubscriptionDetails {
 
     public void setTopic(String topic) {
         this.topic = topic;
+    }
+
+    public int getBroker_port() {
+        return broker_port;
+    }
+
+    public void setBroker_port(int broker_port) {
+        this.broker_port = broker_port;
     }
 }
