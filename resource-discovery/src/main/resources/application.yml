@@ -21,6 +21,7 @@ discovery:
   brokerUsername: "aaa"
   brokerPassword: "111"
   nebulous_broker_ip_address: "nebulous-activemq"
+  nebulous_broker_port: 5672
   nebulous_broker_username: "admin"
   nebulous_broker_password: "admin"
   sal_host: "localhost"
