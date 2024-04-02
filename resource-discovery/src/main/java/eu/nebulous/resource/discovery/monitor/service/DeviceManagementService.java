@@ -192,6 +192,7 @@ public class DeviceManagementService {
 		result.get().setArchiveDate(Instant.now());
 		archivedDeviceRepository.save(deviceConversionService.toArchivedDevice(result.get()));
 		deviceRepository.delete(result.get());
+		//XXX:TODO: Send notification to SAL to deregister Device
 	}
 
 	public void unarchiveDevice(String id, Map<String,String> credentials) {
@@ -208,6 +209,7 @@ public class DeviceManagementService {
 		restoredDevice.setPublicKey(credentials.get("publicKey").toCharArray());
 		deviceRepository.save(restoredDevice);
 		archivedDeviceRepository.deleteById(result.get().getId());
+		//XXX:TODO: Send notification to SAL to re-register Device
 	}
 
 	private void checkCredentials(String id, Map<String, String> credentials) {

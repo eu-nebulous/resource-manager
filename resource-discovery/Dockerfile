@@ -1,9 +1,6 @@
 
-ARG BUILDER_IMAGE=docker.io/library/maven:3.9.5-eclipse-temurin-17
-ARG RUN_IMAGE=docker.io/library/eclipse-temurin:17.0.8.1_1-jre
-
 # ----------------- Builder image -----------------
-FROM docker.io/library/maven:3.9.5-eclipse-temurin-17 as rd-builder
+FROM docker.io/library/maven:3.9.6-eclipse-temurin-21 as rd-builder
 ENV BASEDIR /app
 WORKDIR ${BASEDIR}
 COPY src        ${BASEDIR}/src
@@ -13,7 +10,7 @@ RUN mvn -f ${BASEDIR}/pom.xml -DskipTests clean install && \
     java -Djarmode=layertools -jar ${BASEDIR}/target/resource-discovery-*.jar extract
 
 # -----------------   Runtime image   -----------------
-FROM docker.io/library/eclipse-temurin:17.0.8.1_1-jre
+FROM docker.io/library/eclipse-temurin:21.0.1_12-jre
 
 # Setup environment
 ENV BASEDIR /opt/resource-discovery
@@ -26,9 +23,9 @@ RUN wget  --progress=dot:giga -O /usr/local/bin/dumb-init \
 
 # Add RD user
 ARG RD_USER=rd
-RUN mkdir ${RD_HOME} ; \
-    addgroup ${RD_USER} ; \
-    adduser --home ${RD_HOME} --no-create-home --ingroup ${RD_USER} --disabled-password ${RD_USER} ; \
+RUN mkdir ${RD_HOME} && \
+    addgroup ${RD_USER} && \
+    adduser --home ${RD_HOME} --no-create-home --ingroup ${RD_USER} --disabled-password ${RD_USER} && \
     chown ${RD_USER}:${RD_USER} ${RD_HOME}
 
 # Set User and Workdir

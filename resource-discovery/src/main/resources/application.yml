@@ -20,6 +20,13 @@ discovery:
   brokerURL: "ssl://localhost:61617?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
   brokerUsername: "aaa"
   brokerPassword: "111"
+  nebulous_broker_ip_address: "nebulous-activemq"
+  nebulous_broker_port: 5672
+  nebulous_broker_username: "admin"
+  nebulous_broker_password: "admin"
+  sal_host: "localhost"
+  sal_port: 8080
+  lost_device_topic: "eu.nebulouscloud.monitoring.device_lost"
   trustStoreFile: tests/config/broker-truststore.p12
   trustStorePassword: melodic
   trustStoreType: PKCS12

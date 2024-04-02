@@ -9,6 +9,7 @@ import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
 import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
+import eu.nebulous.resource.discovery.registration.service.SALRegistrationService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
 	private final DeviceManagementService deviceManagementService;
+	private final SALRegistrationService salRegistrationService;
 	private final TaskScheduler taskScheduler;
 	private final ObjectMapper objectMapper;
 	private final BrokerUtil brokerUtil;
@@ -177,6 +179,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 					"deviceOs", registrationRequest.getDevice().getOs(),
 					"deviceName", registrationRequest.getDevice().getName(),
 					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
+					"devicePort", Integer.toString( registrationRequest.getDevice().getPort() ),
 					"deviceUsername", registrationRequest.getDevice().getUsername(),
 					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
 					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
@@ -257,7 +260,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			String ipAddress = registrationRequest.getDevice().getIpAddress();
 			boolean isError = false;
 			if (StringUtils.isNotBlank(deviceIpAddress) && ! StringUtils.equals(ipAddress, deviceIpAddress)) {
-				String mesg = String.format("Device IP address in RESPONSE does not match with that in the request: id=%s, ip-address-response=%s != ip-address-in-request%s", requestId, deviceIpAddress, ipAddress);
+				String mesg = String.format("Device IP address in RESPONSE does not match with that in the request: id=%s, ip-address-response=%s != ip-address-in-request=%s", requestId, deviceIpAddress, ipAddress);
 				log.warn("processResponse: {}", mesg);
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
@@ -367,5 +370,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setRequestId(registrationRequest.getId());
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
+		salRegistrationService.register(device);
 	}
 }

@@ -21,6 +21,7 @@ public class Device {
     private String name;
     private String owner;
     private String ipAddress;
+    private int port;
     private DeviceLocation location;
     private String username;
     @ToString.Exclude
@@ -40,6 +41,7 @@ public class Device {
 
     private String nodeReference;
     @Setter(AccessLevel.NONE)
+    @Builder.Default
     private List<String> messages = new ArrayList<>();
 
     private DeviceStatusUpdate statusUpdate;
