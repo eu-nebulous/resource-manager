@@ -29,7 +29,7 @@ public class SALRegistrationService implements InitializingBean {
 
     public void register(Device device) {
 
-        String  application_name = "default-app"; //TODO decide on this
+        String  application_name = "default-application"; //TODO decide on this
         Map<String,String> device_info = device.getDeviceInfo();
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
@@ -94,7 +94,7 @@ public class SALRegistrationService implements InitializingBean {
     }
 
     private String get_registration_topic_name(String application_name) {
-        return "eu.nebulouscloud.exn.sal.node.put";
+        return "eu.nebulouscloud.exn.sal.node.create";
         //return ("eu.nebulouscloud.exn.sal.edge." + application_name);
     }
 

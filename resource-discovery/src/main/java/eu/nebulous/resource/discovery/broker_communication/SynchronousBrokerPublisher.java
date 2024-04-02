@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.slf4j.Marker;
 
 import java.util.*;
 
@@ -93,19 +94,37 @@ public class SynchronousBrokerPublisher {
 
     public Map publish_for_response (String json_string_content, Collection<String> application_names){
         Map reply = null;
+        HashMap<String,Object> payload = new HashMap<>();
+        HashMap<String,String> metadata = new HashMap<>();
+        metadata.put("user","admin");
+        metadata.put("type","edge");
         if (application_names!=null && !application_names.isEmpty()) {
             for (String application_name : application_names) {
+
+                boolean successful_json_parsing = false;
                 JSONParser parser = new JSONParser();
                 JSONObject json_object = new JSONObject();
                 try {
                     json_object = (JSONObject) parser.parse(json_string_content);
+                    successful_json_parsing = true;
                 } catch (ParseException p) {
                     log.warn("Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
                 }
+                metadata.put("jobId",application_name);
+                payload.put("metaData",metadata);
                 if (private_publisher_instance != null) {
-                    reply = private_publisher_instance.sendSync(json_object, application_name, null, false);
+                    //reply = private_publisher_instance.sendSync(json_object, application_name, null, false);
+                    if (successful_json_parsing) {
+                        json_object.put("jobId",application_name);
+                        payload.put("body",json_object.toJSONString());
+                        reply = private_publisher_instance.sendSync(payload, application_name, null, false);
+                    }else{
+                        payload.put("body",json_string_content);
+                        log.warn(Marker.ANY_MARKER,"Sending the original json string without any modification as its parsing was not successful");
+                        reply = private_publisher_instance.sendSync(payload, application_name, null, false);
+                    }
                 } else {
-                    log.error("Could not send message to AMQP broker, as the broker ip to be used has not been specified");
+                    log.error("Could not send message to AMQP broker, as the private publisher instance is null (is broker ip specified?)");
                 }
             }
         }else{ //Send an empty string for application
@@ -113,6 +132,7 @@ public class SynchronousBrokerPublisher {
             JSONObject json_object = new JSONObject();
             try {
                 json_object = (JSONObject) parser.parse(json_string_content);
+
             } catch (ParseException p) {
                 log.warn("Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
             }
@@ -121,7 +141,7 @@ public class SynchronousBrokerPublisher {
                 reply = private_publisher_instance.sendSync(json_object,EMPTY, null, false);
                 log.info("Sent new synchronous message\n"+json_object.toJSONString());
             } else {
-                log.error("Could not send message to AMQP broker, as the broker ip to be used has not been specified");
+                log.error("Could not send message to AMQP broker, as the private publisher instance is null (is broker ip specified?)");
             }
         }
         return reply;
