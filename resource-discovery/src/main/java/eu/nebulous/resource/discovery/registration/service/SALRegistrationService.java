@@ -69,6 +69,7 @@ public class SALRegistrationService implements InitializingBean {
         get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
         log.error("topic is "+get_registration_topic_name(application_name));
         log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
+        log.error("broker port is "+processorProperties.getNebulous_broker_port());
         log.error("username is "+processorProperties.getNebulous_broker_username());
         log.error("password is "+processorProperties.getNebulous_broker_password());
         //String sal_running_applications_reply = request_running_applications_AMQP();
