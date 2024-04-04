@@ -43,4 +43,3 @@ discovery:
       roles: [ USER ]
 
 #logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE
-logging.level.eu.nebulous.resource.discovery.common: TRACE
