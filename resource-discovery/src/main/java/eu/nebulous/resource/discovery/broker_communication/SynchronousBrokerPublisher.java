@@ -71,6 +71,7 @@ public class SynchronousBrokerPublisher {
             }
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
 
+            log.warn("##########  SynchronousBrokerPublisher: CREATING ExtendedConnector");
             active_connector = new ExtendedConnector("resource_manager"
                     , new CustomConnectorHandler() {}
                     , publishers
@@ -86,13 +87,16 @@ public class SynchronousBrokerPublisher {
                             EMPTY
                     )
             );
+            log.warn("##########  SynchronousBrokerPublisher: STARTING ExtendedConnector");
             active_connector.start();
+            log.warn("##########  SynchronousBrokerPublisher: DONE");
 
         }
     }
 
 
     public Map publish_for_response (String json_string_content, Collection<String> application_names){
+        log.warn("##########  SynchronousBrokerPublisher: BEGIN: publish_for_response");
         Map reply = null;
         HashMap<String,Object> payload = new HashMap<>();
         HashMap<String,String> metadata = new HashMap<>();
@@ -144,6 +148,7 @@ public class SynchronousBrokerPublisher {
                 log.error("Could not send message to AMQP broker, as the private publisher instance is null (is broker ip specified?)");
             }
         }
+        log.warn("##########  SynchronousBrokerPublisher: END: {}", reply);
         return reply;
     }
 }
