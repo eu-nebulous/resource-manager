@@ -240,6 +240,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
 
 		RegistrationRequest registrationRequest = registrationRequestService.getById(requestId).orElse(null);
+		log.warn("!!!!!!  RRProcessor: registrationRequest: {}", registrationRequest);
 		if (registrationRequest!=null) {
 			RegistrationRequestStatus currStatus = registrationRequest.getStatus();
 			RegistrationRequestStatus newStatus = switch (currStatus) {
@@ -251,6 +252,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			};
 			log.debug("processResponse: Temporary status change: {} --> {}", currStatus, newStatus);
 			registrationRequest.setStatus(newStatus);
+			log.warn("!!!!!!  RRProcessor: registrationRequest: status: {} --> {}", currStatus, newStatus);
 
 			if (currStatus==RegistrationRequestStatus.SUCCESS) {
 				log.error("ERROR: received response for a request with status SUCCESS. Will ignore response: request-id={}", requestId);
@@ -288,6 +290,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 			boolean doArchive = false;
 			Object obj = response.get("nodeInfo");
+			log.warn("!!!!!!  RRProcessor: devInfo: obj: {}", obj);
 			if (obj instanceof Map devInfo) {
 				// Update request info
 				registrationRequest.setLastUpdateDate(Instant.ofEpochMilli(timestamp));
@@ -319,12 +322,15 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				}
 
 				// Set new status
+				log.warn("!!!!!!  RRProcessor: devInfo: STATUS BEFORE: {}", currStatus);
+				log.warn("!!!!!!  RRProcessor: devInfo: STATUS BEFORE: {}", registrationRequest.getStatus());
 				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
 					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
 				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
 					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
 					doArchive = processorProperties.isImmediatelyArchiveSuccessRequests();
 				}
+				log.warn("!!!!!!  RRProcessor: devInfo: STATUS  AFTER: {}", registrationRequest.getStatus());
 
 				log.debug("processResponse: Done processing response for request: id={}, timestamp={}", requestId, timestamp);
 			} else {
@@ -334,9 +340,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			// If request status is SUCCESS then copy Device in monitoring subsystem
 			if (registrationRequest.getStatus() == RegistrationRequestStatus.SUCCESS) {
 				try {
-					log.warn("!!!!!!  RRProcessor: COPING TO DEVICES");
+					log.warn("!!!!!!  RRProcessor: COPY TO DEVICES");
 					copyDeviceToMonitoring(registrationRequest);
-					log.warn("!!!!!!  RRProcessor: COPIED TO DEVICES");
 				} catch (Exception e) {
 					log.warn("processResponse: EXCEPTION: while copying device to monitoring subsystem: request={}\n", registrationRequest, e);
 					registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
@@ -361,7 +366,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
-		log.warn("!!!!!!  RRProcessor: copyDeviceToMonitoring: BEGIN");
 		Device device = objectMapper.convertValue(registrationRequest.getDevice(), Device.class);
 		// override values
 		device.setId(null);
@@ -376,10 +380,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		//device.setRequest(registrationRequest);
 		device.setRequestId(registrationRequest.getId());
 		device.setNodeReference(registrationRequest.getNodeReference());
-		log.warn("!!!!!!  RRProcessor: copyDeviceToMonitoring: BEFORE SAVE");
 		deviceManagementService.save(device);
-		log.warn("!!!!!!  RRProcessor: copyDeviceToMonitoring: AFTER SAVE -- BEFORE SAL");
 		salRegistrationService.register(device);
-		log.warn("!!!!!!  RRProcessor: copyDeviceToMonitoring: END: AFTER SAL");
 	}
 }

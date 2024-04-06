@@ -28,7 +28,6 @@ public class SALRegistrationService implements InitializingBean {
     }
 
     public void register(Device device) {
-        log.warn("##########  SALReg: BEGIN: {}", device);
 
         String  application_name = "default-application"; //TODO decide on this
         Map<String,String> device_info = device.getDeviceInfo();
@@ -77,10 +76,8 @@ public class SALRegistrationService implements InitializingBean {
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-        log.warn("##########  SALReg: CREATING register_device_publisher");
                 SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 //TODO handle the response here
-        log.warn("##########  SALReg: PUBLISHING WITH register_device_publisher");
                 Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
                 log.info("The response received while trying to register device " + device_name);
         //}
@@ -96,7 +93,6 @@ public class SALRegistrationService implements InitializingBean {
         TX: 0
          */
 
-        log.warn("##########  SALReg: END");
     }
 
     private String get_registration_topic_name(String application_name) {
