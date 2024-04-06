@@ -231,6 +231,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void processResponse(@NonNull Map<String, Object> response) {
+		log.warn("!!!!!!  RRProcessor: processResponse: BEGIN: {}", response);
 		String requestType = response.getOrDefault("requestType", "").toString().trim();
 		String requestId = response.getOrDefault("requestId", "").toString().trim();
 		String reference = response.getOrDefault("reference", "").toString().trim();
@@ -239,6 +240,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
 
 		RegistrationRequest registrationRequest = registrationRequestService.getById(requestId).orElse(null);
+		log.warn("!!!!!!  RRProcessor: registrationRequest: {}", registrationRequest);
 		if (registrationRequest!=null) {
 			RegistrationRequestStatus currStatus = registrationRequest.getStatus();
 			RegistrationRequestStatus newStatus = switch (currStatus) {
@@ -250,6 +252,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			};
 			log.debug("processResponse: Temporary status change: {} --> {}", currStatus, newStatus);
 			registrationRequest.setStatus(newStatus);
+			log.warn("!!!!!!  RRProcessor: registrationRequest: status: {} --> {}", currStatus, newStatus);
 
 			if (currStatus==RegistrationRequestStatus.SUCCESS) {
 				log.error("ERROR: received response for a request with status SUCCESS. Will ignore response: request-id={}", requestId);
@@ -287,6 +290,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 			boolean doArchive = false;
 			Object obj = response.get("nodeInfo");
+			log.warn("!!!!!!  RRProcessor: devInfo: obj: {}", obj);
 			if (obj instanceof Map devInfo) {
 				// Update request info
 				registrationRequest.setLastUpdateDate(Instant.ofEpochMilli(timestamp));
@@ -318,12 +322,15 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				}
 
 				// Set new status
+				log.warn("!!!!!!  RRProcessor: devInfo: STATUS BEFORE: {}", currStatus);
+				log.warn("!!!!!!  RRProcessor: devInfo: STATUS BEFORE: {}", registrationRequest.getStatus());
 				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
 					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
 				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
 					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
 					doArchive = processorProperties.isImmediatelyArchiveSuccessRequests();
 				}
+				log.warn("!!!!!!  RRProcessor: devInfo: STATUS  AFTER: {}", registrationRequest.getStatus());
 
 				log.debug("processResponse: Done processing response for request: id={}, timestamp={}", requestId, timestamp);
 			} else {
@@ -333,6 +340,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			// If request status is SUCCESS then copy Device in monitoring subsystem
 			if (registrationRequest.getStatus() == RegistrationRequestStatus.SUCCESS) {
 				try {
+					log.warn("!!!!!!  RRProcessor: COPY TO DEVICES");
 					copyDeviceToMonitoring(registrationRequest);
 				} catch (Exception e) {
 					log.warn("processResponse: EXCEPTION: while copying device to monitoring subsystem: request={}\n", registrationRequest, e);
@@ -344,14 +352,17 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			// Store changes
 			log.debug("processResponse: Save updated request: id={}, request={}", requestId, registrationRequest);
 			registrationRequestService.update(registrationRequest, false, true);
+			log.warn("!!!!!!  RRProcessor: SAVED CHANGES!!!!");
 
 			// Archive success requests
 			if (doArchive) {
 				registrationRequestService.archiveRequestBySystem(registrationRequest.getId());
+				log.warn("!!!!!!  RRProcessor: ARCHIVED");
 			}
 		} else {
 			log.debug("processResponse: Request not found: id={}, requestType={}", requestId, requestType);
 		}
+		log.warn("!!!!!!  RRProcessor: END");
 	}
 
 	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
