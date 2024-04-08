@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,6 +58,11 @@ public class ResourceDiscoveryProperties {
 	private String deviceLifeCycleRequestsTopic = "ems.client.installation.requests";
 	private String deviceLifeCycleResponsesTopic = "ems.client.installation.reports";
 
+	// SAL registration settings
+	private boolean salRegistrationEnabled = true;
+	private long salRegistrationTimeout = 60*1000;
+	private String registration_topic_name = "eu.nebulouscloud.exn.sal.node.create";
+
 	// Failed devices detection
 	private boolean automaticFailedDetection = true;
 	private long suspectDeviceThreshold = 5;				// in minutes
@@ -89,8 +93,8 @@ public class ResourceDiscoveryProperties {
 	private String nebulous_broker_ip_address;
 	private int nebulous_broker_port;
 	private String nebulous_broker_username;
-	private String lost_device_topic;
 	private String nebulous_broker_password;
+	private String lost_device_topic;
 
 	@Data
 	public static class UserData {

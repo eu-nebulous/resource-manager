@@ -3,28 +3,36 @@ package eu.nebulous.resource.discovery.registration.service;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.monitor.model.Device;
+import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.json.simple.JSONObject;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingDeque;
 
-import static eu.nebulous.resource.discovery.broker_communication.SALCommunicator.*;
+import static eu.nebulous.resource.discovery.broker_communication.SALCommunicator.get_device_registration_json;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SALRegistrationService implements InitializingBean {
-    @Autowired
+    private final DeviceManagementService deviceManagementService;
     private final ResourceDiscoveryProperties processorProperties;
+    private final TaskExecutor taskExecutor;
+    private final LinkedBlockingDeque<Device> queue = new LinkedBlockingDeque<>();
+    private Thread processQueueThread;
+    private long lastRegistrationStartTimestamp = -1L;
 
-    public SALRegistrationService(ResourceDiscoveryProperties processorProperties) {
-        this.processorProperties = processorProperties;
+    public void queueForRegistration(@NonNull Device device) {
+        if (processorProperties.isSalRegistrationEnabled())
+            queue.add(device);
     }
 
     public void register(Device device) {
@@ -50,9 +58,9 @@ public class SALRegistrationService implements InitializingBean {
          */
         String device_name = device.getName();
 
-        Integer cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
-        Integer ram_gb = Integer.parseInt(device_info.get("RAM_TOTAL_KB"))/1000000;
-        Integer disk_gb = Integer.parseInt(device_info.get("DISK_TOTAL_KB"))/1000000;
+        int cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
+        int ram_gb = Integer.parseInt(device_info.get("RAM_TOTAL_KB"))/1000000;
+        int disk_gb = Integer.parseInt(device_info.get("DISK_TOTAL_KB"))/1000000;
         String external_ip_address = device.getIpAddress();
         String device_username = device.getUsername();
         String device_password = new String(device.getPassword());
@@ -68,11 +76,11 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
         String register_device_message_string = get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
-        log.error("topic is "+get_registration_topic_name(application_name));
-        log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
-        log.error("broker port is "+processorProperties.getNebulous_broker_port());
-        log.error("username is "+processorProperties.getNebulous_broker_username());
-        log.error("password is "+processorProperties.getNebulous_broker_password());
+        log.info("topic is {}", get_registration_topic_name(application_name));
+        log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
+        log.info("broker port is {}", processorProperties.getNebulous_broker_port());
+        log.info("username is {}", processorProperties.getNebulous_broker_username());
+        log.info("password is {}", StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) ? "<provided>" : "<not provided>");
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
@@ -96,22 +104,73 @@ public class SALRegistrationService implements InitializingBean {
     }
 
     private String get_registration_topic_name(String application_name) {
-        return "eu.nebulouscloud.exn.sal.node.create";
+        return processorProperties.getRegistration_topic_name();
         //return ("eu.nebulouscloud.exn.sal.edge." + application_name);
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        if (    processorProperties.getNebulous_broker_password()!=null &&
-                processorProperties.getNebulous_broker_username()!=null &&
-                processorProperties.getNebulous_broker_ip_address()!=null
-        ){
+    public void afterPropertiesSet() {
+        if (! processorProperties.isSalRegistrationEnabled()) {
+            log.info("SAL registration is disabled due to configuration");
+            return;
+        }
+
+        if (    StringUtils.isNotBlank(processorProperties.getNebulous_broker_ip_address()) &&
+                StringUtils.isNotBlank(processorProperties.getNebulous_broker_username()) &&
+                StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) )
+        {
             log.info("Successful setting of properties for communication with SAL");
-        }else{
-            log.error("broker ip is "+processorProperties.getNebulous_broker_ip_address());
-            log.error("username is "+processorProperties.getNebulous_broker_username());
-            log.error("password is "+processorProperties.getNebulous_broker_password());
-            throw new Exception("Required data is null - broker ip is "+processorProperties.getNebulous_broker_ip_address()+" username is "+processorProperties.getNebulous_broker_username()+" password is "+processorProperties.getNebulous_broker_password());
+            taskExecutor.execute(this::processQueue);
+            taskExecutor.execute(this::checkProcessQueue);
+        } else {
+            String message = String.format("Nebulous broker configuration is missing:  ip-address=%s, username=%s, password=%s",
+                    processorProperties.getNebulous_broker_ip_address(),
+                    processorProperties.getNebulous_broker_username(),
+                    StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) ? "<provided>" : "<not provided>");
+            log.error(message);
+            throw new RuntimeException(message);
+        }
+    }
+
+    public void processQueue() {
+        processQueueThread = Thread.currentThread();
+        while (true) {
+            Device device = null;
+            try {
+                device = queue.take();
+                log.warn("SALRegistrationService: processQueue(): Will register device: {}", device);
+                lastRegistrationStartTimestamp = System.currentTimeMillis();
+                register(device);
+                lastRegistrationStartTimestamp = -1L;
+                device.setRegisteredToSAL(true);
+                deviceManagementService.update(device);
+                log.warn("SALRegistrationService: processQueue(): Device registered to SAL: {}", device);
+            } catch (InterruptedException e) {
+                log.warn("SALRegistrationService: processQueue(): Interrupted. Will not register device to SAL: {}", device);
+                lastRegistrationStartTimestamp = -1L;
+//                break;
+            } catch (Exception e) {
+                log.warn("SALRegistrationService: processQueue(): EXCEPTION caught. Will not register device to SAL: {}", device, e);
+                lastRegistrationStartTimestamp = -1L;
+            }
+        }
+    }
+
+    public void checkProcessQueue() {
+        while (true) {
+            try {
+                Thread.sleep(1000);
+                if (processQueueThread!=null && lastRegistrationStartTimestamp > 0) {
+                    long runningTime = System.currentTimeMillis() - lastRegistrationStartTimestamp;
+                    if (runningTime > processorProperties.getSalRegistrationTimeout()) {
+                        log.warn("SALRegistrationService: checkProcessQueue(): Method 'processQueue' is running for too log. Will attempt to interrupt it");
+                        processQueueThread.interrupt();
+                        lastRegistrationStartTimestamp = -1L;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("SALRegistrationService: checkProcessQueue(): EXCEPTION caught: ", e);
+            }
         }
     }
 }

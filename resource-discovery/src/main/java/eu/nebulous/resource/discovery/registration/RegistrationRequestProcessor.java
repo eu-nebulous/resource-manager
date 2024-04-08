@@ -370,6 +370,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setRequestId(registrationRequest.getId());
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
-		salRegistrationService.register(device);
+		if (processorProperties.isSalRegistrationEnabled())
+			salRegistrationService.queueForRegistration(device);
 	}
 }

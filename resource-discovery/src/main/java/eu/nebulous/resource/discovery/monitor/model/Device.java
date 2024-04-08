@@ -50,6 +50,8 @@ public class Device {
     private Instant suspectTimestamp;
     private int retries;
 
+    private boolean registeredToSAL;
+
     public void incrementRetries() {
         retries++;
     }
