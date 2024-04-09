@@ -6,7 +6,6 @@ import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.common.BrokerUtil;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceMetrics;
-import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +31,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
     {
         super("DeviceMetricsMonitorService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.deviceManagementService = deviceManagementService;
+        log.trace("DeviceMetricsMonitorService.<INIT>: {}", monitorProperties);
     }
 
     @Override
@@ -41,6 +41,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
 
     protected void processPayload(@NonNull Map<?,?> dataMap) {
         Object obj = dataMap.get("message");
+        log.trace("DeviceMetricsMonitorService: dataMap={}, message={}, message-class={}", dataMap, obj, obj!=null ? obj.getClass() : null);
         if (obj==null) {
             log.debug("DeviceMetricsMonitorService: Message does not contain device metrics (message field is null): {}", dataMap);
             return;
@@ -63,6 +64,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
             String clientId = stringValue(metricsMap.get("clientId"));
             String ipAddress = stringValue(metricsMap.get("ipAddress"));
             String timestampStr = stringValue(metricsMap.get("receivedAtServer"));
+            log.debug("DeviceMetricsMonitorService: client={}, ip={}, ts={}", clientId, ipAddress, timestampStr);
             if (clientId.isEmpty() || ipAddress.isEmpty() || timestampStr.isEmpty()) {
                 log.warn("DeviceMetricsMonitorService: Device metrics received do not contain clientId or ipAddress or receivedAtServer. Ignoring them: {}", metricsMap);
                 return;
@@ -72,9 +74,18 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
 
             // Get registered device using IP address
             Optional<Device> result = deviceManagementService.getByIpAddress(ipAddress);
+            log.debug("DeviceMetricsMonitorService: device-by-ip: {}", result);
             if (result.isEmpty()) {
                 log.debug("DeviceMetricsMonitorService: Device metrics IP address does not match any registered device: {}", infoMap);
-                return;
+
+                result = deviceManagementService.getAll().stream()
+                        .filter(d->d.getStatusUpdate()!=null)
+                        .filter(d->StringUtils.isNotBlank(d.getStatusUpdate().getClientId()))
+                        .filter(d->StringUtils.equalsIgnoreCase(d.getStatusUpdate().getClientId(), clientId))
+                        .findAny();
+                log.debug("DeviceMetricsMonitorService: device-by-clientId: {}", result);
+                if (result.isEmpty())
+                    return;
             }
             Device device = result.get();
 
@@ -115,6 +126,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
             deviceManagementService.update(device);
             log.debug("DeviceMetricsMonitorService: Device metrics updated for device: id={}, ip-address={}, update={}",
                     device.getId(), device.getIpAddress(), metrics);
+            log.debug("DeviceMetricsMonitorService: Device statistics updated: {}", device);
         } catch (Exception e) {
             log.warn("DeviceMetricsMonitorService: EXCEPTION while processing device metrics map: {}\n", infoMap, e);
         }
