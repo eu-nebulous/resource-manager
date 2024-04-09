@@ -32,6 +32,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
     {
         super("DeviceMetricsMonitorService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.deviceManagementService = deviceManagementService;
+        log.warn("!!!!!!!!!!!   DeviceMetricsMonitorService.<INIT>: {}", monitorProperties);
     }
 
     @Override
@@ -41,10 +42,13 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
 
     protected void processPayload(@NonNull Map<?,?> dataMap) {
         Object obj = dataMap.get("message");
+        log.warn("!!!!!!!!!!!   DeviceMetricsMonitorService.processPayload: MAP: {}", dataMap);
+        log.warn("!!!!!!!!!!!   DeviceMetricsMonitorService.processPayload: OBJ: {}", obj);
         if (obj==null) {
             log.debug("DeviceMetricsMonitorService: Message does not contain device metrics (message field is null): {}", dataMap);
             return;
         }
+        log.warn("!!!!!!!!!!!   DeviceMetricsMonitorService.processPayload: OBJ-CLASS: {}", obj.getClass());
         if (obj instanceof Map<?,?> infoMap) {
             if (infoMap.isEmpty())
                 log.debug("DeviceMetricsMonitorService: Device metrics map (message field) is empty: {}", dataMap);
@@ -72,6 +76,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
 
             // Get registered device using IP address
             Optional<Device> result = deviceManagementService.getByIpAddress(ipAddress);
+            log.warn("!!!!!!!!!!!   DeviceMetricsMonitorService.updateDeviceMetrics: device: {}", result);
             if (result.isEmpty()) {
                 log.debug("DeviceMetricsMonitorService: Device metrics IP address does not match any registered device: {}", infoMap);
                 return;
@@ -115,6 +120,7 @@ public class DeviceMetricsMonitorService extends AbstractMonitorService {
             deviceManagementService.update(device);
             log.debug("DeviceMetricsMonitorService: Device metrics updated for device: id={}, ip-address={}, update={}",
                     device.getId(), device.getIpAddress(), metrics);
+            log.warn("!!!!!!!!!!!   DeviceMetricsMonitorService.updateDeviceMetrics: DONE: {}", device);
         } catch (Exception e) {
             log.warn("DeviceMetricsMonitorService: EXCEPTION while processing device metrics map: {}\n", infoMap, e);
         }

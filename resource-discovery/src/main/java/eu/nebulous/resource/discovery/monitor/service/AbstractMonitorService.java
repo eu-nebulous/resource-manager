@@ -34,6 +34,7 @@ public abstract class AbstractMonitorService implements InitializingBean, Broker
     @Override
     public void afterPropertiesSet() throws Exception {
         // Initialize device status listener
+        log.warn("!!!!!!!!!!!   AbstractMonitorService.afterPropertiesSet: {}", this.getClass());
         taskScheduler.schedule(this::initializeDeviceStatusListener,
                 Instant.now().plusSeconds(monitorProperties.getSubscriptionStartupDelay()));
     }
@@ -43,6 +44,7 @@ public abstract class AbstractMonitorService implements InitializingBean, Broker
             try {
                 brokerUtil.subscribe(topic, this);
                 log.debug("{}: Subscribed to topic: {}", name, topic);
+                log.warn("!!!!!!!!!!!   AbstractMonitorService.initializeDeviceStatusListener: {}: Subscribed to topic: {}", this.getClass(), topic);
             } catch (Exception e) {
                 log.error("{}: ERROR while subscribing to topic: {}\n", name, topic, e);
                 taskScheduler.schedule(this::initializeDeviceStatusListener, Instant.now().plusSeconds(monitorProperties.getSubscriptionRetryDelay()));
