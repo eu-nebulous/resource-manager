@@ -80,3 +80,19 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+env:
+  # =====  MongoDB configuration  =====
+  - name: MONGO_INITDB_ROOT_USERNAME
+    value: 'root'
+  - name: MONGO_INITDB_ROOT_PASSWORD
+    value: 'example'
+  # =====  Resource Manager configuration  =====
+  - name: SPRING_DATA_MONGODB_URI
+    value: 'mongodb://root:example@localhost:27017/admin'
+  - name: DISCOVERY_BROKER_USERNAME
+    value: 'aaa'
+  - name: DISCOVERY_BROKER_PASSWORD
+    value: '111'
+  - name: DISCOVERY_BROKERURL
+    value: 'tcp://nebulous-monitoring:61616?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true'

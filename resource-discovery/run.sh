@@ -5,6 +5,9 @@ PREVWORKDIR=`pwd`
 BASEDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 cd ${BASEDIR}
 
+# Wait for MongoDB to start
+./wait_for_mongodb.sh
+
 # Read JASYPT password (decrypts encrypted configuration settings)
 #if [[ -z "$JASYPT_PASSWORD" ]]; then
 #    printf "Configuration Password: "
