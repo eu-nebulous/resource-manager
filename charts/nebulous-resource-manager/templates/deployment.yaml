@@ -55,7 +55,7 @@ spec:
         - name: {{ .Chart.Name }}-mongodb
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "docker.io/library/mongo:7.0.2"
+          image: "docker.io/library/mongo:4.4.29"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- range .Values.env }}
