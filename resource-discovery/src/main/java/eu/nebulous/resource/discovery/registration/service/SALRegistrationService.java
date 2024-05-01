@@ -68,6 +68,25 @@ public class SALRegistrationService implements InitializingBean {
         //TODO implement provider here: String provider = device.getProvider();
         //String network_rx =device_info.get("RX");
         //String network_tx = device_info.get("TX");
+        String provider_id = device.getOwner(); //TODO improve this
+        String city_name = ""; //TODO improve this
+        String country_name = ""; //TODO improve this
+        String internal_ip = ""; //TODO improve this
+        double device_longitude = 0,device_latitude =0;
+        if (device.getLocation()!=null){
+            String location_name = "";
+            if (device.getLocation().getName()!=null) {
+                location_name = device.getLocation().getName();
+            }
+            if (device.getLocation().getCity()!=null) {
+                city_name = device.getLocation().getCity();
+            }
+            if (device.getLocation().getCountry()!=null){
+                country_name= device.getLocation().getCountry();
+            }
+            device_longitude = device.getLocation().getLongitude();
+            device_latitude = device.getLocation().getLatitude();
+        }
 
         Clock clock = Clock.systemUTC();
 
@@ -75,7 +94,7 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("device_name",device_name);
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
-        String register_device_message_string = get_device_registration_json("10.100.100",external_ip_address,cores,ram_gb,disk_gb,device_name,"test_provider","Athens","Greece", device_username, device_password);
+        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,cores,ram_gb,disk_gb,device_name,provider_id,city_name,country_name, device_username, device_password,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
         log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
         log.info("broker port is {}", processorProperties.getNebulous_broker_port());
@@ -84,10 +103,10 @@ public class SALRegistrationService implements InitializingBean {
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-                SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
-                //TODO handle the response here
-                Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
-                log.info("The response received while trying to register device " + device_name);
+        SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+        //TODO handle the response here
+        Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
+        log.info("The response received while trying to register device " + device_name);
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
@@ -174,3 +193,4 @@ public class SALRegistrationService implements InitializingBean {
         }
     }
 }
+

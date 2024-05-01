@@ -142,7 +142,7 @@ public class SALCommunicator {
     }
 
 
-    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int cpu_cores, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, String device_username, String device_password) {
+    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int cpu_cores, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, String device_username, String device_password, double device_longitude, double device_latitude) {
 
             JSONObject root_json_object = new JSONObject();
             JSONObject loginCredential = new JSONObject();
@@ -168,12 +168,12 @@ public class SALCommunicator {
 
             operatingSystem.put("operatingSystemFamily", "UBUNTU");
             operatingSystem.put("operatingSystemArchitecture", "ARMv8");
-            operatingSystem.put("operatingSystemVersion", 1804);
+            operatingSystem.put("operatingSystemVersion", 2204);
 
             geoLocation.put("city", city_name);
             geoLocation.put("country", country_name);
-            geoLocation.put("latitude", new Random().nextFloat(-90, 90));
-            geoLocation.put("longitude", new Random().nextFloat(-90, 90));
+            geoLocation.put("latitude", device_longitude);
+            geoLocation.put("longitude", device_latitude);
 
             nodeProperties.put("providerId", provider_id);
             nodeProperties.put("numberOfCores", cpu_cores);
