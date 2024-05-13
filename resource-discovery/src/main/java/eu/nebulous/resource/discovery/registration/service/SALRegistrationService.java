@@ -72,6 +72,11 @@ public class SALRegistrationService implements InitializingBean {
         String city_name = ""; //TODO improve this
         String country_name = ""; //TODO improve this
         String internal_ip = ""; //TODO improve this
+        String os_family = "UBUNTU"; //TODO improve this
+        String os_architecture = "ARMv8"; //TODO improve this
+        int os_version = 2204; //TODO improve this
+        String private_key = ""; //TODO improve this
+        int external_access_port = device.getPort();
         double device_longitude = 0,device_latitude =0;
         if (device.getLocation()!=null){
             String location_name = "";
@@ -94,7 +99,8 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("device_name",device_name);
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
-        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,cores,ram_gb,disk_gb,device_name,provider_id,city_name,country_name, device_username, device_password,device_longitude, device_latitude);
+
+        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,os_version,cores,ram_gb,disk_gb,device_name,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
         log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
         log.info("broker port is {}", processorProperties.getNebulous_broker_port());
@@ -106,7 +112,7 @@ public class SALRegistrationService implements InitializingBean {
         SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
         //TODO handle the response here
         Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
-        log.info("The response received while trying to register device " + device_name);
+        log.info("The response received while trying to register device " + device_name + " is "+response.toString());
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
