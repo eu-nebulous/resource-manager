@@ -35,12 +35,12 @@ public class SynchronousBrokerPublisher {
             HashSet<String> topics_to_publish_to = new HashSet<>();
             topics_to_publish_to.add(topic);
             broker_and_topics_to_publish_to.put(broker_ip,topics_to_publish_to);
-            log.error("changed1");
+            //log.error("changed1");
             publisher_configuration_changed = true;
         }else{
             if (!broker_and_topics_to_publish_to.get(broker_ip).contains(topic)){
                 broker_and_topics_to_publish_to.get(broker_ip).add(topic);
-                log.error("changed2");
+                //log.error("changed2");
                 publisher_configuration_changed = true;
             }
             else{
@@ -48,9 +48,9 @@ public class SynchronousBrokerPublisher {
             }
         }
 
-        log.error("preliminary_outside");
+        //log.error("preliminary_outside");
         if (publisher_configuration_changed){
-            log.error("preliminary_inside1");
+            //log.error("preliminary_inside1");
 //            for (String current_broker_ip : broker_and_topics_to_publish_to.keySet()){
             log.info("Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
             if (active_connector!=null) {
@@ -58,7 +58,7 @@ public class SynchronousBrokerPublisher {
             }
             publishers.clear();
             for (String broker_topic : broker_and_topics_to_publish_to.get(broker_ip)){
-                log.error("preliminary_inside2");
+                //log.error("preliminary_inside2");
                 //ArrayList<Publisher> publishers = new ArrayList<>();
                 SyncedPublisher publisher = new SyncedPublisher("resource_manager_"+broker_topic, broker_topic, true, true);
                 publishers.add(publisher);
