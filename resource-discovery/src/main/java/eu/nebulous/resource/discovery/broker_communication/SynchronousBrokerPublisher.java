@@ -22,12 +22,16 @@ public class SynchronousBrokerPublisher {
     private ExtendedConnector active_connector;
     private String topic;
     private String broker_ip;
-
     public SynchronousBrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
+        this(topic, broker_ip, broker_port, brokerUsername, brokerPassword, amqLibraryConfigurationLocation,false);
+    }
+
+    public SynchronousBrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation,boolean hard_initialize_connector) {
 
         boolean able_to_initialize_BrokerPublisher = topic!=null && broker_ip!=null && brokerUsername!=null && brokerPassword!=null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
         if (!able_to_initialize_BrokerPublisher){
+            log.error("Unable to initialize SynchronousBrokerPublisher");
             return;
         }
         boolean publisher_configuration_changed;
@@ -49,7 +53,7 @@ public class SynchronousBrokerPublisher {
         }
 
         //log.error("preliminary_outside");
-        if (publisher_configuration_changed){
+        if (publisher_configuration_changed || hard_initialize_connector){
             //log.error("preliminary_inside1");
 //            for (String current_broker_ip : broker_and_topics_to_publish_to.keySet()){
             log.info("Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
@@ -71,7 +75,7 @@ public class SynchronousBrokerPublisher {
             }
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
 
-            active_connector = new ExtendedConnector("resource_manager"
+            active_connector = new ExtendedConnector("resource_manager_synchronous"
                     , new CustomConnectorHandler() {}
                     , publishers
                     , List.of(),
@@ -145,5 +149,8 @@ public class SynchronousBrokerPublisher {
             }
         }
         return reply;
+    }
+    public boolean is_publisher_null(){
+        return (private_publisher_instance == null);
     }
 }
