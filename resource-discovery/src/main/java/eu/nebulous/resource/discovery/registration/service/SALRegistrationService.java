@@ -110,6 +110,21 @@ public class SALRegistrationService implements InitializingBean {
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
         SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+        int sending_attempt = 1;
+        while (register_device_publisher.is_publisher_null()){
+            if (sending_attempt<=2) {
+                register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+            }else{
+                log.warn("Will now attempt to reset the Synchronous publisher connector");
+                register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+            }
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            sending_attempt++;
+        }
         //TODO handle the response here
         Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
         log.info("The response received while trying to register device " + device_name + " is "+response.toString());

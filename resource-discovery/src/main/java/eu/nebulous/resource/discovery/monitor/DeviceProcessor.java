@@ -138,7 +138,26 @@ public class DeviceProcessor  implements InitializingBean {
                 lost_device_message.put("device_name",device.getName());
                 Clock clock = Clock.systemUTC();
                 lost_device_message.put("timestamp",(int)(clock.millis()/1000));
-                BrokerPublisher device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(),processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                log.info("Creating new BrokerPublisher to publish device lost message");
+                BrokerPublisher device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                int sending_attempt = 1;
+                while (device_lost_publisher.is_publisher_null()){
+
+                    try {
+                        log.info("Attempting to recreate new BrokerPublisher to publish the device lost message");
+                        log.info("The topic name is "+processorProperties.getLost_device_topic()+", the broker ip is "+ processorProperties.getNebulous_broker_ip_address()+", the broker port is "+ processorProperties.getNebulous_broker_port()+", the username is "+ processorProperties.getNebulous_broker_username()+", and the password is "+ processorProperties.getNebulous_broker_password());
+                        if (sending_attempt<=2) {
+                            device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                        }else{
+                            log.warn("Will now attempt to reset the BrokerPublisher connector");
+                            device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "",true);
+                        }
+                        Thread.sleep(3000);
+                    }catch (InterruptedException i){
+                        i.printStackTrace();
+                    }
+                    sending_attempt++;
+                }
                 device_lost_publisher.publish(lost_device_message.toJSONString(), Collections.singleton(""));
                 log.warn("processFailedDevices: Marked as FAILED device with Id: {}", device.getId());
             }
