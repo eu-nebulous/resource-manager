@@ -18,6 +18,7 @@
           namespace: nebulous
           repo_shortname: resource-manager
           repo_description: ""
+          tags: ["r1-latest"]
 
 - job:
     name: nebulous-resource-manager-upload-container-images
