@@ -8,6 +8,7 @@
       - nebulous-resource-manager-container-images
     description: Build the container images.
     files: &image_files
+      - ^zuul\.d/jobs\.yaml$
       - ^resource-discovery/
     vars: &image_vars
       promote_container_image_job: nebulous-resource-manager-upload-container-images
