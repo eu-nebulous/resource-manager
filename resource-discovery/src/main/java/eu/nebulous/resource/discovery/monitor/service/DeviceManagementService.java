@@ -46,6 +46,15 @@ public class DeviceManagementService {
 		return deviceRepository.findByIpAddress(ipAddress);
 	}
 
+	public void setCompromised(@NonNull String id){
+		Optional<Device> device = getById(id);
+        device.ifPresent(value -> value.setStatus(DeviceStatus.COMPROMISED));
+	}
+	
+	public Optional<ArchivedDevice> isCompromised(@NonNull String id){
+		return archivedDeviceRepository.findById(id).filter(device -> device.getStatus()!= null && device.getStatus() == DeviceStatus.COMPROMISED );
+	}
+	
 	public boolean isIpAddressInUse(@NonNull String ipAddress) {
 		return deviceRepository.findByIpAddress(ipAddress).isPresent();
 	}
