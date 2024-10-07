@@ -9,4 +9,3 @@ ${AnsiColor.012}  ╚═╝  ╚═╝╚══════╝╚═════
 ${AnsiColor.046} :: App version :: ${AnsiColor.87}                       (${application.version})
 ${AnsiColor.046} :: Spring Boot :: ${AnsiColor.87}                      ${spring-boot.formatted-version}
 ${AnsiColor.046} :: Java (TM)   :: ${AnsiColor.87}                       (${java.version})
-${AnsiColor.DEFAULT}${AnsiStyle.NORMAL}
