@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +52,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
 	private final DeviceManagementService deviceManagementService;
-	private final SALRegistrationService salRegistrationService;
+	private final Optional<SALRegistrationService> salRegistrationService;
 	private final TaskScheduler taskScheduler;
 	private final ObjectMapper objectMapper;
 	private final BrokerUtil brokerUtil;
@@ -123,12 +124,12 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_REQUESTED);
 
 				log.debug("processNewRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
-				registrationRequestService.update(registrationRequest);
+				registrationRequestService.update(registrationRequest, null);
 				log.debug("processNewRequests: Data collection request sent for request with Id: {}", registrationRequest.getId());
 			} catch (Exception e) {
 				log.warn("processNewRequests: EXCEPTION while sending data collection request for request with Id: {}\n", registrationRequest.getId(), e);
 				registrationRequest.setStatus(RegistrationRequestStatus.DATA_COLLECTION_ERROR);
-				registrationRequestService.update(registrationRequest);
+				registrationRequestService.update(registrationRequest, null);
 			}
 		}
 
@@ -157,13 +158,13 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
 
 				log.debug("processOnboardingRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
-				registrationRequestService.update(registrationRequest, false);
+				registrationRequestService.update(registrationRequest, false, null);
 				log.debug("processOnboardingRequests: Onboarding request sent for request with Id: {}", registrationRequest.getId());
 			} catch (Exception e) {
 				log.warn("processOnboardingRequests: EXCEPTION while sending onboarding request for request with Id: {}\n", registrationRequest.getId(), e);
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
 				registrationRequest.getMessages().add("EXCEPTION "+e.getMessage());
-				registrationRequestService.update(registrationRequest, false);
+				registrationRequestService.update(registrationRequest, false, null);
 			}
 		}
 
@@ -281,7 +282,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				if (log.isDebugEnabled())
 					log.debug("processResponse: Save request with errors: id={}, errors={}, request={}", requestId, registrationRequest.getMessages(), registrationRequest);
 				log.warn("processResponse: Save request with errors: id={}, errors={}", requestId, registrationRequest.getMessages());
-				registrationRequestService.update(registrationRequest, false, true);
+				registrationRequestService.update(registrationRequest, false, true, null);
 				return;
 			}
 
@@ -343,7 +344,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 			// Store changes
 			log.debug("processResponse: Save updated request: id={}, request={}", requestId, registrationRequest);
-			registrationRequestService.update(registrationRequest, false, true);
+			registrationRequestService.update(registrationRequest, false, true, null);
 
 			// Archive success requests
 			if (doArchive) {
@@ -371,6 +372,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
 		if (processorProperties.isSalRegistrationEnabled())
-			salRegistrationService.queueForRegistration(device);
+            salRegistrationService.ifPresent(salRegistrationService -> salRegistrationService.queueForRegistration(device));
 	}
 }

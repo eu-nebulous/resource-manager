@@ -22,6 +22,7 @@
 $(function() {
     const urlParams = new URLSearchParams(window.location.search);
     const reqId = urlParams.get('id') ?? '';
+    const appId = urlParams.get('appId') ?? 'all-applications';
     const readonly = urlParams.get('readonly') ?? '';
 
     requestId = reqId;
@@ -32,8 +33,22 @@ $(function() {
         refreshRequestInfo(reqId);
     else
         isNew = true;
+
+    if (appId!=='' || ! isNew) {
+        var devId = gen_uuid();
+        var devRef = 'application_id|' + appId + '|' + devId;
+        var it = $(`[id="request#device#ref"]`);
+        it.val( devRef );
+    }
     checkSameUser();
 });
+
+function gen_uuid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+    });
+}
 
 var isNew = false;
 var isAdmin = false;
@@ -77,6 +92,7 @@ function refreshRequestInfo(id) {
         var reqId = data.id;
         $('#page_title').html(
             reqId=='' ? 'New Registration Request' : 'Registration Request '+reqId
+                    + '<br/><span class="fw-lighter text-secondary" style="font-size: calc(80%);">' + data.device.ref + '</span>'
         );
 
         requestId = data.id;
@@ -328,6 +344,11 @@ function sendRequestData(requestData) {
                             data.admin ? $('#whoami').html( $(`<span class="text-primary fw-bold">${data.user}</span>`) ) : $('#whoami').html( data.user );
                             if (isAdmin) $('.adminOnly').toggleClass('d-none');
 
+                            if (isNew) {
+                                var it = $(`[id="request#device#owner"]`);
+                                it.val( username );
+                            }
+
                             checkSameUser();
                         })
                         .fail(function(xhr, status, error) { $('#whoami').html( $(`Error: ${status} ${JSON.stringify(error)}`) ); });
@@ -427,7 +448,14 @@ function sendRequestData(requestData) {
                         <div class="form-group row">
                             <label for="request#device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#id" value="" placeholder="Device unique id">
+                                <input type="text" readonly class="form-control-plaintext" id="request#device#id" value="" placeholder="Device unique id">
+                            </div>
+                        </div>
+                        <!-- Device Ref -->
+                        <div class="form-group row">
+                            <label for="request#device#ref" class="col-sm-2 col-form-label"><b>Device Ref</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control-plaintext" id="request#device#ref" value="" placeholder="Device Ref">
                             </div>
                         </div>
                         <!-- Device Name -->
@@ -448,7 +476,7 @@ function sendRequestData(requestData) {
                         <div class="form-group row">
                             <label for="request#device#owner" class="col-sm-2 col-form-label"><b>Device Owner</b></label>
                             <div class="col-sm-10">
-                                <input type="text" class="form-control" id="request#device#owner" value="" placeholder="Device Owner">
+                                <input type="text" readonly class="form-control-plaintext" id="request#device#owner" value="" placeholder="Device Owner">
                             </div>
                         </div>
                         <!-- Device IP Address -->

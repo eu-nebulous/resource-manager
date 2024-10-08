@@ -26,6 +26,8 @@ import java.util.concurrent.Future;
 @RequiredArgsConstructor
 @RequestMapping("/discovery")
 public class RegistrationRequestController {
+	private final static String REQUIRES_ADMIN_ROLE = "hasAuthority('ROLE_ADMIN')";
+
 	private final RegistrationRequestService registrationRequestService;
 	private final IRegistrationRequestProcessor registrationRequestProcessor;
 
@@ -44,14 +46,14 @@ public class RegistrationRequestController {
 		);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/process", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Map<String, String> processRequests() throws ExecutionException, InterruptedException {
 		Future<String> future = registrationRequestProcessor.processRequests();
 		return Map.of("result", future.isDone() ? future.get() : "STARTED");
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/all", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<RegistrationRequest> listRequestsAdmin(Authentication authentication) {
 		return registrationRequestService.getAll();
@@ -89,36 +91,36 @@ public class RegistrationRequestController {
 		registrationRequestService.deleteByIdAsUser(id, authentication);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/{id}/authorize", produces = MediaType.APPLICATION_JSON_VALUE)
 	public RegistrationRequest authorizeRequest(@PathVariable String id, Authentication authentication) {
 		return registrationRequestService.authorizeRequest(id, true, authentication);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/{id}/reject", produces = MediaType.APPLICATION_JSON_VALUE)
 	public RegistrationRequest rejectRequest(@PathVariable String id, Authentication authentication) {
 		return registrationRequestService.authorizeRequest(id, false, authentication);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/{id}/status/{newStatus}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public RegistrationRequest setRequestStatus(@PathVariable String id, @PathVariable String newStatus) {
 		RegistrationRequestStatus _newStatus = RegistrationRequestStatus.valueOf(newStatus);
 		RegistrationRequest request = registrationRequestService.getById(id)
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: " + id));
 		request.setStatus(_newStatus);
-		return registrationRequestService.update(request, false);
+		return registrationRequestService.update(request, false, null);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/{id}/archive", produces = MediaType.APPLICATION_JSON_VALUE)
 	public String archiveRequest(@PathVariable String id, Authentication authentication) {
 		registrationRequestService.archiveRequest(id, authentication);
 		return "ARCHIVED";
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@PostMapping(value = "/request/{id}/unarchive",
 			consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public RegistrationRequest unarchiveRequest(@PathVariable String id,
@@ -135,7 +137,7 @@ public class RegistrationRequestController {
 		return registrationRequestService.getArchivedAllAsUser(authentication);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+	@PreAuthorize(REQUIRES_ADMIN_ROLE)
 	@GetMapping(value = "/request/archived/all", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<ArchivedRegistrationRequest> listArchivedRequestsAdmin() {
 		return registrationRequestService.getArchivedAll();

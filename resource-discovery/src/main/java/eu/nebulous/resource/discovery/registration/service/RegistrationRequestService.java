@@ -54,7 +54,7 @@ public class RegistrationRequestService {
 		return result.stream().anyMatch(r -> !r.getId().equals(excludeId));
 	}
 
-	public @NonNull RegistrationRequest save(@NonNull RegistrationRequest registrationRequest) {
+	public @NonNull RegistrationRequest save(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
 		RegistrationRequestStatus status = registrationRequest.getStatus();
 		if (status == null) {
 			registrationRequest.setStatus(RegistrationRequestStatus.NEW_REQUEST);
@@ -68,11 +68,21 @@ public class RegistrationRequestService {
 			throw new RegistrationRequestException(
 					"New registration request already has an Id: " + registrationRequest.getId());
 		}
+		if (registrationRequest.getDevice()!=null && StringUtils.isBlank(registrationRequest.getDevice().getId())) {
+			String devId;
+			if (StringUtils.isNotBlank(registrationRequest.getDevice().getRef())) {
+				int p = registrationRequest.getDevice().getRef().lastIndexOf("|");
+				devId = p < 0 ? registrationRequest.getDevice().getRef() : registrationRequest.getDevice().getRef().substring(p + 1);
+			} else {
+				devId = UUID.randomUUID().toString();
+			}
+			registrationRequest.getDevice().setId(devId);
+		}
 		if (getById(registrationRequest.getId()).isPresent())
 			throw new RegistrationRequestException(
 					"A registration request with the same Id already exists in repository: "+registrationRequest.getId());
 		registrationRequest.setRequestDate(Instant.now());
-		checkRegistrationRequest(registrationRequest);
+		checkRegistrationRequest(registrationRequest, null, authentication);
 
 		// check IP address uniqueness
 		checkIpAddressUniqueness(registrationRequest);
@@ -81,20 +91,20 @@ public class RegistrationRequestService {
 		return registrationRequest;
 	}
 
-	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest) {
-		return update(registrationRequest, true);
+	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
+		return update(registrationRequest, true, authentication);
 	}
 
-	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel) {
-		return update(registrationRequest, checkEditDel, false);
+	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel, Authentication authentication) {
+		return update(registrationRequest, checkEditDel, false, authentication);
 	}
 
-	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel, boolean skipUniqueIpAddressCheck) {
+	public RegistrationRequest update(@NonNull RegistrationRequest registrationRequest, boolean checkEditDel, boolean skipUniqueIpAddressCheck, Authentication authentication) {
 		Optional<RegistrationRequest> result = getById(registrationRequest.getId());
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
-		checkRegistrationRequest(registrationRequest);
+		checkRegistrationRequest(registrationRequest, result.get(), authentication);
 		if (checkEditDel)
 			canEditOrDelete(result.get());
 
@@ -103,9 +113,11 @@ public class RegistrationRequestService {
 			checkIpAddressUniqueness(registrationRequest);
 
 		// Copy submitted registration request data onto the retrieved request
+		String devOwner = result.get().getDevice().getOwner();
 		BeanUtils.copyProperties(registrationRequest, result.get(),
 				"id", "device", "requester", "requestDate");
 		result.get().setLastUpdateDate(Instant.now());
+		result.get().getDevice().setOwner(devOwner);
 
 		// Check if device password/public key need update...
 		List<String> ignoreList = new ArrayList<>();
@@ -137,7 +149,7 @@ public class RegistrationRequestService {
 		return c==' ' || c=='\t' || c=='\r' || c=='\n';
 	}
 
-	private void checkRegistrationRequest(@NonNull RegistrationRequest registrationRequest) {
+	private void checkRegistrationRequest(@NonNull RegistrationRequest registrationRequest, RegistrationRequest storedRequest, Authentication authentication) {
 		List<String> errors = new ArrayList<>();
 		if (StringUtils.isBlank(registrationRequest.getId())) errors.add("Null or blank Id");
 		if (registrationRequest.getDevice()==null) errors.add("No Device specified");
@@ -149,11 +161,26 @@ public class RegistrationRequestService {
 					String.format("Registration request has errors: %s\n%s",
 							String.join(", ", errors), registrationRequest));
 		}
-		checkDevice(registrationRequest.getDevice());
+
+		Device storedDevice = storedRequest != null ? storedRequest.getDevice() : null;
+		checkDevice(registrationRequest.getDevice(), storedDevice, authentication, errors);
+		if (!errors.isEmpty()) {
+			throw new RegistrationRequestException(
+					String.format("Device data in Registration request has errors: %s\n%s",
+							String.join(", ", errors), registrationRequest));
+		}
 	}
 
-	private void checkDevice(@NonNull Device device) {
-		//XXX:TODO
+	private void checkDevice(@NonNull Device device, Device storedRequestDevice, Authentication authentication, List<String> errors) {
+		//if (StringUtils.isBlank(device.getId())) errors.add("Null or blank device id");
+		if (StringUtils.isBlank(device.getOwner())) errors.add("Null or blank device owner");
+		if (authentication!=null && StringUtils.isNotBlank(authentication.getName()))
+			if (! isAdmin(authentication) && ! device.getOwner().equals(authentication.getName()))
+				errors.add("Device owner differs from authenticated user");
+		if (storedRequestDevice!=null) {
+			if (! storedRequestDevice.getId().equals(device.getId())) errors.add("Device Id is different than stored");
+			if (! storedRequestDevice.getOwner().equals(device.getOwner())) errors.add("Device owner is different than stored");
+		}
 	}
 
 	private void checkIpAddressUniqueness(RegistrationRequest registrationRequest) {
@@ -198,10 +225,13 @@ public class RegistrationRequestService {
 		return result;
 	}
 
-	private void checkAdmin(@NonNull String requestId, Authentication authentication) {
-		boolean isAdmin = authentication.getAuthorities().stream()
+	private boolean isAdmin(Authentication authentication) {
+		return authentication.getAuthorities().stream()
 				.map(GrantedAuthority::getAuthority).toList().contains("ROLE_ADMIN");
-		if (! isAdmin)
+	}
+
+	private void checkAdmin(@NonNull String requestId, Authentication authentication) {
+		if (! isAdmin(authentication))
 			throw new RegistrationRequestException(
 					new IllegalAccessException("Operation requires ADMIN role. Cannot access request with Id: "+requestId));
 	}
@@ -233,7 +263,7 @@ public class RegistrationRequestService {
 	public @NonNull RegistrationRequest saveAsUser(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
 		registrationRequest.setRequester(authentication.getName());
 		checkRequester(registrationRequest, authentication);
-		return save(registrationRequest);
+		return save(registrationRequest, authentication);
 	}
 
 	public RegistrationRequest updateAsUser(@NonNull RegistrationRequest registrationRequest, Authentication authentication) {
@@ -242,7 +272,7 @@ public class RegistrationRequestService {
 			throw new RegistrationRequestException(
 					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
 		checkRequester(result.get(), authentication);
-		return update(registrationRequest);
+		return update(registrationRequest, authentication);
 	}
 
 	public void deleteByIdAsUser(@NonNull String id, Authentication authentication) {
@@ -271,7 +301,7 @@ public class RegistrationRequestService {
 		result.get().setStatus( authorize
 				? RegistrationRequestStatus.PENDING_ONBOARDING
 				: RegistrationRequestStatus.AUTHORIZATION_REJECT );
-		return update(result.get());
+		return update(result.get(), authentication);
 	}
 
 	// ------------------------------------------------------------------------

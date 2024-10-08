@@ -30,13 +30,14 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
     );
     private final RegistrationRequestService registrationRequestService;
     private final DeviceManagementService deviceManagementService;
-    private final SALRegistrationService salRegistrationService;
+    private final Optional<SALRegistrationService> salRegistrationService;
     private final Map<String, String> detectedDevices = Collections.synchronizedMap(new LinkedHashMap<>());
     private final List<Map> deviceDetailsQueue = Collections.synchronizedList(new LinkedList<>());
 
     public UnknownDeviceRegistrationService(ResourceDiscoveryProperties monitorProperties, TaskScheduler taskScheduler,
                                             ObjectMapper objectMapper, DeviceManagementService deviceManagementService,
-                                            RegistrationRequestService registrationRequestService, BrokerUtil brokerUtil, SALRegistrationService salRegistrationService)
+                                            RegistrationRequestService registrationRequestService, BrokerUtil brokerUtil,
+                                            Optional<SALRegistrationService> salRegistrationService)
     {
         super("UnknownDeviceRegistrationService", monitorProperties, taskScheduler, objectMapper, brokerUtil);
         this.registrationRequestService = registrationRequestService;
@@ -247,8 +248,10 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
                 newDevice = deviceManagementService.save(newDevice);
                 log.info("UnknownDeviceRegistrationService: Registered device: {}", newDevice);
 
-                log.info("Registering the device {} to SAL...",newDevice);
-                salRegistrationService.register(newDevice);
+                if (salRegistrationService.isPresent()) {
+                    log.info("Registering the device {} to SAL...", newDevice);
+                    salRegistrationService.get().register(newDevice);
+                }
 
 
             } catch (Exception e) {
