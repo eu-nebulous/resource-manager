@@ -49,7 +49,8 @@ function refreshRequestInfo(id) {
         // console.log('refreshRequestInfo: OK: ', data);
         var reqId = data.id;
         if (reqId!=='')
-            $('#page_title').html( 'Archived Registration Request '+reqId );
+            $('#page_title').html( 'Archived Registration Request '+reqId
+                    + '<br/><span class="fw-lighter text-secondary" style="font-size: calc(80%);">' + data.device.ref + '</span>' );
         else
             $('#page_title').html( $(`<div class="text-warning bg-danger">Error: ${status}: ${error}</div>`) );
 
@@ -270,6 +271,13 @@ function flattenObject(ob) {
                             <label for="request#device#id" class="col-sm-2 col-form-label"><b>Device Id</b></label>
                             <div class="col-sm-10">
                                 <input type="text" readonly class="form-control" id="request#device#id" value="" placeholder="Device unique id">
+                            </div>
+                        </div>
+                        <!-- Device Ref -->
+                        <div class="form-group row">
+                            <label for="request#device#ref" class="col-sm-2 col-form-label"><b>Device Ref</b></label>
+                            <div class="col-sm-10">
+                                <input type="text" readonly class="form-control" id="request#device#ref" value="" placeholder="Device Ref">
                             </div>
                         </div>
                         <!-- Device Name -->
