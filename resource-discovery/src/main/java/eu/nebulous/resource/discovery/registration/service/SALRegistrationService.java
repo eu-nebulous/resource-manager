@@ -58,7 +58,7 @@ public class SALRegistrationService implements InitializingBean {
         echo OS_KERNEL=$TMP_KERNEL
         echo OS_KERNEL_RELEASE=$TMP_KERNEL_RELEASE
          */
-        String device_name = device.getName();
+        String device_name = device.getRef();
 
         int cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
         int ram_gb = Integer.parseInt(device_info.get("RAM_TOTAL_KB"))/1000000;
