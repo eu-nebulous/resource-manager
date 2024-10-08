@@ -12,8 +12,10 @@ import java.util.List;
 @Slf4j
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "discovery")
+@ConfigurationProperties(prefix = ResourceDiscoveryProperties.CONFIG_PREFIX)
 public class ResourceDiscoveryProperties {
+	public final static String CONFIG_PREFIX = "discovery";
+
 	// Broker configuration
 	private String brokerURL;
 	private String brokerUsername;
@@ -88,6 +90,10 @@ public class ResourceDiscoveryProperties {
 
 	// Users
 	private List<UserData> users;
+
+	// API-Key authentication fields
+	private boolean apiKeyAuthenticationEnabled;
+	private String apiKeyValue;
 
 	// Nebulous broker subscription details
 	private String nebulous_broker_ip_address;

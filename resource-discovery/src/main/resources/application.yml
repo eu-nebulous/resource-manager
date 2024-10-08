@@ -42,6 +42,9 @@ discovery:
       password: '$2a$10$I6GSOKiY5n4/Ql0LA7Js0.4HT4UXVCNaNpGv5UdZt/brEdv/F.ttG'    # user1   (BCrypt; 10 iterations)
       roles: [ USER ]
 
+#  apiKeyAuthenticationEnabled: true
+#  apiKeyValue: 1234567890
+
 #logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE
 logging.level.eu.nebulous.resource: DEBUG
 management.endpoints.web.exposure.include: '*'
