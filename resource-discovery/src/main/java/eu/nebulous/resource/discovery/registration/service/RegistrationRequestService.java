@@ -68,6 +68,16 @@ public class RegistrationRequestService {
 			throw new RegistrationRequestException(
 					"New registration request already has an Id: " + registrationRequest.getId());
 		}
+		if (registrationRequest.getDevice()!=null && StringUtils.isBlank(registrationRequest.getDevice().getId())) {
+			String devId;
+			if (StringUtils.isNotBlank(registrationRequest.getDevice().getRef())) {
+				int p = registrationRequest.getDevice().getRef().lastIndexOf("|");
+				devId = p < 0 ? registrationRequest.getDevice().getRef() : registrationRequest.getDevice().getRef().substring(p + 1);
+			} else {
+				devId = UUID.randomUUID().toString();
+			}
+			registrationRequest.getDevice().setId(devId);
+		}
 		if (getById(registrationRequest.getId()).isPresent())
 			throw new RegistrationRequestException(
 					"A registration request with the same Id already exists in repository: "+registrationRequest.getId());
@@ -103,9 +113,11 @@ public class RegistrationRequestService {
 			checkIpAddressUniqueness(registrationRequest);
 
 		// Copy submitted registration request data onto the retrieved request
+		String devOwner = result.get().getDevice().getOwner();
 		BeanUtils.copyProperties(registrationRequest, result.get(),
 				"id", "device", "requester", "requestDate");
 		result.get().setLastUpdateDate(Instant.now());
+		result.get().getDevice().setOwner(devOwner);
 
 		// Check if device password/public key need update...
 		List<String> ignoreList = new ArrayList<>();
