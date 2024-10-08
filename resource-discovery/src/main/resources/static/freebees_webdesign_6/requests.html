@@ -42,6 +42,7 @@ function updateRequestsList(asAdmin) {
         data.forEach(item => {
             var reqId = item.id;
             var requester = item.requester;
+            var devRef = item.device.ref;
             var devName = item.device.name;
             var ipAddress = item.device.ipAddress;
             var date = new Date( Date.parse( item.requestDate ) );
@@ -91,6 +92,7 @@ function updateRequestsList(asAdmin) {
                             <td>${requester}</td>
                             <td class="text-start">
                                 <a href="/request-edit.html?id=${reqId}">${devName} @ ${ipAddress}</a>
+                                <br><span class="text-secondary font-italic" style="font-size: calc(80%);">${devRef}</span>
                             </td>
                             <td>${ipAddress}</td>
                             <td>${dateStr}</td>
