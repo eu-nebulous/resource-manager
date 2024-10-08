@@ -89,6 +89,10 @@ public class ResourceDiscoveryProperties {
 	// Users
 	private List<UserData> users;
 
+	// API-Key authentication fields
+	private boolean apiKeyAuthenticationEnabled;
+	private String apiKeyValue;
+
 	// Nebulous broker subscription details
 	private String nebulous_broker_ip_address;
 	private int nebulous_broker_port;
