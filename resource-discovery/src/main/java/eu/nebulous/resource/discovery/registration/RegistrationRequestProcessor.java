@@ -28,6 +28,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +52,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
 	private final DeviceManagementService deviceManagementService;
-	private final SALRegistrationService salRegistrationService;
+	private final Optional<SALRegistrationService> salRegistrationService;
 	private final TaskScheduler taskScheduler;
 	private final ObjectMapper objectMapper;
 	private final BrokerUtil brokerUtil;
@@ -371,6 +372,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
 		if (processorProperties.isSalRegistrationEnabled())
-			salRegistrationService.queueForRegistration(device);
+            salRegistrationService.ifPresent(salRegistrationService -> salRegistrationService.queueForRegistration(device));
 	}
 }

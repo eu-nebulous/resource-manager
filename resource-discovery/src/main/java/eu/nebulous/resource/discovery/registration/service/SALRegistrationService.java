@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import static eu.nebulous.resource.discovery.broker_communication.SALCommunicato
 
 @Slf4j
 @Service
+@ConditionalOnProperty(name = ResourceDiscoveryProperties.CONFIG_PREFIX + ".sal-registration.enabled", havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 public class SALRegistrationService implements InitializingBean {
     private final DeviceManagementService deviceManagementService;

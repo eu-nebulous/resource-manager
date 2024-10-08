@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -37,7 +38,7 @@ public class DeviceManagementController {
 	private final DeviceProcessor deviceProcessor;
 	private final DeviceManagementService deviceService;
 	private final DeviceLifeCycleRequestService deviceLifeCycleRequestService;
-	private final SALRegistrationService salRegistrationService;
+	private final Optional<SALRegistrationService> salRegistrationService;
 
 	private boolean isAuthenticated(Authentication authentication) {
 		return authentication!=null && StringUtils.isNotBlank(authentication.getName());
@@ -91,7 +92,7 @@ public class DeviceManagementController {
 	@PutMapping(value = "/device", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Device createDevice(@RequestBody Device device) {
 
-		salRegistrationService.register(device);
+        salRegistrationService.ifPresent(salRegistrationService -> salRegistrationService.register(device));
 		return deviceService.save(device);
 	}
 
