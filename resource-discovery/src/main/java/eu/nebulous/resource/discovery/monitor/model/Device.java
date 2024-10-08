@@ -17,6 +17,7 @@ import java.util.Map;
 @Document(collection = "device")
 public class Device {
     private String id;
+    private String ref;
     private String os;
     private String name;
     private String owner;

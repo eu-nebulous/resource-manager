@@ -142,7 +142,7 @@ public class SALCommunicator {
     }
 
 
-    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, int os_version, int cpu_cores, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
+    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
 
             JSONObject root_json_object = new JSONObject();
             JSONObject loginCredential = new JSONObject();
@@ -194,7 +194,7 @@ public class SALCommunicator {
             root_json_object.put("nodeProperties", nodeProperties);
             root_json_object.put("systemArch", os_architecture); //TODO refine - for now assuming that the architecture of the device is the same as that of the OS installed on top of it, could be a wrong assumption
             root_json_object.put("scriptURL", "https://www.google.com");
-            root_json_object.put("jarURL", "https://www.activeeon.com/public_content/7cde3381417ff3784639dc41fa7e7cd0544a5234-morphemic-7bulls/node_13.1.0-SNAPSHOT_armv8.jar");
+            root_json_object.put("jarURL", jar_url);
 
 
             //JSONObject root_json_object = JsonFileParser.parse(request_body_file);

@@ -46,6 +46,7 @@ function updateRequestsList(asAdmin) {
         data.forEach(item => {
             var reqId = item.id;
             var requester = item.requester;
+            var devRef = item.device.ref;
             var devName = item.device.name;
             var ipAddress = item.device.ipAddress;
             var date = new Date( Date.parse( item.requestDate ) );
@@ -54,7 +55,7 @@ function updateRequestsList(asAdmin) {
             var status = item.status;
             var color = getRequestStatusColor(status);
             var adminActions = (isAdmin) ? `
-                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveRequest('${reqId}', '${ipAddress}')">
+                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveRequest('${reqId}', '${ipAddress}', '${devRef}')">
                                     <i class="fas fa-box-open"></i>
                                 </button>
             `: '';
@@ -65,6 +66,7 @@ function updateRequestsList(asAdmin) {
                             <td>${requester}</td>
                             <td class="text-start">
                                 <a href="/archived-request-view.html?id=${reqId}">${devName}</a>
+                                <br><span class="text-secondary font-italic" style="font-size: calc(80%);">${devRef}</span>
                             </td>
                             <td>${ipAddress}</td>
                             <td>${dateStr}</td>
@@ -94,9 +96,13 @@ function getRequestStatusColor(status) {
     return 'table-info';
 }
 
-function unarchiveRequest(reqId, ipAddress) {
+function unarchiveRequest(reqId, ipAddress, devRef) {
     if (! confirm('Restore request?')) return;
-    showModal('Request: '+ipAddress+' ['+reqId+']', 'REQUEST', reqId);
+    //showModal('Request: '+ipAddress+' ['+reqId+']', 'REQUEST', reqId, devRef);
+    showModal(`<b>Request Id:</b> ${reqId}<br/>
+               <b>Request Ref:</b> ${devRef}<br/>
+               <b>IP address:</b> ${ipAddress}<br/>
+              `, 'REQUEST', reqId, devRef);
 }
 
 function _unarchiveRequest(reqId, credentials) {
@@ -120,11 +126,12 @@ function _unarchiveRequest(reqId, credentials) {
 
 // ----------------------------------------------------------------------------
 
-function showModal(info, type, id) {
+function showModal(info, type, id, ref) {
     // Set credentials modal data and clear form
     $('#credentialsModal_info').html(info);
     $(`[id="device#type"]`).val(type);
     $(`[id="device#id"]`).val(id);
+    $(`[id="device#ref"]`).val(ref);
 
     $(`[id="device#username"]`).val('');
     $(`[id="device#password"]`).val('');
@@ -182,6 +189,7 @@ function updateDevicesList(asAdmin) {
         var ii = 0;
         data.forEach(item => {
             var devId = item.id;
+            var devRef = item.ref;
             var owner = item.owner;
             var devName = item.name;
             var ipAddress = item.ipAddress;
@@ -191,7 +199,7 @@ function updateDevicesList(asAdmin) {
             var status = item.status;
             var color = getDeviceStatusColor(status);
             var adminActions = (isAdmin) ? `
-                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveDevice('${devId}', '${ipAddress}')">
+                                <button class="btn btn-outline-primary btn-sm" onClick="unarchiveDevice('${devId}', '${ipAddress}', '${devRef}')">
                                     <i class="fas fa-box-open"></i>
                                 </button>
             `: '';
@@ -202,6 +210,7 @@ function updateDevicesList(asAdmin) {
                             <td>${owner}</td>
                             <td class="text-start">
                                 <a href="/archived-device-view.html?id=${devId}">${devName}</a>
+                                <br><span class="text-secondary font-italic" style="font-size: calc(80%);">${devRef}</span>
                             </td>
                             <td>${ipAddress}</td>
                             <td>${dateStr}</td>
@@ -234,9 +243,13 @@ function getDeviceStatusColor(status) {
     return 'table-info';
 }
 
-function unarchiveDevice(devId, ipAddress) {
+function unarchiveDevice(devId, ipAddress, devRef) {
     if (! confirm('Restore device?')) return;
-    showModal('Device: '+ipAddress+' ['+devId+']', 'DEVICE', devId);
+    //showModal('Device: '+ipAddress+' ['+devId+']', 'DEVICE', devId, devRef);
+    showModal(`<b>Device Id:</b> ${devId}<br/>
+               <b>Device Ref:</b> ${devRef}<br/>
+               <b>IP Address:</b> ${ipAddress}<br/>
+              `, 'DEVICE', devId, devRef);
 }
 
 function _unarchiveDevice(devId, credentials) {
