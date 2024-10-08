@@ -1,12 +1,7 @@
 
-ARG BUILDER_IMAGE=docker.io/library/maven
-ARG BUILDER_IMAGE_TAG=3.9.6-eclipse-temurin-21
-ARG RUN_IMAGE=docker.io/library/eclipse-temurin
-ARG RUN_IMAGE_TAG=21.0.1_12-jre
-
 # ----------------- Builder image -----------------
-FROM $BUILDER_IMAGE:$BUILDER_IMAGE_TAG as rd-builder
-ENV BASEDIR /app
+FROM docker.io/library/maven:3.9.6-eclipse-temurin-21 AS rd-builder
+ENV BASEDIR=/app
 WORKDIR ${BASEDIR}
 COPY src        ${BASEDIR}/src
 COPY pom.xml    ${BASEDIR}/
@@ -14,11 +9,11 @@ RUN mvn -f ${BASEDIR}/pom.xml -DskipTests clean install && \
     java -Djarmode=layertools -jar ${BASEDIR}/target/resource-discovery-*.jar extract
 
 # -----------------   Runtime image   -----------------
-FROM $RUN_IMAGE:$RUN_IMAGE_TAG
+FROM docker.io/library/eclipse-temurin:21.0.1_12-jre
 
 # Setup environment
-ENV BASEDIR /opt/resource-discovery
-ENV RD_HOME ${BASEDIR}
+ENV BASEDIR=/opt/resource-discovery
+ENV RD_HOME=${BASEDIR}
 
 # Install required and optional packages
 RUN wget  --progress=dot:giga -O /usr/local/bin/dumb-init \
