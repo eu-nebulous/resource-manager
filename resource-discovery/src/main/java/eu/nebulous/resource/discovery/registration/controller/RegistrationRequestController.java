@@ -110,7 +110,7 @@ public class RegistrationRequestController {
 		RegistrationRequest request = registrationRequestService.getById(id)
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: " + id));
 		request.setStatus(_newStatus);
-		return registrationRequestService.update(request, false);
+		return registrationRequestService.update(request, false, null);
 	}
 
 	@PreAuthorize(REQUIRES_ADMIN_ROLE)
