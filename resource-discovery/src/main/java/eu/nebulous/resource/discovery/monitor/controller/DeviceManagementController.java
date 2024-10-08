@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.monitor.controller;
 
+import eu.nebulous.resource.discovery.SecurityConfig;
 import eu.nebulous.resource.discovery.monitor.DeviceProcessor;
 import eu.nebulous.resource.discovery.monitor.model.ArchivedDevice;
 import eu.nebulous.resource.discovery.monitor.model.Device;
@@ -27,8 +28,12 @@ import java.util.concurrent.Future;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/monitor")
-@PreAuthorize("hasAuthority('ROLE_ADMIN')")
+@PreAuthorize(DeviceManagementController.REQUIRES_ADMIN_ROLE)
 public class DeviceManagementController {
+	public final static String REQUIRES_ADMIN_ROLE = "hasAuthority('ROLE_ADMIN')";
+	public final static String REQUIRES_ADMIN_OR_USER_ROLE =
+			"hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER') || hasAuthority('"+ SecurityConfig.SSO_USER_ROLE +"')";
+
 	private final DeviceProcessor deviceProcessor;
 	private final DeviceManagementService deviceService;
 	private final DeviceLifeCycleRequestService deviceLifeCycleRequestService;
@@ -47,7 +52,7 @@ public class DeviceManagementController {
 		return false;
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/device", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<Device> listDevicesUser(Authentication authentication) {
 		return isAuthenticated(authentication)
@@ -65,7 +70,7 @@ public class DeviceManagementController {
 		return deviceService.getByOwner(owner);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/device/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Device getDevice(@PathVariable String id, Authentication authentication) {
 		Device device = deviceService.getById(id)
@@ -105,19 +110,19 @@ public class DeviceManagementController {
 
 	// ------------------------------------------------------------------------
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/device/{id}/onboard")
 	public void onboardDevice(@PathVariable String id) {
 		deviceLifeCycleRequestService.reinstallRequest(id);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/device/{id}/offboard")
 	public void offboardDevice(@PathVariable String id) {
 		deviceLifeCycleRequestService.uninstallRequest(id);
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/request-update")
 	public String requestUpdate() {
 		deviceLifeCycleRequestService.requestInfoUpdate();
@@ -145,7 +150,7 @@ public class DeviceManagementController {
 
 	// ------------------------------------------------------------------------
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/device/archived", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<ArchivedDevice> listArchivedRequests(Authentication authentication) {
 		return deviceService.getArchivedByOwner(authentication);
@@ -156,7 +161,7 @@ public class DeviceManagementController {
 		return deviceService.getArchivedAll();
 	}
 
-	@PreAuthorize("hasAuthority('ROLE_ADMIN') || hasAuthority('ROLE_USER')")
+	@PreAuthorize(REQUIRES_ADMIN_OR_USER_ROLE)
 	@GetMapping(value = "/device/archived/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ArchivedDevice getArchivedRequest(@PathVariable String id, Authentication authentication) {
 		return deviceService.getArchivedById(id, authentication)

@@ -1,14 +1,11 @@
 package eu.nebulous.resource.discovery.broker_communication;
 
-import eu.nebulouscloud.exn.Connector;
 import eu.nebulouscloud.exn.core.Publisher;
-import eu.nebulouscloud.exn.handlers.ConnectorHandler;
 import eu.nebulouscloud.exn.settings.StaticExnConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 

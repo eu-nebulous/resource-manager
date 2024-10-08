@@ -12,8 +12,10 @@ import java.util.List;
 @Slf4j
 @Data
 @Configuration
-@ConfigurationProperties(prefix = "discovery")
+@ConfigurationProperties(prefix = ResourceDiscoveryProperties.CONFIG_PREFIX)
 public class ResourceDiscoveryProperties {
+	public final static String CONFIG_PREFIX = "discovery";
+
 	// Broker configuration
 	private String brokerURL;
 	private String brokerUsername;
