@@ -3,6 +3,7 @@ package eu.nebulous.resource.discovery.monitor.service;
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.common.BrokerUtil;
 import eu.nebulous.resource.discovery.common.REQUEST_TYPE;
+import eu.nebulous.resource.discovery.monitor.model.ArchivedDevice;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
@@ -41,6 +42,11 @@ public class DeviceLifeCycleRequestService {
 
 			// Send request
 			brokerUtil.sendMessage(properties.getDeviceLifeCycleRequestsTopic(), onboardingRequest);
+			Optional<ArchivedDevice> archived_device = deviceManagementService.isCompromised(device.getId());
+			if (archived_device.isPresent()){
+				log.warn("reinstallRequest: Attempted to onboard a device which had been compromised in the past");
+				return;
+			}
 			device.setStatus(DeviceStatus.ONBOARDING);
 
 			log.debug("reinstallRequest: Save updated device: id={}, device={}", device.getId(), device);

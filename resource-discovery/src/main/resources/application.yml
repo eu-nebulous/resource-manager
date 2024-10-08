@@ -46,3 +46,5 @@ discovery:
 #  apiKeyValue: 1234567890
 
 #logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE
+logging.level.eu.nebulous.resource: DEBUG
+management.endpoints.web.exposure.include: '*'

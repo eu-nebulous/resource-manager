@@ -39,7 +39,7 @@ public class SALRegistrationService implements InitializingBean {
 
     public void register(Device device) {
 
-        String  application_name = "default-application"; //TODO decide on this
+        String  application_name = ""; //TODO decide on this
         Map<String,String> device_info = device.getDeviceInfo();
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
@@ -75,7 +75,9 @@ public class SALRegistrationService implements InitializingBean {
         String country_name = ""; //TODO improve this
         String internal_ip = ""; //TODO improve this
         String os_family = "UBUNTU"; //TODO improve this
-        String os_architecture = "ARMv8"; //TODO improve this
+        //String os_architecture = "ARMv8"; //TODO improve this
+        String os_architecture = device_info.get("OS_ARCHITECTURE").equals("aarch64") ? "armv8" : device_info.get("OS_ARCHITECTURE").equals("armv8") ?"armv8": device_info.get("OS_ARCHITECTURE").equals("armv7l") ? "armv7l": "AMD";
+        String jar_url = os_architecture.equals("armv8") ? "https://www.activeeon.com/public_content/nebulous/node_14.1.0-SNAPSHOT_arm_v8.jar" : os_architecture.equals("armv7l") ? "https://www.activeeon.com/public_content/nebulous/node_14.1.0-SNAPSHOT_arm_v7l.jar" :  "https://www.activeeon.com/public_content/nebulous/node_14.1.0-SNAPSHOT_amd.jar";
         int os_version = 2204; //TODO improve this
         String private_key = ""; //TODO improve this
         int external_access_port = device.getPort();
@@ -102,7 +104,7 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
 
-        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,os_version,cores,ram_gb,disk_gb,device_name,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
+        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cores,ram_gb,disk_gb,device_name,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
         log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
         log.info("broker port is {}", processorProperties.getNebulous_broker_port());
