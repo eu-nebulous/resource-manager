@@ -47,7 +47,7 @@ public class SALRegistrationService implements InitializingBean {
         String public_ip = System.getenv("NEBULOUS_IP");
         if (public_ip.equals("")){
             log.warn("Using default IP address as the environmental variable was not set or found");
-            public_ip = "158.39.201.36";
+            public_ip = processorProperties.getNebulous_server_ip_address();
         }
 
         Map<String,String> device_info = device.getDeviceInfo();
@@ -71,8 +71,8 @@ public class SALRegistrationService implements InitializingBean {
         String device_name = device.getRef();
 
         int cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
-        long ram_gb = Math.round(Integer.parseInt(device_info.get("RAM_TOTAL_KB"))*1.0/1000000);
-        long disk_gb = Math.round(Integer.parseInt(device_info.get("DISK_TOTAL_KB"))*1.0/1000000);
+        long ram_mb = Math.round(Integer.parseInt(device_info.get("RAM_TOTAL_KB"))*1.0/1000);
+        long disk_mb = Math.round(Integer.parseInt(device_info.get("DISK_TOTAL_KB"))*1.0/1000);
         String external_ip_address = device.getIpAddress();
         String device_username = device.getUsername();
         String device_password = new String(device.getPassword());
@@ -115,7 +115,7 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
 
-        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cores,ram_gb,disk_gb,device_name,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
+        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cores,ram_mb,disk_mb,device_name,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
         log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
         log.info("broker port is {}", processorProperties.getNebulous_broker_port());
