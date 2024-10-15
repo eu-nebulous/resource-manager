@@ -27,6 +27,7 @@ discovery:
   sal_host: "localhost"
   sal_port: 8080
   lost_device_topic: "eu.nebulouscloud.monitoring.device_lost"
+  nebulous_server_ip_address: "158.39.201.36"
 #  trustStoreFile: tests/config/broker-truststore.p12
 #  trustStorePassword: melodic
 #  trustStoreType: PKCS12
