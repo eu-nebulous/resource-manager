@@ -39,7 +39,17 @@ public class SALRegistrationService implements InitializingBean {
 
     public void register(Device device) {
 
-        String  application_name = ""; //TODO decide on this
+        
+        String  application_name = device.getRef().split("\\|")[1];
+        if (application_name.equals("all_applications")){
+            application_name="";
+        }
+        String public_ip = System.getenv("NEBULOUS_IP");
+        if (public_ip.equals("")){
+            log.warn("Using default IP address as the environmental variable was not set or found");
+            public_ip = "158.39.201.36";
+        }
+
         Map<String,String> device_info = device.getDeviceInfo();
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
@@ -61,8 +71,8 @@ public class SALRegistrationService implements InitializingBean {
         String device_name = device.getRef();
 
         int cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
-        int ram_gb = Integer.parseInt(device_info.get("RAM_TOTAL_KB"))/1000000;
-        int disk_gb = Integer.parseInt(device_info.get("DISK_TOTAL_KB"))/1000000;
+        long ram_gb = Math.round(Integer.parseInt(device_info.get("RAM_TOTAL_KB"))*1.0/1000000);
+        long disk_gb = Math.round(Integer.parseInt(device_info.get("DISK_TOTAL_KB"))*1.0/1000000);
         String external_ip_address = device.getIpAddress();
         String device_username = device.getUsername();
         String device_password = new String(device.getPassword());
@@ -76,8 +86,9 @@ public class SALRegistrationService implements InitializingBean {
         String internal_ip = ""; //TODO improve this
         String os_family = "UBUNTU"; //TODO improve this
         //String os_architecture = "ARMv8"; //TODO improve this
-        String os_architecture = device_info.get("OS_ARCHITECTURE").equals("aarch64") ? "armv8" : device_info.get("OS_ARCHITECTURE").equals("armv8") ?"armv8": device_info.get("OS_ARCHITECTURE").equals("armv7l") ? "armv7l": "AMD";
-        String jar_url = os_architecture.equals("armv8") ? "https://www.activeeon.com/public_content/nebulous/node_14.1.0-SNAPSHOT_arm_v8.jar" : os_architecture.equals("armv7l") ? "https://www.activeeon.com/public_content/nebulous/node_14.1.0-SNAPSHOT_arm_v7l.jar" :  "https://www.activeeon.com/public_content/nebulous/node_14.1.0-SNAPSHOT_amd.jar";
+        String os_architecture = device_info.get("OS_ARCHITECTURE").equals("aarch64") ? "ARMv8" : device_info.get("OS_ARCHITECTURE").equals("armv8") ?"ARMv8": device_info.get("OS_ARCHITECTURE").equals("armv7l") ? "ARMv7": "AMD";
+        String jar_url = os_architecture.equals("ARMv8") ? "http://"+public_ip+":8880/rest/node-arm-v8.jar" : os_architecture.equals("ARMv7") ? "http://"+public_ip+":8880/rest/node-arm-v7.jar" :  "http://"+public_ip+":8880/rest/node-amd-64.jar";
+        
         int os_version = 2204; //TODO improve this
         String private_key = ""; //TODO improve this
         int external_access_port = device.getPort();

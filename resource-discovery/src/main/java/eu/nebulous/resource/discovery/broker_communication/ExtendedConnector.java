@@ -74,6 +74,7 @@ public class ExtendedConnector extends Connector {
         if (publishers.size()>0) {
             stop_publishers(publishers);
         }
+        this.stop();
     }
 
 
