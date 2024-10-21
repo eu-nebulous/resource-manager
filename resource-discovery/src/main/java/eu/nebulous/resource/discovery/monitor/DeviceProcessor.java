@@ -7,6 +7,7 @@ import java.time.Clock;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
+import eu.nebulous.resource.discovery.registration.service.SALDeregistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
@@ -22,6 +23,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +48,8 @@ public class DeviceProcessor  implements InitializingBean {
     private final DeviceManagementService deviceManagementService;
     private final TaskScheduler taskScheduler;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final Optional<SALDeregistrationService> salDeregistrationService;
+
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -134,6 +138,8 @@ public class DeviceProcessor  implements InitializingBean {
                     && device.getCreationDate().isBefore(failedDeviceThreshold) )
             {
                 device.setStatus(DeviceStatus.FAILED);
+                log.info("processFailedDevices: Deregistering device with Id: {}", device.getId());
+                salDeregistrationService.ifPresent(deregistrationService -> deregistrationService.deregister(device));
                 JSONObject lost_device_message = new JSONObject();
                 lost_device_message.put("device_name",device.getName());
                 Clock clock = Clock.systemUTC();

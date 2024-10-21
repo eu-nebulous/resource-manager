@@ -46,7 +46,7 @@ public class SALRegistrationService implements InitializingBean {
         }
         String public_ip = System.getenv("NEBULOUS_IP");
         if (public_ip==null || public_ip.isEmpty()){
-            log.warn("Using default IP address as the environmental variable was not set or found");
+            log.warn("Using default IP address ("+processorProperties.getNebulous_server_ip_address()+") to fetch Proactive client jar files from, as the environmental variable was not set or found");
             public_ip = processorProperties.getNebulous_server_ip_address();
         }
 

@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.broker_communication;
 
+import eu.nebulous.resource.discovery.monitor.model.Device;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -141,6 +142,9 @@ public class SALCommunicator {
         }
     }
 
+    public static String get_device_deregistration_json(Device device){
+        return "";
+    }
 
     public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, long ram_gb, long disk_gb, String device_name,String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
 
