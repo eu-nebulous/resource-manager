@@ -320,7 +320,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 				// Set new status
 				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
-					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
+					registrationRequest.setStatus( getNextStatus(currStatus) );
 				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
 					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
 					doArchive = processorProperties.isImmediatelyArchiveSuccessRequests();
@@ -353,6 +353,14 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		} else {
 			log.debug("processResponse: Request not found: id={}, requestType={}", requestId, requestType);
 		}
+	}
+
+	private RegistrationRequestStatus getNextStatus(RegistrationRequestStatus currStatus) {
+		return switch (processorProperties.getAuthorizationType()) {
+			case MANUAL -> RegistrationRequestStatus.PENDING_AUTHORIZATION;
+			case NONE, ALWAYS_AUTHORIZE -> RegistrationRequestStatus.PENDING_ONBOARDING;
+			case ALWAYS_REJECT -> RegistrationRequestStatus.AUTHORIZATION_REJECT;
+		};
 	}
 
 	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
