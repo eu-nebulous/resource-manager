@@ -53,6 +53,9 @@ public class ResourceDiscoveryProperties {
 	private String dataCollectionResponseTopic = "ems.client.installation.reports";
 	private List<String> allowedDeviceInfoKeys = new ArrayList<>(List.of("*"));
 
+	// Device authorization settings
+	private AUTHORIZATION_TYPE authorizationType = AUTHORIZATION_TYPE.ALWAYS_AUTHORIZE;
+
 	// Device monitoring settings
 	private String deviceStatusMonitorTopic = "_ui_instance_info";	//XXX:TODO: Change Topic name. Also update EMS config.
 	private String deviceMetricsMonitorTopic = "_client_metrics";	//XXX:TODO: Change Topic name. Also update EMS config.
@@ -105,6 +108,12 @@ public class ResourceDiscoveryProperties {
 	
 	// Nebulous server data
 	private String nebulous_server_ip_address;
+
+	public enum AUTHORIZATION_TYPE {
+		NONE, MANUAL,
+		ALWAYS_AUTHORIZE, ALWAYS_REJECT
+		//, CALL_REST_API, ASK_ABAC_SERVER
+	}
 
 	@Data
 	public static class UserData {

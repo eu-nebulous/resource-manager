@@ -153,8 +153,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				deviceManagementService.checkDevice(deviceForMonitoring, true);
 
 				log.debug("processOnboardingRequests: Requesting device onboarding for request with Id: {}", registrationRequest.getId());
-				Map<String, String> dataCollectionRequest = prepareRequestPayload(REQUEST_TYPE.INSTALL, registrationRequest);
-				brokerUtil.sendMessage(processorProperties.getDataCollectionRequestTopic(), dataCollectionRequest);
+				Map<String, String> deviceOnboardingRequest = prepareRequestPayload(REQUEST_TYPE.INSTALL, registrationRequest);
+				brokerUtil.sendMessage(processorProperties.getDataCollectionRequestTopic(), deviceOnboardingRequest);
 				registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_REQUESTED);
 
 				log.debug("processOnboardingRequests: Save updated request: id={}, request={}", registrationRequest.getId(), registrationRequest);
@@ -173,18 +173,18 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 	private static Map<String, String> prepareRequestPayload(@NonNull REQUEST_TYPE requestType, RegistrationRequest registrationRequest) {
 		try {
-			Map<String, String> payload = new LinkedHashMap<>(Map.of(
-					"requestId", registrationRequest.getId(),
-					"requestType", requestType.name(),
-					"deviceId", registrationRequest.getDevice().getId(),
-					"deviceOs", registrationRequest.getDevice().getOs(),
-					"deviceName", registrationRequest.getDevice().getName(),
-					"deviceIpAddress", registrationRequest.getDevice().getIpAddress(),
-					"devicePort", Integer.toString( registrationRequest.getDevice().getPort() ),
-					"deviceUsername", registrationRequest.getDevice().getUsername(),
-					"devicePassword", new String(registrationRequest.getDevice().getPassword()),
-					"devicePublicKey", new String(registrationRequest.getDevice().getPublicKey())
-			));
+			Map<String, String> payload = new LinkedHashMap<>();
+			payload.put("requestId", registrationRequest.getId());
+			payload.put("requestType", requestType.name());
+			payload.put("deviceId", registrationRequest.getDevice().getId());
+			payload.put("deviceRef", registrationRequest.getDevice().getRef());
+			payload.put("deviceOs", registrationRequest.getDevice().getOs());
+			payload.put("deviceName", registrationRequest.getDevice().getName());
+			payload.put("deviceIpAddress", registrationRequest.getDevice().getIpAddress());
+			payload.put("devicePort", Integer.toString( registrationRequest.getDevice().getPort() ));
+			payload.put("deviceUsername", registrationRequest.getDevice().getUsername());
+			payload.put("devicePassword", new String(registrationRequest.getDevice().getPassword()));
+			payload.put("devicePublicKey", new String(registrationRequest.getDevice().getPublicKey()));
 			payload.put("timestamp", Long.toString(Instant.now().toEpochMilli()));
 			payload.put("priority", Double.toString(1.0));
 			payload.put("retry", Integer.toString(1));
@@ -320,7 +320,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 				// Set new status
 				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
-					registrationRequest.setStatus(RegistrationRequestStatus.PENDING_AUTHORIZATION);
+					registrationRequest.setStatus( getNextStatus(currStatus) );
 				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
 					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
 					doArchive = processorProperties.isImmediatelyArchiveSuccessRequests();
@@ -353,6 +353,14 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		} else {
 			log.debug("processResponse: Request not found: id={}, requestType={}", requestId, requestType);
 		}
+	}
+
+	private RegistrationRequestStatus getNextStatus(RegistrationRequestStatus currStatus) {
+		return switch (processorProperties.getAuthorizationType()) {
+			case MANUAL -> RegistrationRequestStatus.PENDING_AUTHORIZATION;
+			case NONE, ALWAYS_AUTHORIZE -> RegistrationRequestStatus.PENDING_ONBOARDING;
+			case ALWAYS_REJECT -> RegistrationRequestStatus.AUTHORIZATION_REJECT;
+		};
 	}
 
 	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
