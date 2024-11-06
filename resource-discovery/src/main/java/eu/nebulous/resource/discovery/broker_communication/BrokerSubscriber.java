@@ -17,6 +17,8 @@ import static eu.nebulous.resource.discovery.broker_communication.BrokerPublishe
 @Slf4j
 public class BrokerSubscriber {
 
+    private AtomicBoolean stop_signal = new AtomicBoolean();
+    
     private class MessageProcessingHandler extends Handler {
         private BrokerSubscriptionDetails broker_details;
         private static final BiFunction temporary_function = (Object o, Object o2) -> {
@@ -54,6 +56,7 @@ public class BrokerSubscriber {
     private static HashMap<String, HashSet<String>> broker_and_topics_to_subscribe_to = new HashMap<>();
     private static HashMap<String, HashMap<String, Consumer>> active_consumers_per_topic_per_broker_ip = new HashMap<>();
     private static HashMap<String, ExtendedConnector> current_connectors = new HashMap<>();
+    ArrayList<Consumer> consumers = new ArrayList<>();
     private String topic;
     private String broker_ip;
     private int broker_port;
@@ -62,6 +65,7 @@ public class BrokerSubscriber {
     BrokerSubscriptionDetails broker_details;
 
     public BrokerSubscriber(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation, String application_name) {
+        stop_signal.set(false);
         boolean able_to_initialize_BrokerSubscriber = topic != null && broker_ip != null && brokerUsername != null && brokerPassword != null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
         if (!able_to_initialize_BrokerSubscriber) {
@@ -120,10 +124,20 @@ public class BrokerSubscriber {
      */
     private void add_topic_consumer_to_broker_connector(Consumer new_consumer) {
         if (current_connectors.get(broker_ip) != null) {
-            current_connectors.get(broker_ip).add_consumer(new_consumer);
-        } else {
-            ArrayList<Consumer> consumers = new ArrayList<>();
+            current_connectors.get(broker_ip).stop(consumers,new ArrayList<>());
+        } 
+        if (consumers.isEmpty()){
+            consumers = new ArrayList<>();
+        }
+        boolean do_not_add_new_consumer = false;
+        for (Consumer consumer : consumers) {
+            if (Objects.equals(consumer.linkAddress, new_consumer.linkAddress)) {
+                do_not_add_new_consumer = true;
+            }
+        }
+        if(!do_not_add_new_consumer) {
             consumers.add(new_consumer);
+        }
             ExtendedConnector extended_connector = new ExtendedConnector("resource_manager",
                     new CustomConnectorHandler() {
                     },
@@ -142,7 +156,6 @@ public class BrokerSubscriber {
             );
             extended_connector.start();
             current_connectors.put(broker_ip, extended_connector);
-        }
     }
 
     private void remove_topic_from_broker_connector(String topic_key) {
@@ -150,7 +163,11 @@ public class BrokerSubscriber {
             current_connectors.get(broker_ip).remove_consumer_with_key(topic_key);
         }
     }
-
+    
+    public int subscribe (BiFunction function, String application_name) {
+        return subscribe(function,application_name,stop_signal);
+    }
+    
     public int subscribe(BiFunction function, String application_name, AtomicBoolean stop_signal) {
         int exit_status = -1;
         log.info("ESTABLISHING SUBSCRIPTION for " + topic);

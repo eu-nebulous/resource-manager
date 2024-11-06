@@ -15,7 +15,7 @@ import java.util.*;
 @Slf4j
 public class SynchronousBrokerPublisher {
     public static String EMPTY="";
-    private static HashMap<String, HashSet<String>> broker_and_topics_to_publish_to = new HashMap<>();
+    private HashMap<String, HashSet<String>> broker_and_topics_to_publish_to = new HashMap<>();
     private SyncedPublisher private_publisher_instance;
     private ArrayList<Publisher> publishers = new ArrayList<>();
 
@@ -35,25 +35,13 @@ public class SynchronousBrokerPublisher {
             return;
         }
         boolean publisher_configuration_changed;
-        if (!broker_and_topics_to_publish_to.containsKey(broker_ip)){
-            HashSet<String> topics_to_publish_to = new HashSet<>();
-            topics_to_publish_to.add(topic);
-            broker_and_topics_to_publish_to.put(broker_ip,topics_to_publish_to);
-            //log.error("changed1");
-            publisher_configuration_changed = true;
-        }else{
-            if (!broker_and_topics_to_publish_to.get(broker_ip).contains(topic)){
-                broker_and_topics_to_publish_to.get(broker_ip).add(topic);
-                //log.error("changed2");
-                publisher_configuration_changed = true;
-            }
-            else{
-                publisher_configuration_changed = false;
-            }
-        }
+        HashSet<String> topics_to_publish_to = new HashSet<>();
+        topics_to_publish_to.add(topic);
+        broker_and_topics_to_publish_to.put(broker_ip,topics_to_publish_to);
+        //log.error("changed1");
 
         //log.error("preliminary_outside");
-        if (publisher_configuration_changed || hard_initialize_connector){
+        //if (publisher_configuration_changed || hard_initialize_connector){
             //log.error("preliminary_inside1");
 //            for (String current_broker_ip : broker_and_topics_to_publish_to.keySet()){
             log.info("Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
@@ -61,18 +49,20 @@ public class SynchronousBrokerPublisher {
                 active_connector.stop(new ArrayList<>(), publishers);
             }
             publishers.clear();
-            for (String broker_topic : broker_and_topics_to_publish_to.get(broker_ip)){
+            //for (String broker_topic : broker_and_topics_to_publish_to.get(broker_ip)){
                 //log.error("preliminary_inside2");
                 //ArrayList<Publisher> publishers = new ArrayList<>();
-                SyncedPublisher publisher = new SyncedPublisher("resource_manager_"+broker_topic, broker_topic, true, true);
+                //SyncedPublisher publisher = new SyncedPublisher("resource_manager_"+broker_topic, broker_topic, true, true);
+                SyncedPublisher publisher = new SyncedPublisher("resource_manager_"+topic, topic, true, true);
                 publishers.add(publisher);
-                if (broker_topic.equals(topic)){
+            //    if (broker_topic.equals(topic)){
                     log.error("inside_assignment_to_private_publisher_instance");
                     this.private_publisher_instance = (SyncedPublisher) publishers.get(publishers.size()-1);
-                    this.topic = broker_topic;
+                    //this.topic = broker_topic;
+                    this.topic = topic;
                     this.broker_ip = broker_ip;
-                }
-            }
+            //    }
+            //}
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
 
             active_connector = new ExtendedConnector("resource_manager_synchronous"
@@ -92,7 +82,7 @@ public class SynchronousBrokerPublisher {
             );
             active_connector.start();
 
-        }
+        //}
     }
 
 

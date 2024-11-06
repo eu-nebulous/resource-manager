@@ -104,6 +104,7 @@ public class ResourceDiscoveryProperties {
 	private String nebulous_broker_username;
 	private String nebulous_broker_password;
 	private String lost_device_topic;
+	private String compromised_device_topic;
 	
 	// Nebulous server data
 	private String nebulous_server_ip_address;

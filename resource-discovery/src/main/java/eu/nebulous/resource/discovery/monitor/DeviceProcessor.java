@@ -7,6 +7,7 @@ import java.time.Clock;
 import eu.nebulous.resource.discovery.monitor.model.Device;
 import eu.nebulous.resource.discovery.monitor.model.DeviceStatus;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
+import eu.nebulous.resource.discovery.registration.service.SALDeregistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
@@ -22,6 +23,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,6 +48,8 @@ public class DeviceProcessor  implements InitializingBean {
     private final DeviceManagementService deviceManagementService;
     private final TaskScheduler taskScheduler;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final Optional<SALDeregistrationService> salDeregistrationService;
+
 
     @Override
     public void afterPropertiesSet() throws Exception {
@@ -134,6 +138,8 @@ public class DeviceProcessor  implements InitializingBean {
                     && device.getCreationDate().isBefore(failedDeviceThreshold) )
             {
                 device.setStatus(DeviceStatus.FAILED);
+                log.info("processFailedDevices: Deregistering device with Id: {}", device.getId());
+                salDeregistrationService.ifPresent(deregistrationService -> deregistrationService.deregister(device));
                 JSONObject lost_device_message = new JSONObject();
                 lost_device_message.put("device_name",device.getName());
                 Clock clock = Clock.systemUTC();
@@ -144,14 +150,11 @@ public class DeviceProcessor  implements InitializingBean {
                 while (device_lost_publisher.is_publisher_null()){
 
                     try {
-                        log.info("Attempting to recreate new BrokerPublisher to publish the device lost message");
+                        log.warn("Will now make attempt No "+sending_attempt+" to recreate the BrokerPublisher connector for the lost device topic");
                         log.info("The topic name is "+processorProperties.getLost_device_topic()+", the broker ip is "+ processorProperties.getNebulous_broker_ip_address()+", the broker port is "+ processorProperties.getNebulous_broker_port()+", the username is "+ processorProperties.getNebulous_broker_username()+", and the password is "+ processorProperties.getNebulous_broker_password());
-                        if (sending_attempt<=2) {
-                            device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
-                        }else{
-                            log.warn("Will now attempt to reset the BrokerPublisher connector");
-                            device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "",true);
-                        }
+                        
+                        device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                    
                         Thread.sleep(3000);
                     }catch (InterruptedException i){
                         i.printStackTrace();

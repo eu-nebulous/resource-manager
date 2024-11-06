@@ -46,7 +46,7 @@ public class SALRegistrationService implements InitializingBean {
         }
         String public_ip = System.getenv("NEBULOUS_IP");
         if (public_ip==null || public_ip.isEmpty()){
-            log.warn("Using default IP address as the environmental variable was not set or found");
+            log.warn("Using default IP address ("+processorProperties.getNebulous_server_ip_address()+") to fetch Proactive client jar files from, as the environmental variable was not set or found");
             public_ip = processorProperties.getNebulous_server_ip_address();
         }
 
@@ -130,7 +130,7 @@ public class SALRegistrationService implements InitializingBean {
             if (sending_attempt<=2) {
                 register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }else{
-                log.warn("Will now attempt to reset the Synchronous publisher connector");
+                log.warn("Will now attempt to reset the Synchronous publisher connector to register");
                 register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }
             try {
