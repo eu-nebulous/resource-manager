@@ -150,14 +150,11 @@ public class DeviceProcessor  implements InitializingBean {
                 while (device_lost_publisher.is_publisher_null()){
 
                     try {
-                        log.info("Attempting to recreate new BrokerPublisher to publish the device lost message");
+                        log.warn("Will now make attempt No "+sending_attempt+" to recreate the BrokerPublisher connector for the lost device topic");
                         log.info("The topic name is "+processorProperties.getLost_device_topic()+", the broker ip is "+ processorProperties.getNebulous_broker_ip_address()+", the broker port is "+ processorProperties.getNebulous_broker_port()+", the username is "+ processorProperties.getNebulous_broker_username()+", and the password is "+ processorProperties.getNebulous_broker_password());
-                        if (sending_attempt<=2) {
-                            device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
-                        }else{
-                            log.warn("Will now attempt to reset the BrokerPublisher connector");
-                            device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "",true);
-                        }
+                        
+                        device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                    
                         Thread.sleep(3000);
                     }catch (InterruptedException i){
                         i.printStackTrace();

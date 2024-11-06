@@ -74,7 +74,14 @@ public class ExtendedConnector extends Connector {
         if (publishers.size()>0) {
             stop_publishers(publishers);
         }
-        this.stop();
+        Context context = ((CustomConnectorHandler)handler).getContext();
+        try {
+            context.stop();
+            this.stop();
+            log.info("Successfully stopped the ExtendedConnector");
+        }catch (Exception e){
+            log.warn("There was an issue while trying to stop an ExtendedConnector");
+        }
     }
 
 

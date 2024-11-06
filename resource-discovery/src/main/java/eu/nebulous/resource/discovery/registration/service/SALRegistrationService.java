@@ -130,7 +130,7 @@ public class SALRegistrationService implements InitializingBean {
             if (sending_attempt<=2) {
                 register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }else{
-                log.warn("Will now attempt to reset the Synchronous publisher connector");
+                log.warn("Will now attempt to reset the Synchronous publisher connector to register");
                 register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }
             try {
