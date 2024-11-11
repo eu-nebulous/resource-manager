@@ -98,7 +98,7 @@ public class SynchronousBrokerPublisher {
                     json_object = (JSONObject) parser.parse(json_string_content);
                     successful_json_parsing = true;
                 } catch (ParseException p) {
-                    log.warn("Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
+                    log.warn("publish_for_response-if: Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
                 }
                 metadata.put("jobId",application_name);
                 payload.put("metaData",metadata);
@@ -124,7 +124,7 @@ public class SynchronousBrokerPublisher {
                 json_object = (JSONObject) parser.parse(json_string_content);
 
             } catch (ParseException p) {
-                log.warn("Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
+                log.warn("publish_for_response-else: Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
             }
             if (private_publisher_instance != null) {
                 log.info("Sending new synchronous message\n"+json_object.toJSONString());

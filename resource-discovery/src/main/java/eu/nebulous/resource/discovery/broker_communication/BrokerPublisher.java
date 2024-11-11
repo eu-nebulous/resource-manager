@@ -97,7 +97,7 @@ public class BrokerPublisher {
             try {
                 json_object = (JSONObject) parser.parse(json_string_content);
             } catch (ParseException p) {
-                log.warn( "Could not parse the string content to be published to the broker as json, which is the following: "+json_string_content);
+                log.warn( "publish: Could not parse the string content to be published to the broker as json, which is the following: "+json_string_content);
             }
             if (!is_publisher_null()) {
                 private_publisher_instance.send(json_object);
