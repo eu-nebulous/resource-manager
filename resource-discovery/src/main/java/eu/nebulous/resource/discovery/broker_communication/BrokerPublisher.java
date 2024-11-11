@@ -50,7 +50,7 @@ public class BrokerPublisher {
 
         //if (publisher_configuration_changed || hard_initialize_connector){
 //            for (String current_broker_ip : broker_and_topics_to_publish_to.keySet()){
-            log.info("Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
+            log.info("Publisher configuration changed, creating new connector at "+broker_ip+" for topic "+topic);
             if (active_connector!=null) {
                 //active_connector.stop(new ArrayList<>(), publishers);
                 active_connector.stop();
