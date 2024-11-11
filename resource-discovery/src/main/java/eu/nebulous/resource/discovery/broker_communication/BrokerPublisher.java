@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.broker_communication;
 
+import eu.nebulouscloud.exn.Connector;
 import eu.nebulouscloud.exn.core.Publisher;
 import eu.nebulouscloud.exn.settings.StaticExnConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,7 @@ public class BrokerPublisher {
     private Publisher private_publisher_instance;
     private ArrayList<Publisher> publishers = new ArrayList<>();
 
-    private ExtendedConnector active_connector;
+    private Connector active_connector;
     private String topic;
     private String broker_ip;
     private int broker_port;
@@ -49,9 +50,10 @@ public class BrokerPublisher {
 
         //if (publisher_configuration_changed || hard_initialize_connector){
 //            for (String current_broker_ip : broker_and_topics_to_publish_to.keySet()){
-            log.info("Publisher configuration changed, creating new connector at  "+broker_ip+" for topic "+topic);
+            log.info("Publisher configuration changed, creating new connector at "+broker_ip+" for topic "+topic);
             if (active_connector!=null) {
-                active_connector.stop(new ArrayList<>(), publishers);
+                //active_connector.stop(new ArrayList<>(), publishers);
+                active_connector.stop();
             }
             publishers.clear();
             //for (String broker_topic : broker_and_topics_to_publish_to.get(broker_ip)){
@@ -68,7 +70,7 @@ public class BrokerPublisher {
             //}
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
 
-            active_connector = new ExtendedConnector("resource_manager"
+            active_connector = new Connector("resource_manager"
                     , new CustomConnectorHandler() {}
                     , publishers
                     , List.of(),
@@ -113,7 +115,8 @@ public class BrokerPublisher {
     
     public void stop(){
         if (active_connector!=null) {
-            active_connector.stop(new ArrayList<>(), publishers);
+            //active_connector.stop(new ArrayList<>(), publishers);
+            active_connector.stop();
         }
     }
 }
