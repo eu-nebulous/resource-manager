@@ -76,7 +76,7 @@ public class ExtendedConnector extends Connector {
         }
         Context context = ((CustomConnectorHandler)handler).getContext();
         try {
-            context.stop();
+            //context.stop();
             this.stop();
             log.info("Successfully stopped the ExtendedConnector");
         }catch (Exception e){
