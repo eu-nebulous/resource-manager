@@ -18,6 +18,7 @@ public class Device {
     private String os;
     private String name;
     private String owner;
+    private String provider;
     private String ipAddress;
     private int port;
     private DeviceLocation location;

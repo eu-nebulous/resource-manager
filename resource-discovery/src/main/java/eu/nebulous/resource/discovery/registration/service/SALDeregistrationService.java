@@ -67,7 +67,7 @@ public class SALDeregistrationService implements InitializingBean {
                 deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             } else {
                 log.warn("Will now attempt to reset the Synchronous publisher connector to deregister");
-                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "",true);
+                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }
             try {
                 Thread.sleep(3000);

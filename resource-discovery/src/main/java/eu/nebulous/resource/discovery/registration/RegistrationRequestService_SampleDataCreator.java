@@ -63,6 +63,7 @@ public class RegistrationRequestService_SampleDataCreator implements Initializin
 				.name( "Device name #"+pos )
 				.os("LINUX")
 				.owner(owner)
+				.provider("default-provider")
 				.ipAddress("10.10.0."+(100+pos))
 				.username("ubuntu_"+pos)
 				.password("password".toCharArray())

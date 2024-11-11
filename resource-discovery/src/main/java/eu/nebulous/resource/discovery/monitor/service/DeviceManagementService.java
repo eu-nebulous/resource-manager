@@ -107,6 +107,7 @@ public class DeviceManagementService {
 		if (!dryRun && StringUtils.isBlank(device.getId())) errors.add("Null or blank Id");
 		if (StringUtils.isBlank(device.getOs())) errors.add("Null or blank OS");
 		if (StringUtils.isBlank(device.getOwner())) errors.add("Null or blank Owner");
+		if (StringUtils.isBlank(device.getProvider())) errors.add("Null or blank Provider");
 		if (StringUtils.isBlank(device.getIpAddress())) errors.add("Null or blank IP address");
 		if (!dryRun && StringUtils.isBlank(device.getNodeReference())) errors.add("Null or blank Node reference");
 		if (!dryRun && device.getCreationDate()==null) errors.add("Null Creation date");

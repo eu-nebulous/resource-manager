@@ -103,7 +103,7 @@ public class RegistrationRequestService {
 		Optional<RegistrationRequest> result = getById(registrationRequest.getId());
 		if (result.isEmpty())
 			throw new RegistrationRequestException(
-					"Registration request with the Id does not exists in repository: "+registrationRequest.getId());
+					"Registration request with Id: "+registrationRequest.getId()+" does not exist in repository");
 		checkRegistrationRequest(registrationRequest, result.get(), authentication);
 		if (checkEditDel)
 			canEditOrDelete(result.get());
@@ -174,6 +174,7 @@ public class RegistrationRequestService {
 	private void checkDevice(@NonNull Device device, Device storedRequestDevice, Authentication authentication, List<String> errors) {
 		//if (StringUtils.isBlank(device.getId())) errors.add("Null or blank device id");
 		if (StringUtils.isBlank(device.getOwner())) errors.add("Null or blank device owner");
+		if (StringUtils.isBlank(device.getProvider())) errors.add("Null or blank device provider");
 		if (authentication!=null && StringUtils.isNotBlank(authentication.getName()))
 			if (! isAdmin(authentication) && ! device.getOwner().equals(authentication.getName()))
 				errors.add("Device owner differs from authenticated user");

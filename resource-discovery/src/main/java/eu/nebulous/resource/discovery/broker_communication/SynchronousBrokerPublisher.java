@@ -23,10 +23,6 @@ public class SynchronousBrokerPublisher {
     private String topic;
     private String broker_ip;
     public SynchronousBrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
-        this(topic, broker_ip, broker_port, brokerUsername, brokerPassword, amqLibraryConfigurationLocation,false);
-    }
-
-    public SynchronousBrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation,boolean hard_initialize_connector) {
 
         boolean able_to_initialize_BrokerPublisher = topic!=null && broker_ip!=null && brokerUsername!=null && brokerPassword!=null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
