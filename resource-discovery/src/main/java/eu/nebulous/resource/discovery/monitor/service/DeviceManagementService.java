@@ -92,7 +92,7 @@ public class DeviceManagementService {
 		Optional<Device> result = getById(device.getId());
 		if (result.isEmpty())
 			throw new DeviceException(
-					"Device with the Id does not exists in repository: "+device.getId());
+					"Device with the Id does not exist in repository: "+device.getId());
 		checkDevice(device, false);
 
 		device.setLastUpdateDate(Instant.now());
