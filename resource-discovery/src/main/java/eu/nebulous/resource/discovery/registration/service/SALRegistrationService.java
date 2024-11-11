@@ -80,7 +80,7 @@ public class SALRegistrationService implements InitializingBean {
         //TODO implement provider here: String provider = device.getProvider();
         //String network_rx =device_info.get("RX");
         //String network_tx = device_info.get("TX");
-        String provider_id = device.getOwner(); //TODO improve this
+        String provider_id = device.getProvider();
         String city_name = ""; //TODO improve this
         String country_name = ""; //TODO improve this
         String internal_ip = ""; //TODO improve this
