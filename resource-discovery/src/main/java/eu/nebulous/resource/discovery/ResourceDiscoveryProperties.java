@@ -103,6 +103,7 @@ public class ResourceDiscoveryProperties {
 	private int nebulous_broker_port;
 	private String nebulous_broker_username;
 	private String nebulous_broker_password;
+	private boolean deregistration_emulated;
 	private String lost_device_topic;
 	private String compromised_device_topic;
 	

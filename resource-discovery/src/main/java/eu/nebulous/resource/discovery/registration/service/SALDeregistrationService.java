@@ -59,7 +59,9 @@ public class SALDeregistrationService implements InitializingBean {
 
 
         String deregister_device_message_string = get_device_deregistration_json(device);
-        
+        if (processorProperties.isDeregistration_emulated()){
+            return;
+        }
         SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
         int sending_attempt = 1;
         while (deregister_device_publisher.is_publisher_null()) {
@@ -77,8 +79,12 @@ public class SALDeregistrationService implements InitializingBean {
             sending_attempt++;
         }
         //TODO handle the response here
-        Map response = deregister_device_publisher.publish_for_response(deregister_device_message_string, Collections.singleton(application_name));
-        log.info("The response received while trying to deregister device " + device.getRef() + " is " + response.toString());
+        if (deregister_device_message_string!=null && !deregister_device_message_string.isEmpty()) {
+            Map response = deregister_device_publisher.publish_for_response(deregister_device_message_string, Collections.singleton(application_name));
+            log.info("The response received while trying to deregister device " + device.getRef() + " is " + response.toString());
+        }else{
+            log.warn("Deregistration was to be initiated with an empty deregistration payload");
+        }
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
