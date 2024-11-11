@@ -110,4 +110,10 @@ public class BrokerPublisher {
     public boolean is_publisher_null(){
         return (private_publisher_instance == null);
     }
+    
+    public void stop(){
+        if (active_connector!=null) {
+            active_connector.stop(new ArrayList<>(), publishers);
+        }
+    }
 }
