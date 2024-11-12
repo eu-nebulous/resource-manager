@@ -2,6 +2,7 @@ package eu.nebulous.resource.discovery.broker_communication;
 
 import eu.nebulouscloud.exn.Connector;
 import eu.nebulouscloud.exn.core.Publisher;
+import eu.nebulouscloud.exn.handlers.ConnectorHandler;
 import eu.nebulouscloud.exn.settings.StaticExnConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
@@ -19,6 +20,7 @@ public class BrokerPublisher {
     private ArrayList<Publisher> publishers = new ArrayList<>();
 
     private Connector active_connector;
+    private CustomConnectorHandler active_connector_handler;
     private String topic;
     private String broker_ip;
     private int broker_port;
@@ -53,7 +55,17 @@ public class BrokerPublisher {
             log.info("Publisher configuration changed, creating new connector at "+broker_ip+" for topic "+topic);
             if (active_connector!=null) {
                 //active_connector.stop(new ArrayList<>(), publishers);
-                active_connector.stop();
+                synchronized (active_connector_handler.getReady()){
+                    while (!active_connector_handler.getReady().get()) {
+                        try {
+                            active_connector_handler.wait();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    active_connector.stop();
+                }
+                
             }
             publishers.clear();
             //for (String broker_topic : broker_and_topics_to_publish_to.get(broker_ip)){
@@ -69,9 +81,9 @@ public class BrokerPublisher {
                 //}
             //}
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
-
+            active_connector_handler = new CustomConnectorHandler() {};
             active_connector = new Connector("resource_manager"
-                    , new CustomConnectorHandler() {}
+                    , active_connector_handler
                     , publishers
                     , List.of(),
                     false,
