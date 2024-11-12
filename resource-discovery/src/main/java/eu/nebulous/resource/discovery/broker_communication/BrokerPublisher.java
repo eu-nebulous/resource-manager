@@ -20,6 +20,7 @@ public class BrokerPublisher {
     private ArrayList<Publisher> publishers = new ArrayList<>();
 
     private Connector active_connector;
+
     private CustomConnectorHandler active_connector_handler;
     private String topic;
     private String broker_ip;
@@ -81,6 +82,7 @@ public class BrokerPublisher {
                 //}
             //}
             //CustomConnectorHandler custom_handler = new CustomConnectorHandler();
+     
             active_connector_handler = new CustomConnectorHandler() {};
             active_connector = new Connector("resource_manager"
                     , active_connector_handler
@@ -121,7 +123,7 @@ public class BrokerPublisher {
             }
         }
     }
-    public boolean is_publisher_null(){
+    public boolean is_publisher_null(){Minor logging improvement
         return (private_publisher_instance == null);
     }
     
