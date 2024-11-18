@@ -192,6 +192,7 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
                 String name = map.getOrDefault("name", null).toString();
                 String owner = "-EMS-";
                 String provider = map.getOrDefault("provider", null).toString();
+                Double price = (Double) map.getOrDefault("price", null);
                 String ipAddress = map.getOrDefault("deviceIpAddress", null).toString();
                 String username = map.getOrDefault("username", null).toString();
                 char[] password = map.getOrDefault("password", "").toString().toCharArray();
@@ -237,6 +238,7 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
                         .name(name)
                         .owner("--EMS--")
                         .provider(provider)
+                        .price(price)
                         .requestId(requestId)
                         .ipAddress(ipAddress)
                         .nodeReference(nodeReference)

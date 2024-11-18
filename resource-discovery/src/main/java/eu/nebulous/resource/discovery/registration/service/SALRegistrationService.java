@@ -69,13 +69,15 @@ public class SALRegistrationService implements InitializingBean {
         echo OS_KERNEL_RELEASE=$TMP_KERNEL_RELEASE
          */
         String device_name = device.getRef();
+        Double price = device.getPrice();
 
         int cores = Integer.parseInt(device_info.get("CPU_PROCESSORS"));
         long ram_mb = Math.round(Integer.parseInt(device_info.get("RAM_TOTAL_KB"))*1.0/1000);
         long disk_mb = Math.round(Integer.parseInt(device_info.get("DISK_TOTAL_KB"))*1.0/1000);
         String external_ip_address = device.getIpAddress();
         String device_username = device.getUsername();
-        String device_password = new String(device.getPassword());
+        String device_password = new String
+                (device.getPassword());
         String device_pub_key = new String(device.getPublicKey()); //TODO get here private key instead and pass this to device registration
         //TODO implement provider here: String provider = device.getProvider();
         //String network_rx =device_info.get("RX");
@@ -115,7 +117,7 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
 
-        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cores,ram_mb,disk_mb,device_name,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
+        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cores,ram_mb,disk_mb,device_name,price,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
         log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
         log.info("broker port is {}", processorProperties.getNebulous_broker_port());

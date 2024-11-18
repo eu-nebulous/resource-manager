@@ -43,7 +43,7 @@ public class SALDeregistrationService implements InitializingBean {
     private Thread processQueueThread;
     private long lastDeregistrationStartTimestamp = -1L;
 
-    public void queueForRegistration(@NonNull Device device) {
+    public void queueForDeregistration(@NonNull Device device) {
         if (processorProperties.isSalRegistrationEnabled()) //If registration is enabled, so should be deregistration as well
             queue.add(device);
     }
