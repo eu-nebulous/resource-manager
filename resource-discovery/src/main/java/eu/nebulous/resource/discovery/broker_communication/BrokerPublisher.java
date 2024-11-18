@@ -128,6 +128,16 @@ public class BrokerPublisher {
     public void stop(){
         if (active_connector!=null) {
             //active_connector.stop(new ArrayList<>(), publishers);
+            synchronized (active_connector_handler.getReady()){
+                while (!active_connector_handler.getReady().get()) {
+                    try {
+                        active_connector_handler.getReady().wait();
+                     } catch (InterruptedException e) {
+                        
+                    }
+                }
+            }
+            
             active_connector.stop();
         }
     }
