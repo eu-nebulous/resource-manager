@@ -29,7 +29,7 @@ discovery:
   sal_port: 8080
   lost_device_topic: "eu.nebulouscloud.monitoring.device_lost"
   compromised_device_topic: "eu.nebulouscloud.monitoring.device_compromised"
-  nebulous_server_ip_address: ${NEBULOUS_SERVER_IP_ADDRESS}
+  nebulous_server_ip_address: "158.39.201.36"
 #  trustStoreFile: tests/config/broker-truststore.p12
 #  trustStorePassword: melodic
 #  trustStoreType: PKCS12
@@ -39,10 +39,10 @@ discovery:
   # To generate BCrypt encrypted passwords you can use:  https://bcrypt-generator.com/
   users:
     - username: admin
-      password: ${RM_ADMIN_PASSWD}
+      password: '$2a$10$5jzrhbVKq.W2J1PMGYeHyeydQtlw71PoVgryzDP0VZ.88FsPlq1ne'    # admin1  (BCrypt; 10 iterations)
       roles: [ ADMIN ]
     - username: user
-      password: ${RM_USER_PASSWD}
+      password: '$2a$10$I6GSOKiY5n4/Ql0LA7Js0.4HT4UXVCNaNpGv5UdZt/brEdv/F.ttG'    # user1   (BCrypt; 10 iterations)
       roles: [ USER ]
 
 #  apiKeyAuthenticationEnabled: true
