@@ -144,7 +144,7 @@ public class SALRegistrationService implements InitializingBean {
         }
         //TODO handle the response here
         Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
-        log.info("The response received while trying to register device " + device_name + " is "+response.toString());
+        log.warn("The response received while trying to register device " + device_name + " is "+response.toString());
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
