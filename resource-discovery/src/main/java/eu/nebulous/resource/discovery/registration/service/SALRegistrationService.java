@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.task.TaskExecutor;
@@ -148,7 +150,13 @@ public class SALRegistrationService implements InitializingBean {
         Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
         log.warn("The response received while trying to register device " + device_name + " is "+response.toString());
         JSONObject response_json = new JSONObject(response);
-        JSONObject response_json_body = (JSONObject) response_json.get("body");
+        JSONParser json_parser = new JSONParser();
+        JSONObject response_json_body = null;
+        try {
+            response_json_body = (JSONObject) json_parser.parse(String.valueOf(response_json.get("body")));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         String device_id = (String) response_json_body.get("id");
         return device_id;
         //}
