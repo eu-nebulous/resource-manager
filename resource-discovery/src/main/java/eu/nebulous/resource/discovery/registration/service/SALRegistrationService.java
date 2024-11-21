@@ -8,6 +8,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.task.TaskExecutor;
@@ -37,8 +38,8 @@ public class SALRegistrationService implements InitializingBean {
             queue.add(device);
     }
 
-    public void register(Device device) {
-
+    public String register(Device device) {
+        log.warn("SALRegistrationService: register: BEGIN: device: {}", device);
         
         String  application_name = device.getRef().split("\\|")[1];
         if (application_name.equals("all_applications")){
@@ -46,11 +47,12 @@ public class SALRegistrationService implements InitializingBean {
         }
         String public_ip = System.getenv("NEBULOUS_IP");
         if (public_ip==null || public_ip.isEmpty()){
-            log.warn("Using default IP address ("+processorProperties.getNebulous_server_ip_address()+") to fetch Proactive client jar files from, as the environmental variable was not set or found");
             public_ip = processorProperties.getNebulous_server_ip_address();
+            log.warn("Using default IP address ({}) to fetch Proactive client jar files from, as the environmental variable was not set or found", public_ip);
         }
 
         Map<String,String> device_info = device.getDeviceInfo();
+        log.warn("SALRegistrationService: register: DEVICE-INFO: {}", device_info);
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
         echo CPU_CORES=$TMP_NUM_CORES
@@ -145,6 +147,10 @@ public class SALRegistrationService implements InitializingBean {
         //TODO handle the response here
         Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
         log.warn("The response received while trying to register device " + device_name + " is "+response.toString());
+        JSONObject response_json = new JSONObject(response);
+        JSONObject response_json_body = (JSONObject) response_json.get("body");
+        String device_id = (String) response_json_body.get("id");
+        return device_id;
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
@@ -197,7 +203,8 @@ public class SALRegistrationService implements InitializingBean {
                 device = queue.take();
                 log.warn("SALRegistrationService: processQueue(): Will register device: {}", device);
                 lastRegistrationStartTimestamp = System.currentTimeMillis();
-                register(device);
+                String device_sal_id = register(device);
+                device.setSal_id(device_sal_id);
                 lastRegistrationStartTimestamp = -1L;
                 device.setRegisteredToSAL(true);
                 deviceManagementService.update(device);
