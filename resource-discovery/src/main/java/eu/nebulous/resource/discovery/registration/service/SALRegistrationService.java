@@ -8,6 +8,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONObject;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.task.TaskExecutor;
@@ -37,7 +38,7 @@ public class SALRegistrationService implements InitializingBean {
             queue.add(device);
     }
 
-    public void register(Device device) {
+    public String register(Device device) {
 
         
         String  application_name = device.getRef().split("\\|")[1];
@@ -145,6 +146,10 @@ public class SALRegistrationService implements InitializingBean {
         //TODO handle the response here
         Map response = register_device_publisher.publish_for_response(register_device_message_string, Collections.singleton(application_name));
         log.warn("The response received while trying to register device " + device_name + " is "+response.toString());
+        JSONObject response_json = new JSONObject(response);
+        JSONObject response_json_body = (JSONObject) response_json.get("body");
+        String device_id = (String) response_json_body.get("id");
+        return device_id;
         //}
 
         /* This is some realtime information, could be retrieved with a different call to the EMS.
@@ -197,7 +202,8 @@ public class SALRegistrationService implements InitializingBean {
                 device = queue.take();
                 log.warn("SALRegistrationService: processQueue(): Will register device: {}", device);
                 lastRegistrationStartTimestamp = System.currentTimeMillis();
-                register(device);
+                String device_sal_id = register(device);
+                device.setSal_id(device_sal_id);
                 lastRegistrationStartTimestamp = -1L;
                 device.setRegisteredToSAL(true);
                 deviceManagementService.update(device);
