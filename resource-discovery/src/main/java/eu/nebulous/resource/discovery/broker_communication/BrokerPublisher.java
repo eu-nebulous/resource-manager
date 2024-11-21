@@ -63,7 +63,11 @@ public class BrokerPublisher {
                             throw new RuntimeException(e);
                         }
                     }
-                    active_connector.stop();
+                    try {
+                        active_connector.stop(); //TODO reassure expected stop() functionality is working here when this is necessary
+                    }catch (Exception e){
+                        e.printStackTrace();
+                    }
                 }
                 
             }
@@ -104,23 +108,27 @@ public class BrokerPublisher {
 
     //TODO The methods below assume that the only content to be sent is json-like
     public void publish (String json_string_content, Collection<String> application_names){
-
         for (String application_name : application_names) {
-            JSONParser parser = new JSONParser();
-            JSONObject json_object = new JSONObject();
-            try {
-                json_object = (JSONObject) parser.parse(json_string_content);
-            } catch (ParseException p) {
-                log.warn( "publish: Could not parse the string content to be published to the broker as json, which is the following: "+json_string_content);
-            }
-            if (!is_publisher_null()) {
-                private_publisher_instance.send(json_object);
-                log.info("Sent new message\n"+json_object.toJSONString());
-            } else {
-                log.error( "Could not send message to AMQP broker, as the publisher instance is null");
-            }
+            publish(json_string_content);
         }
     }
+    
+    public void publish (String json_string_content){
+        JSONParser parser = new JSONParser();
+        JSONObject json_object = new JSONObject();
+        try {
+            json_object = (JSONObject) parser.parse(json_string_content);
+        } catch (ParseException p) {
+            log.warn( "publish: Could not parse the string content to be published to the broker as json, which is the following: "+json_string_content);
+        }
+        if (!is_publisher_null()) {
+            private_publisher_instance.send(json_object);
+            log.info("Sent new message\n"+json_object.toJSONString());
+        } else {
+            log.error( "Could not send message to AMQP broker, as the publisher instance is null");
+        }
+    }
+    
     public boolean is_publisher_null(){
         return (private_publisher_instance == null);
     }

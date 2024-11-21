@@ -49,6 +49,7 @@ public class DeviceProcessor  implements InitializingBean {
     private final TaskScheduler taskScheduler;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final Optional<SALDeregistrationService> salDeregistrationService;
+    private BrokerPublisher device_lost_publisher;
 
 
     @Override
@@ -145,7 +146,7 @@ public class DeviceProcessor  implements InitializingBean {
                 Clock clock = Clock.systemUTC();
                 lost_device_message.put("timestamp",(int)(clock.millis()/1000));
                 log.info("Creating new BrokerPublisher to publish device lost message");
-                BrokerPublisher device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                 int sending_attempt = 1;
                 while (device_lost_publisher.is_publisher_null()){
 
@@ -163,7 +164,7 @@ public class DeviceProcessor  implements InitializingBean {
                 }
                 device_lost_publisher.publish(lost_device_message.toJSONString(), Collections.singleton(""));
                 log.warn("processFailedDevices: Marked as FAILED device with Id: {}", device.getId());
-                device_lost_publisher.stop();
+                //device_lost_publisher.stop();
             }
 
             deviceManagementService.update(device);
