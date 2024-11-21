@@ -253,7 +253,7 @@ public class UnknownDeviceRegistrationService extends AbstractMonitorService {
                 log.info("UnknownDeviceRegistrationService: Registered device: {}", newDevice);
 
                 if (salRegistrationService.isPresent()) {
-                    log.info("Registering the device {} to SAL...", newDevice);
+                    log.info("Registering the device to SAL: {}", newDevice);
                     salRegistrationService.get().register(newDevice);
                 }
 

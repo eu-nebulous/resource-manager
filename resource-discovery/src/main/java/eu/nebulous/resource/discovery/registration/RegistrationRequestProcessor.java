@@ -240,6 +240,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
 
 		RegistrationRequest registrationRequest = registrationRequestService.getById(requestId).orElse(null);
+		log.warn("RegistrationRequestProcessor: processResponse: request: {}", registrationRequest);
 		if (registrationRequest!=null) {
 			RegistrationRequestStatus currStatus = registrationRequest.getStatus();
 			RegistrationRequestStatus newStatus = switch (currStatus) {
@@ -288,6 +289,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 
 			boolean doArchive = false;
 			Object obj = response.get("nodeInfo");
+			log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: {} {}", obj==null?null:obj.getClass().getTypeName(), obj);
 			if (obj instanceof Map devInfo) {
 				// Update request info
 				registrationRequest.setLastUpdateDate(Instant.ofEpochMilli(timestamp));
@@ -297,12 +299,14 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				boolean allowAllKeys = processorProperties.getAllowedDeviceInfoKeys().contains("*");
 				final Map<String,String> processedDevInfo = new LinkedHashMap<>();
 				devInfo.forEach((key, value) -> {
+					log.warn("RegistrationRequestProcessor: processResponse:       Dev-info pair: {} = {}", key, value);
 					if (key!=null && value!=null) {
 						String k = key.toString().trim();
 						String v = value.toString().trim();
 						if (StringUtils.isNotBlank(k) && StringUtils.isNotBlank(v)) {
 							if (allowAllKeys || processorProperties.getAllowedDeviceInfoKeys().contains(k.toUpperCase())) {
 								processedDevInfo.put(k, v);
+								log.warn("RegistrationRequestProcessor: processResponse: Dev-info pair ADDED: {} = {}", key, value);
 							} else {
 								log.debug("processResponse: Not allowed device info key for request: id={}, key={}", requestId, k);
 							}
@@ -364,6 +368,8 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void copyDeviceToMonitoring(RegistrationRequest registrationRequest) {
+		log.warn("RegistrationRequestProcessor: copyDeviceToMonitoring: BEGIN: request: {}", registrationRequest);
+		log.warn("RegistrationRequestProcessor: copyDeviceToMonitoring: request-DEVICE: {}", registrationRequest.getDevice());
 		Device device = objectMapper.convertValue(registrationRequest.getDevice(), Device.class);
 		// override values
 		device.setId(null);
@@ -379,6 +385,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		device.setRequestId(registrationRequest.getId());
 		device.setNodeReference(registrationRequest.getNodeReference());
 		deviceManagementService.save(device);
+		log.warn("RegistrationRequestProcessor: copyDeviceToMonitoring: COPIED-DEVICE: {}", device);
 		if (processorProperties.isSalRegistrationEnabled())
             salRegistrationService.ifPresent(salRegistrationService -> salRegistrationService.queueForRegistration(device));
 	}

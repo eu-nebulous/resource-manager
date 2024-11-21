@@ -39,7 +39,7 @@ public class SALRegistrationService implements InitializingBean {
     }
 
     public String register(Device device) {
-
+        log.warn("SALRegistrationService: register: BEGIN: device: {}", device);
         
         String  application_name = device.getRef().split("\\|")[1];
         if (application_name.equals("all_applications")){
@@ -47,11 +47,12 @@ public class SALRegistrationService implements InitializingBean {
         }
         String public_ip = System.getenv("NEBULOUS_IP");
         if (public_ip==null || public_ip.isEmpty()){
-            log.warn("Using default IP address ("+processorProperties.getNebulous_server_ip_address()+") to fetch Proactive client jar files from, as the environmental variable was not set or found");
             public_ip = processorProperties.getNebulous_server_ip_address();
+            log.warn("Using default IP address ({}) to fetch Proactive client jar files from, as the environmental variable was not set or found", public_ip);
         }
 
         Map<String,String> device_info = device.getDeviceInfo();
+        log.warn("SALRegistrationService: register: DEVICE-INFO: {}", device_info);
         /* Information available from the EMS, based on https://gitlab.com/nebulous-project/ems-main/-/blob/master/ems-core/bin/detect.sh?ref_type=heads
         echo CPU_SOCKETS=$TMP_NUM_CPUS
         echo CPU_CORES=$TMP_NUM_CORES

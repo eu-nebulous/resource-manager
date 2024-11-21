@@ -91,6 +91,7 @@ public class DeviceManagementController {
 
 	@PutMapping(value = "/device", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public Device createDevice(@RequestBody Device device) {
+		log.warn("DeviceManagementController: createDevice: device: {}", device);
 
         salRegistrationService.ifPresent(salRegistrationService -> salRegistrationService.register(device));
 		return deviceService.save(device);
