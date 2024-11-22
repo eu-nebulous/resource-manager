@@ -302,7 +302,6 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 					log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: ** PROBLEM: REGISTRATION REQUEST DOES NOT CONTAIN DEVICE INFO EITHER **");
 				}
 			}
-			log.warn("RegistrationRequestProcessor: processResponse: CHECK: ** NOT A REAL EXCEPTION **\n", new RuntimeException("NOT A REAL EXCEPTION"));
 
 			if (obj instanceof Map devInfo) {
 				// Update request info

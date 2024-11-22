@@ -200,9 +200,11 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                 Object obj = objectMapper.readerFor(typeRef).readValue(payload);
 
                 if (obj instanceof Map<?,?> dataMap) {
+                    log.warn("BrokerUtil: Received a new message:   topic: {}", ((ActiveMQTextMessage) message).getDestination().getPhysicalName());
+                    log.warn("BrokerUtil: Received a new message: payload: {}", dataMap);
                     handlePayload(((ActiveMQTextMessage) message).getDestination().getPhysicalName(), dataMap);
                 } else {
-                    log.debug("BrokerUtil: Message payload is not recognized. Expected Map but got: type={}, object={}", obj.getClass().getName(), obj);
+                    log.warn("BrokerUtil: Message payload is not recognized. Expected Map but got: type={}, object={}", obj.getClass().getName(), obj);
                 }
             } else {
                 log.debug("BrokerUtil: Message type is not supported: {}", message);
