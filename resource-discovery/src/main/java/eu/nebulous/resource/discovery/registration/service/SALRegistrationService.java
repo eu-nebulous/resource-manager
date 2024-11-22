@@ -47,11 +47,11 @@ public class SALRegistrationService implements InitializingBean {
         if (application_name.equals("all_applications")){
             application_name="";
         }
-        String public_ip = System.getenv("NEBULOUS_IP");
+        /*String public_ip = System.getenv("NEBULOUS_IP");
         if (public_ip==null || public_ip.isEmpty()){
             public_ip = processorProperties.getNebulous_server_ip_address();
-            log.warn("Using default IP address ({}) to fetch Proactive client jar files from, as the environmental variable was not set or found", public_ip);
-        }
+            log.warn("Using default IP address ({}) to fetch Proactive client jar files from, as the environmental variable was not set or found", public_ip);}*/
+        String public_ip = processorProperties.getNebulous_server_ip_address();
 
         Map<String,String> device_info = device.getDeviceInfo();
         log.warn("SALRegistrationService: register: DEVICE-INFO: {}", device_info);
