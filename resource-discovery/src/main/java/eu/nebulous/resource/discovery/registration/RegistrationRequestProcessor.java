@@ -290,6 +290,20 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			boolean doArchive = false;
 			Object obj = response.get("nodeInfo");
 			log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: {} {}", obj==null?null:obj.getClass().getTypeName(), obj);
+
+			// If device info are missing copy them from the registration request
+			if (obj==null || obj instanceof Map && ((Map) obj).isEmpty()) {
+				log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: ** NO DEVICE INFO IN RESPONSE **");
+				if (! registrationRequest.getDevice().getDeviceInfo().isEmpty()) {
+					obj = registrationRequest.getDevice().getDeviceInfo();
+					log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: ** DEVICE INFO COPIED FROM REGISTRATION REQUEST **");
+					log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: {}", obj);
+				} else {
+					log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: ** PROBLEM: REGISTRATION REQUEST DOES NOT CONTAIN DEVICE INFO EITHER **");
+				}
+			}
+			log.warn("RegistrationRequestProcessor: processResponse: CHECK: ** NOT A REAL EXCEPTION **\n", new RuntimeException("NOT A REAL EXCEPTION"));
+
 			if (obj instanceof Map devInfo) {
 				// Update request info
 				registrationRequest.setLastUpdateDate(Instant.ofEpochMilli(timestamp));
