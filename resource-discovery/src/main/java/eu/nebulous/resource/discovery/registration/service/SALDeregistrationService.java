@@ -62,7 +62,7 @@ public class SALDeregistrationService implements InitializingBean {
         if (processorProperties.isDeregistration_emulated()){
             return;
         }
-        SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+        SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(device.getSal_id()), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
         int sending_attempt = 1;
         while (deregister_device_publisher.is_publisher_null()) {
             if (sending_attempt <= 2) {
@@ -81,7 +81,7 @@ public class SALDeregistrationService implements InitializingBean {
         //TODO handle the response here
         if (deregister_device_message_string!=null && !deregister_device_message_string.isEmpty()) {
             Map response = deregister_device_publisher.publish_for_response(deregister_device_message_string, Collections.singleton(application_name));
-            log.info("The response received while trying to deregister device " + device.getRef() + " is " + response.toString());
+            log.warn("The response received while trying to deregister device " + device.getRef() + " is " + response.toString());
         }else{
             log.warn("Deregistration was to be initiated with an empty deregistration payload");
         }
@@ -100,9 +100,8 @@ public class SALDeregistrationService implements InitializingBean {
 
     }
     
-    private String get_deregistration_topic_name(String application_name) {
-        return processorProperties.getRegistration_topic_name();
-        //return ("eu.nebulouscloud.exn.sal.edge." + application_name);
+    private String get_deregistration_topic_name(String sal_id) {
+        return processorProperties.getDeregistration_topic_prefix()+"."+sal_id;
     }
 
     @Override
