@@ -200,9 +200,16 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                 Object obj = objectMapper.readerFor(typeRef).readValue(payload);
 
                 if (obj instanceof Map<?,?> dataMap) {
-                    log.warn("BrokerUtil: Received a new message:   topic: {}", ((ActiveMQTextMessage) message).getDestination().getPhysicalName());
-                    log.warn("BrokerUtil: Received a new message: payload: {}", dataMap);
-                    handlePayload(((ActiveMQTextMessage) message).getDestination().getPhysicalName(), dataMap);
+                    String topic = ((ActiveMQTextMessage) message).getDestination().getPhysicalName();
+                    // Print response messages except the EMS node status reports (_ui_instance_info, _client_metrics)
+                    if (StringUtils.isNotBlank(topic)
+                            && ! topic.equals(properties.getDeviceStatusMonitorTopic())
+                            && ! topic.equals(properties.getDeviceMetricsMonitorTopic()))
+                    {
+                        log.warn("BrokerUtil: Received a new message:   topic: {}", topic);
+                        log.warn("BrokerUtil: Received a new message: payload: {}", dataMap);
+                    }
+                    handlePayload(topic, dataMap);
                 } else {
                     log.warn("BrokerUtil: Message payload is not recognized. Expected Map but got: type={}, object={}", obj.getClass().getName(), obj);
                 }
