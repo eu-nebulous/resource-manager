@@ -102,9 +102,9 @@ public class SALCommunicator {
 
                 ((JSONObject) ((JSONArray) json.get("ipAddresses")).get(0)).put("value", internal_ip_address + counter);
                 ((JSONObject) json.get("nodeProperties")).put("disk", new Random().nextInt(1, 101));
-                ((JSONObject) json.get("nodeProperties")).put("memory", new Random().nextInt(1, 17));
+                ((JSONObject) json.get("nodeProperties")).put("ram", new Random().nextInt(1, 17));
                 ((JSONObject) json.get("nodeProperties")).put("providerId", String.valueOf(new Random().nextInt(1, 21)));
-                ((JSONObject) json.get("nodeProperties")).put("numberOfCores", new Random().nextInt(1, 17));
+                ((JSONObject) json.get("nodeProperties")).put("cores", new Random().nextInt(1, 17));
 
                 String[] country_choices = {"Greece", "Poland", "France"};
                 String[] city_choices = {"Athens", "Warsaw", "Nice"};
@@ -119,9 +119,9 @@ public class SALCommunicator {
                 ((JSONObject) ((JSONArray) json.get("ipAddresses")).get(0)).put("value", internal_ip_address);
                 ((JSONObject) ((JSONArray) json.get("ipAddresses")).get(1)).put("value", external_ip_address);
                 ((JSONObject) json.get("nodeProperties")).put("disk", disk_gb);
-                ((JSONObject) json.get("nodeProperties")).put("memory", ram_gb);
+                ((JSONObject) json.get("nodeProperties")).put("ram", ram_gb);
                 ((JSONObject) json.get("nodeProperties")).put("providerId", provider_id);
-                ((JSONObject) json.get("nodeProperties")).put("numberOfCores", cpu_cores);
+                ((JSONObject) json.get("nodeProperties")).put("cores", cpu_cores);
                 ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("country", country_name);
                 ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("city", city_name);
                 ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
@@ -182,8 +182,8 @@ public class SALCommunicator {
             geoLocation.put("longitude", device_latitude);
 
             nodeProperties.put("providerId", provider_id);
-            nodeProperties.put("numberOfCores", cpu_cores);
-            nodeProperties.put("memory", ram_gb);
+            nodeProperties.put("cores", cpu_cores);
+            nodeProperties.put("ram", ram_gb);
             nodeProperties.put("disk", disk_gb);
             nodeProperties.put("price", price);
             nodeProperties.put("operatingSystem", operatingSystem);
@@ -209,9 +209,9 @@ public class SALCommunicator {
             //((JSONObject) ((JSONArray) root_json_object.get("ipAddresses")).get(0)).put("value", internal_ip_address);
             //((JSONObject) ((JSONArray) root_json_object.get("ipAddresses")).get(1)).put("value", external_ip_address);
             //((JSONObject) root_json_object.get("nodeProperties")).put("disk", disk_gb);
-            //((JSONObject) root_json_object.get("nodeProperties")).put("memory", ram_gb);
+            //((JSONObject) root_json_object.get("nodeProperties")).put("ram", ram_gb);
             //((JSONObject) root_json_object.get("nodeProperties")).put("providerId", provider_id);
-            //((JSONObject) root_json_object.get("nodeProperties")).put("numberOfCores", cpu_cores);
+            //((JSONObject) root_json_object.get("nodeProperties")).put("cores", cpu_cores);
             //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("country", country_name);
             //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("city", city_name);
             //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
