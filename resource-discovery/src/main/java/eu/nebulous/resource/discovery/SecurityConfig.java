@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery;
 
+import eu.nebulous.resource.discovery.registration.controller.RegistrationRequestController;
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,6 +16,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -26,6 +28,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.security.SecureRandom;
 import java.util.Collections;
+import java.util.HashMap;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -37,6 +40,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
     private final static String USERNAME_REQUEST_HEADER = "X-SSO-USER";
     private final static String USERNAME_REQUEST_PARAM = "ssoUser";
+    private final static String NONCE_REQUEST_PARAM = "nonce";
+    private final static String APPID_REQUEST_PARAM = "appId";
     private final static String API_KEY_REQUEST_HEADER = "X-API-KEY";
     private final static String API_KEY_REQUEST_PARAM = "apiKey";
 
@@ -54,6 +59,7 @@ public class SecurityConfig {
                         "/discovery/**", "/*.html").authenticated())
                 .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
                 .addFilterAfter(apiKeyAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(nonceAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
 
@@ -100,6 +106,13 @@ public class SecurityConfig {
 
     public Filter apiKeyAuthenticationFilter() {
         return (servletRequest, servletResponse, filterChain) -> {
+
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth!=null && auth.isAuthenticated()) {
+                filterChain.doFilter(servletRequest, servletResponse);
+                return;
+            }
+            
             if (properties.isApiKeyAuthenticationEnabled() && StringUtils.isNotBlank(properties.getApiKeyValue())) {
                 if (servletRequest instanceof HttpServletRequest request && servletResponse instanceof HttpServletResponse) {
 
@@ -149,4 +162,65 @@ public class SecurityConfig {
             filterChain.doFilter(servletRequest, servletResponse);
         };
     }
+    
+    public Filter nonceAuthenticationFilter(){
+        return (servletRequest, servletResponse, filterChain) -> {
+            try {
+                HttpServletRequest request = ((HttpServletRequest )servletRequest);
+//                HttpSession session = request.getSession(false);
+//                
+//                if(session!=null){
+//                    filterChain.doFilter(servletRequest, servletResponse);
+//                    return;
+//                }
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth!=null && auth.isAuthenticated()) {
+                    filterChain.doFilter(servletRequest, servletResponse);
+                    return;
+                }
+                StringBuilder requestURL = new StringBuilder(request.getRequestURL().toString());
+                String queryString = request.getQueryString();
+
+                if (queryString == null) {
+                    log.warn( requestURL.toString());
+                } else {
+                    log.warn(requestURL.append('?').append(queryString).toString());
+                }
+                log.warn(servletRequest.toString());
+                
+                String nonce = servletRequest.getParameter(NONCE_REQUEST_PARAM);
+                String appId = servletRequest.getParameter(APPID_REQUEST_PARAM);
+
+                String username =null;
+                HashMap<String, String> map = new HashMap<>();
+                map.put(NONCE_REQUEST_PARAM, nonce);
+                map.put(APPID_REQUEST_PARAM, appId);
+                username = RegistrationRequestController.getNonceUsername(map);
+//                if ((nonce != null && appId != null) && (!nonce.isEmpty())) {
+//                    HashMap<String, String> map = new HashMap<>();
+//                    map.put(NONCE_REQUEST_PARAM, nonce);
+//                    map.put(APPID_REQUEST_PARAM, appId);
+//                    username = RegistrationRequestController.getNonceUsername(map);
+//                }
+
+                if (username != null) {
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(username, nonce,
+                                    Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
+                    // store completed authentication in security context
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("User was authenticated using a nonce token");
+                }
+                
+            } catch (Exception e) {
+                log.error("nonceAuthenticationFilter: EXCEPTION: ", e);
+            }
+            
+             // continue down the chain
+            filterChain.doFilter(servletRequest, servletResponse);
+            
+        };
+    }
+
+
 }

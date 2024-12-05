@@ -7,6 +7,7 @@ import eu.nebulouscloud.exn.core.Handler;
 import eu.nebulouscloud.exn.settings.StaticExnConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.qpid.protonj2.client.Message;
+import org.apache.qpid.protonj2.client.exceptions.ClientException;
 import org.json.simple.JSONValue;
 
 import java.util.*;
@@ -15,11 +16,13 @@ import java.util.function.BiFunction;
 
 import static eu.nebulous.resource.discovery.broker_communication.BrokerPublisher.EMPTY;
 
+
 @Slf4j
 public class BrokerSubscriber {
 
-    private AtomicBoolean stop_signal = new AtomicBoolean();
-    
+    private Connector connector;
+    private final AtomicBoolean stop_signal = new AtomicBoolean(false);
+
     private class MessageProcessingHandler extends Handler {
         private BrokerSubscriptionDetails broker_details;
         private static final BiFunction temporary_function = (Object o, Object o2) -> {
@@ -31,8 +34,18 @@ public class BrokerSubscriber {
 
         @Override
         public void onMessage(String key, String address, Map body, Message message, Context context) {
-            log.info("Handling message for address " + address);
-            processing_function.apply(broker_details, JSONValue.toJSONString(body));
+            log.warn("Handling message for address " + address);
+            String precise_topic;
+            try {
+                 precise_topic = message.to();
+            } catch (ClientException e) {
+                throw new RuntimeException(e);
+            }
+            if (precise_topic!=null){
+                broker_details.setTopic(precise_topic);
+            }
+            
+            processing_function.apply(new BrokerSubscriptionDetails(broker_ip,broker_port,brokerUsername,brokerPassword,application_name,precise_topic), JSONValue.toJSONString(body));
         }
 
         public MessageProcessingHandler(BrokerSubscriptionDetails broker_details) {
@@ -56,10 +69,11 @@ public class BrokerSubscriber {
 
     private static HashMap<String, HashSet<String>> broker_and_topics_to_subscribe_to = new HashMap<>();
     private static HashMap<String, HashMap<String, Consumer>> active_consumers_per_topic_per_broker_ip = new HashMap<>();
-    private static HashMap<String, Connector> current_connectors = new HashMap<>();
+    private static final HashMap<String, CustomConnectorHandler> current_connector_handlers = new HashMap<>();
     ArrayList<Consumer> consumers = new ArrayList<>();
     private String topic;
     private String broker_ip;
+    private String application_name;
     private int broker_port;
     private String brokerUsername;
     private String brokerPassword;
@@ -101,32 +115,77 @@ public class BrokerSubscriber {
             }
         }
         if (subscriber_configuration_changed) {
-            Consumer current_consumer;
-            if (application_name != null && !application_name.equals(EMPTY)) { //Create a consumer for one application
-                log.info("APP level subscriber " + topic);
-                current_consumer = new Consumer(topic, topic, new MessageProcessingHandler(broker_details), application_name, true, true);
-            } else { //Allow the consumer to get information from any publisher
-                current_consumer = new Consumer(topic, topic, new MessageProcessingHandler(broker_details), true, true);
-                log.info("HIGH level subscriber " + topic);
-            }
-            active_consumers_per_topic_per_broker_ip.get(broker_ip).put(topic, current_consumer);
 
+            this.application_name = application_name;
             this.topic = topic;
             this.broker_ip = broker_ip;
             this.broker_port = broker_port;
             this.brokerUsername = brokerUsername;
             this.brokerPassword = brokerPassword;
-            add_topic_consumer_to_broker_connector(current_consumer);
+
         }
     }
 
+
+    public void stop(){
+        synchronized (stop_signal) {
+            stop_signal.set(true);
+        }
+    }    
+    
     /**
      * This method updates the global connector of Resource manager to the AMQP server, by adding support for one more component
      */
     private void add_topic_consumer_to_broker_connector(Consumer new_consumer) {
-        if (current_connectors.get(broker_ip) != null) {
-            //current_connectors.get(broker_ip).stop(consumers,new ArrayList<>());
-            current_connectors.get(broker_ip).stop();
+/*        Consumer current_consumer;
+        if (application_name != null && !application_name.equals(EMPTY)) { //Create a consumer for one application
+            Logger.getAnonymousLogger().log(INFO,"APP level subscriber " + topic);
+            current_consumer = new Consumer(topic, topic, new MessageProcessingHandler(broker_details), application_name, true, true);
+        } else { //Allow the consumer to get information from any publisher
+            current_consumer = new Consumer(topic, topic, new MessageProcessingHandler(broker_details), true, true);
+            Logger.getAnonymousLogger().log(INFO,"HIGH level subscriber " + topic);
+        }        
+        current_consumer.setProperty("topic",topic);*/
+
+        active_consumers_per_topic_per_broker_ip.get(broker_ip).put(topic, new_consumer);
+
+        CustomConnectorHandler current_connector_handler = current_connector_handlers.get(broker_ip);
+        if (current_connector_handler==null){
+            current_connector_handler = new CustomConnectorHandler() {};
+            this.connector = new Connector("slo_violation_detector_consumer",
+                    current_connector_handler,
+                    List.of(),
+                    List.of(new_consumer),
+                    false,
+                    false,
+                    new StaticExnConfig(
+                            broker_ip,
+                            broker_port,
+                            brokerUsername,
+                            brokerPassword,
+                            60,
+                            EMPTY
+                    )
+            );
+            connector.start();
+        }else if (!active_consumers_per_topic_per_broker_ip.get(broker_ip).containsKey(topic)){
+            //current_connector_handler.remove_consumer_with_key(topic);
+
+            synchronized (current_connector_handler.getReady()) {
+                while (!current_connector_handler.getReady().get()) {
+                    try {
+                        current_connector_handler.getReady().wait();
+                        log.info("Unable to register connector handler as the connector is unexpectedly not ready");
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            log.warn("Adding new consumer " + new_consumer.key());
+            current_connector_handler.add_consumer(new_consumer);
+        }
+        /*if (current_connectors.get(broker_ip) != null) {
+            current_connectors.get(broker_ip).stop(consumers,new ArrayList<>());
         } 
         if (consumers.isEmpty()){
             consumers = new ArrayList<>();
@@ -140,7 +199,7 @@ public class BrokerSubscriber {
         if(!do_not_add_new_consumer) {
             consumers.add(new_consumer);
         }
-            Connector connector = new Connector("resource_manager",
+            Connector extended_connector = new Connector("resource_manager",
                     new CustomConnectorHandler() {
                     },
                     List.of(),
@@ -156,21 +215,13 @@ public class BrokerSubscriber {
                             EMPTY
                     )
             );
-            connector.start();
-            current_connectors.put(broker_ip, connector);
+            extended_connector.start();
+            current_connectors.put(broker_ip, extended_connector);*/
     }
+    
 
-    private void remove_topic_from_broker_connector(String topic_key) {
-        if (current_connectors.get(broker_ip) != null) {
-            //current_connectors.get(broker_ip).remove_consumer_with_key(topic_key);
-        }
-    }
-    
     public int subscribe (BiFunction function, String application_name) {
-        return subscribe(function,application_name,stop_signal);
-    }
-    
-    public int subscribe(BiFunction function, String application_name, AtomicBoolean stop_signal) {
+        
         int exit_status = -1;
         log.info("ESTABLISHING SUBSCRIPTION for " + topic);
         /*
@@ -181,7 +232,8 @@ public class BrokerSubscriber {
         } else {
             active_consumers_per_topic_per_broker_ip.put(broker_ip, new HashMap<>());
         }
-        */
+        
+         */
         //Then add the new consumer
         Consumer new_consumer;
         if (application_name != null && !application_name.equals(EMPTY)) {
@@ -191,7 +243,13 @@ public class BrokerSubscriber {
             new_consumer = new Consumer(topic, topic, new MessageProcessingHandler(function, broker_details), true, true);
         }
         new_consumer.setProperty("topic", topic);
-        active_consumers_per_topic_per_broker_ip.get(broker_ip).put(topic, new_consumer);
+
+        if (active_consumers_per_topic_per_broker_ip.containsKey(broker_ip)){
+            active_consumers_per_topic_per_broker_ip.get(broker_ip).put(topic, new_consumer);
+        }else {
+            active_consumers_per_topic_per_broker_ip.put(broker_ip, new HashMap<>());
+        }
+        
         add_topic_consumer_to_broker_connector(new_consumer);
 
         log.info("ESTABLISHED SUBSCRIPTION to topic " + topic);
@@ -209,8 +267,9 @@ public class BrokerSubscriber {
         }
         active_consumers_per_topic_per_broker_ip.get(broker_ip).remove(topic);
         //remove_topic_from_broker_connector(topic);
-        current_connectors.get(broker_ip).stop();
+        //current_connectors.get(broker_ip).stop();
         exit_status = 0;
         return exit_status;
     }
+
 }
