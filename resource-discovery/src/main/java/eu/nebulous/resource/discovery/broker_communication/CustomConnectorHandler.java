@@ -1,5 +1,6 @@
 package eu.nebulous.resource.discovery.broker_communication;
 
+import eu.nebulouscloud.exn.core.Consumer;
 import eu.nebulouscloud.exn.core.Context;
 import eu.nebulouscloud.exn.handlers.ConnectorHandler;
 
@@ -19,6 +20,10 @@ public class CustomConnectorHandler extends ConnectorHandler {
     }
     public void remove_consumer_with_key(String key){
         context.unregisterConsumer(key);
+    }
+    
+    public void add_consumer(Consumer consumer){
+        context.registerConsumer(consumer);
     }
 
     public Context getContext() {

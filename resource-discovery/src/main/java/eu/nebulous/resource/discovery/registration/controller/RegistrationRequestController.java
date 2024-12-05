@@ -1,5 +1,9 @@
 package eu.nebulous.resource.discovery.registration.controller;
 
+import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
+import eu.nebulous.resource.discovery.broker_communication.BrokerPublisher;
+import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriber;
+import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriptionDetails;
 import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
 import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
@@ -9,28 +13,72 @@ import eu.nebulous.resource.discovery.registration.service.RegistrationRequestSe
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.BiFunction;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/discovery")
-public class RegistrationRequestController {
+public class RegistrationRequestController implements InitializingBean {
 	private final static String REQUIRES_ADMIN_ROLE = "hasAuthority('ROLE_ADMIN')";
-
+	private final static String GET_USER_TOPIC = "eu.nebulouscloud.ui.user.get";
+	private static ResourceDiscoveryProperties processorPropertiesStatic;
+	private final ResourceDiscoveryProperties processorProperties;
 	private final RegistrationRequestService registrationRequestService;
 	private final IRegistrationRequestProcessor registrationRequestProcessor;
+	
+	private static final Map<String,String> nonce_messages = Collections.synchronizedMap(new HashMap<>());
+	private static final Set<String> nonce_message_published = Collections.synchronizedSet(new HashSet<>());
+	private static boolean has_initialized_nonce_connector = false;
+	private static BrokerSubscriber nonce_subscriber;
+	private static BrokerPublisher nonce_publisher;
+	private static final int TIMEOUT_DURATION_SECONDS = 5;
 
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		processorPropertiesStatic = processorProperties;
+
+		log.debug("Initializing connector");
+		if (!has_initialized_nonce_connector){
+			nonce_publisher = new BrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(), processorPropertiesStatic.getNebulous_broker_password(), "");
+
+			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(),processorPropertiesStatic.getNebulous_broker_password(), "","");
+
+			log.debug("Defining function");
+			BiFunction<BrokerSubscriptionDetails,String,String> function = (broker_subscription_details, message_body) -> {
+				
+				String topic_suffix = broker_subscription_details.getTopic().replace("topic://"+GET_USER_TOPIC,"");
+				if (topic_suffix!=null && !topic_suffix.isEmpty()){
+					String nonce_from_topic = StringUtils.substringAfterLast(topic_suffix,".");
+					log.warn("Received message"+message_body+" at "+broker_subscription_details.getTopic());
+					nonce_messages.put(nonce_from_topic,message_body);
+					nonce_message_published.add(nonce_from_topic);
+				}
+				return message_body;
+			};
+
+			log.debug("Starting subscription thread");
+			Thread subscriber_thread = new Thread (()->	nonce_subscriber.subscribe(function,""));//Could have a particular application name instead of empty here if needed
+			subscriber_thread.start();
+			has_initialized_nonce_connector = true;
+		}
+		
+	}
+	
 	@GetMapping(value = "/whoami", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Map<String, Object> whoami(Authentication authentication) {
 		List<String> roles = authentication != null
@@ -70,6 +118,64 @@ public class RegistrationRequestController {
 				.orElseThrow(() -> new RegistrationRequestException("Not found registration request with id: "+id));
 	}
 
+	//@GetMapping(value= "/nonce_username", produces = MediaType.APPLICATION_JSON_VALUE)
+	public static String getNonceUsername(@RequestParam Map data) {
+		
+		//Get the nonce from the provided data, along with the appId
+		//initialize the BrokerPublisher
+		//Parse the response of the SyncedPublisher
+		//Return an appropriate json object to the client
+		log.debug("Initializing processing");
+		String nonce = (String) data.get("nonce");
+		String appId = (String) data.get("appId");
+		
+		JSONObject json_request = new JSONObject();
+		json_request.put("nonce",nonce);
+		json_request.put("appId",appId);
+		
+		String empty_response = null; //"{\"nonce\": \"" + nonce + "\", \"username\": \"" + "" + "\"}";
+		
+		log.debug("Sending nonce message to middleware");
+		nonce_publisher.publish(json_request.toJSONString(),List.of(""));
+
+		
+		int cumulative_sleep = 0;
+		int sleep_duration_millis = 500;
+		
+		JSONParser parser = new JSONParser();
+		
+		while (!nonce_message_published.contains(nonce)){
+			log.debug("While iteration, nonce messages {}",nonce_messages.keySet());
+			log.debug("While iteration, nonce message published {}",nonce_message_published);
+			if (cumulative_sleep>= TIMEOUT_DURATION_SECONDS *1000){
+				//nonce_message_published.remove(nonce);
+				//nonce_messages.remove(nonce);
+				return empty_response;
+			}
+            try {
+                Thread.sleep(sleep_duration_millis);
+				cumulative_sleep = cumulative_sleep + sleep_duration_millis;
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+		try {
+			
+			//nonce_message_published.remove(nonce);
+			//nonce_messages.remove(nonce);
+			
+			JSONObject response = (JSONObject) parser.parse(nonce_messages.get(nonce));
+			String username = (String) response.get("username");
+
+			// Return an appropriate JSON object to the client
+			//return "{\"nonce\": \"" + nonce + "\", \"username\": \"" + username + "\"}";
+			return username;
+		} catch (ParseException e) {
+			throw new RuntimeException(e);
+		}
+		
+	}
+	
 	@PutMapping(value = "/request", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public RegistrationRequest createRequest(@RequestBody RegistrationRequest registrationRequest, Authentication authentication) {
 		return registrationRequestService.saveAsUser(registrationRequest, authentication);
@@ -159,4 +265,5 @@ public class RegistrationRequestController {
 				"message", exception.getMessage()
 		);
 	}
+
 }
