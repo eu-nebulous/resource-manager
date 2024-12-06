@@ -148,7 +148,7 @@ public class SALCommunicator {
         return root_json_object.toJSONString();
     }
 
-    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, long ram_gb, long disk_gb, String device_name,Double price, String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
+    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, long ram_gb, long disk_gb, int number_of_gpus, String device_name,Double price, String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
 
             JSONObject root_json_object = new JSONObject();
             JSONObject loginCredential = new JSONObject();
@@ -186,6 +186,7 @@ public class SALCommunicator {
             nodeProperties.put("ram", ram_gb);
             nodeProperties.put("disk", disk_gb);
             nodeProperties.put("price", price);
+            nodeProperties.put("gpu", number_of_gpus);
             nodeProperties.put("operatingSystem", operatingSystem);
             nodeProperties.put("geoLocation", geoLocation);
 
