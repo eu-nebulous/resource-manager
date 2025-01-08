@@ -131,7 +131,8 @@ public class SALCommunicator {
             System.out.println(json.toJSONString());
 
             for (String application : applications) {
-                json.put("jobId", application);
+                //json.put("jobId", application);
+                json.put("jobId", "");
                 String payload3 = json.toJSONString();
                 HashMap<String, String> headers = new HashMap<>();
                 headers.put("sessionid", sessionID);
@@ -232,11 +233,11 @@ public class SALCommunicator {
                 JSONArray jobs_array = (JSONArray) parser.parse(running_jobs_string);
                 for (int i = 0; i < jobs_array.size(); i++) {
                     JSONObject json_job_object = (JSONObject) jobs_array.get(i);
-                    applications.add((String) json_job_object.get("jobId"));
+                    //applications.add((String) json_job_object.get("jobId"));
                 }
             }else if (received_json instanceof JSONObject){
                 JSONObject json_job_object = (JSONObject) received_json;
-                applications.add((String) json_job_object.get("jobId"));
+                //applications.add((String) json_job_object.get("jobId"));
             }
         }catch (Exception e){
             e.printStackTrace();

@@ -102,12 +102,14 @@ public class SynchronousBrokerPublisher {
                 } catch (ParseException p) {
                     log.warn("publish_for_response-if: Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
                 }
-                metadata.put("jobId",application_name);
+                //metadata.put("jobId",application_name);
+                metadata.put("jobId","");
                 payload.put("metaData",metadata);
                 if (private_publisher_instance != null) {
                     //reply = private_publisher_instance.sendSync(json_object, application_name, null, false);
                     if (successful_json_parsing) {
-                        json_object.put("jobId",application_name);
+                        //json_object.put("jobId",application_name);
+                        json_object.put("jobId","");
                         payload.put("body",json_object.toJSONString());
                         reply = private_publisher_instance.sendSync(payload, application_name, null, false);
                     }else{
