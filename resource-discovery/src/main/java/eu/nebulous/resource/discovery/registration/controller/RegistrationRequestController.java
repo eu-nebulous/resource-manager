@@ -136,7 +136,7 @@ public class RegistrationRequestController implements InitializingBean {
 		String empty_response = null; //"{\"nonce\": \"" + nonce + "\", \"username\": \"" + "" + "\"}";
 		
 		log.debug("Sending nonce message to middleware");
-		nonce_publisher.publish(json_request.toJSONString(),List.of(""));
+		nonce_publisher.publish(json_request.toJSONString(),List.of(""),true);
 
 		
 		int cumulative_sleep = 0;
