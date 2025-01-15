@@ -66,7 +66,9 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                 //taskScheduler.schedule(this::initializeBrokerConnection,
                 //        Instant.now().plusSeconds(properties.getSubscriptionRetryDelay()));
                 try {
-                    Thread.sleep(properties.getSubscriptionRetryDelay()*1000L);
+                    long seconds_to_wait = properties.getSubscriptionRetryDelay();
+                    log.error("Waiting "+seconds_to_wait+" seconds before retrying to initialize the connection to the broker");
+                    Thread.sleep(seconds_to_wait*1000L);
                 } catch (InterruptedException ex) {
                     throw new RuntimeException(ex);
                 }

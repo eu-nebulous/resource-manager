@@ -169,7 +169,7 @@ public class BrokerPublisher {
                     try {
                         active_connector_handler.getReady().wait();
                      } catch (InterruptedException e) {
-                        
+                        e.printStackTrace();
                     }
                 }
             }
