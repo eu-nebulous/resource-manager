@@ -17,6 +17,7 @@ public class CustomConnectorHandler extends ConnectorHandler {
             this.ready.set(true);
             this.ready.notifyAll();
         }
+        
     }
     public void remove_consumer_with_key(String key){
         context.unregisterConsumer(key);

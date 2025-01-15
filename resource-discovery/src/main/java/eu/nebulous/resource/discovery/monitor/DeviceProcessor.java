@@ -28,6 +28,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static eu.nebulous.resource.discovery.broker_communication.BrokerPublisher.getExistingOrNewBrokerPublisher;
+
 @Slf4j
 @Service
 @EnableAsync
@@ -154,7 +156,7 @@ public class DeviceProcessor  implements InitializingBean {
                         log.warn("Will now make attempt No "+sending_attempt+" to (re)create the BrokerPublisher connector for the lost device topic");
                         log.info("The topic name is "+processorProperties.getLost_device_topic()+", the broker ip is "+ processorProperties.getNebulous_broker_ip_address()+", the broker port is "+ processorProperties.getNebulous_broker_port()+", the username is "+ processorProperties.getNebulous_broker_username()+", and the password is "+ processorProperties.getNebulous_broker_password());
                         
-                        device_lost_publisher = new BrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                        device_lost_publisher = getExistingOrNewBrokerPublisher(processorProperties.getLost_device_topic(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
                     
                         Thread.sleep(3000);
                     }catch (InterruptedException i){
