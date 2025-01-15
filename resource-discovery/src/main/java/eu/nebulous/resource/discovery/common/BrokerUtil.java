@@ -118,7 +118,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
         boolean error = false;
         try {
             sendMessage(properties.getHealthCheckTopic(), Map.of("ping", "pong"));
-        } catch (JMSException | JsonProcessingException e) {
+        } catch (Exception e) {
             log.warn("BrokerUtil: EXCEPTION during connection health: ", e);
             error = true;
         }
@@ -141,38 +141,17 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
     // ------------------------------------------------------------------------
 
-    public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message) throws JMSException, JsonProcessingException {
-
-        boolean message_sent = false;
-        while (!message_sent) {
-            boolean error = false;
-            try {
-                sendMessage(topic, message, false);
-                message_sent=true;
-            } catch (JMSException | JsonProcessingException e) {
-                log.warn("BrokerUtil: EXCEPTION during sending message: ", e);
-                error = true;
-            }
-
-            if (error) {
-                // Close connection
-                try {
-                    closeBrokerConnection();
-                } catch (JMSException e) {
-                    log.error("BrokerUtil: ERROR while closing connection to Message broker: ", e);
-                    this.session = null;
-                    this.connection = null;
-                }
-
-                // Try to re-connect
-                taskScheduler.schedule(this::initializeBrokerConnection,
-                        Instant.now().plusSeconds(1));
-            }
-        }
+    public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message) {
+         sendMessage(topic, message, false);
     }
 
-    public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message, boolean encrypt) throws JMSException, JsonProcessingException {
-        String jsonMessage = objectMapper.writer().writeValueAsString(message);
+    public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message, boolean encrypt) {
+        String jsonMessage = null;
+        try {
+            jsonMessage = objectMapper.writer().writeValueAsString(message);
+        } catch (JsonProcessingException e) {
+            log.error("Could not parse json message "+e);
+        }
         sendMessage(topic, jsonMessage, encrypt);
     }
 
@@ -180,16 +159,43 @@ public class BrokerUtil implements InitializingBean, MessageListener {
         sendMessage(topic, message, false);
     }
 
-    public void sendMessage(@NonNull String topic, @NonNull String message, boolean encrypt) throws JMSException, JsonProcessingException {
+    public void sendMessage(@NonNull String topic, @NonNull String message, boolean encrypt) {
         ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
         if (encrypt) {
             sendMessage(topic, Map.of("encrypted-message", encryptionUtil.encryptText(message)), false);
         } else {
-            textMessage.setText(message);
-            try {
-                getOrCreateProducer(topic).send(textMessage);
-            } catch (JMSException jmsE) {
-                log.error("Could not send message. Get or create producer for topic "+ topic + " returns "+ getOrCreateProducer(topic)+" and the message which was to be sent was "+textMessage);
+            
+            boolean message_sent = false;
+            while (!message_sent) {
+                boolean error = false;
+                try {
+                    textMessage.setText(message);
+                    getOrCreateProducer(topic).send(textMessage);
+                    message_sent=true;
+                } catch (Exception e) {
+                    log.warn("BrokerUtil: EXCEPTION during sending message: ", e);
+                    error = true;
+                }
+
+                if (error) {
+                    // Close connection
+                    try {
+                        closeBrokerConnection();
+                    } catch (Exception e) {
+                        log.error("BrokerUtil: ERROR while closing connection to Message broker: ", e);
+                        this.session = null;
+                        this.connection = null;
+                    }
+
+                    // Try to re-connect
+                    taskScheduler.schedule(this::initializeBrokerConnection,
+                            Instant.now().plusSeconds(1));
+                    try {
+                        Thread.sleep(1000L);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
         }
     }
