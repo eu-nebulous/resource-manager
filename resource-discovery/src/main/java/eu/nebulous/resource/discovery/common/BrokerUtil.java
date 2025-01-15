@@ -142,19 +142,31 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     // ------------------------------------------------------------------------
 
     public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message) throws JMSException, JsonProcessingException {
-        boolean successful_message_sending = false;
-        while(!successful_message_sending) {
+
+        boolean message_sent = false;
+        while (!message_sent) {
+            boolean error = false;
             try {
                 sendMessage(topic, message, false);
-                successful_message_sending = true;
-            } catch (JMSException j) {
-                log.error("BrokerUtil: EXCEPTION during sending message to Message broker: ", j);
-                log.error("Will retry sending message after 5 seconds");
+                message_sent=true;
+            } catch (JMSException | JsonProcessingException e) {
+                log.warn("BrokerUtil: EXCEPTION during sending message: ", e);
+                error = true;
+            }
+
+            if (error) {
+                // Close connection
                 try {
-                    Thread.sleep(5000L);
-                } catch (InterruptedException e) {
-                    log.error("BrokerUtil: EXCEPTION during sleeping: ", e);
+                    closeBrokerConnection();
+                } catch (JMSException e) {
+                    log.error("BrokerUtil: ERROR while closing connection to Message broker: ", e);
+                    this.session = null;
+                    this.connection = null;
                 }
+
+                // Try to re-connect
+                taskScheduler.schedule(this::initializeBrokerConnection,
+                        Instant.now().plusSeconds(1));
             }
         }
     }
