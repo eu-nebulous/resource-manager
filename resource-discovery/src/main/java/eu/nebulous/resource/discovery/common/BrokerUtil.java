@@ -165,7 +165,11 @@ public class BrokerUtil implements InitializingBean, MessageListener {
             sendMessage(topic, Map.of("encrypted-message", encryptionUtil.encryptText(message)), false);
         } else {
             textMessage.setText(message);
-            getOrCreateProducer(topic).send(textMessage);
+            try {
+                getOrCreateProducer(topic).send(textMessage);
+            } catch (JMSException jmsE) {
+                log.error("Could not send message. Get or create producer for topic "+ topic + " returns "+ getOrCreateProducer(topic)+" and the message which was to be sent was "+textMessage);
+            }
         }
     }
 

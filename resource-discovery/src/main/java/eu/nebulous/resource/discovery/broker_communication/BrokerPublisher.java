@@ -128,7 +128,22 @@ public class BrokerPublisher {
             log.error( "Could not send message to AMQP broker, as the publisher instance is null");
         }
         if (stop_connector){
-            active_connector.stop();
+            synchronized (active_connector_handler.getReady()){
+                while (!active_connector_handler.getReady().get()) {
+                    try {
+                        log.error( "Waiting for the connector to be ready to stop");
+                        active_connector_handler.wait();
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                try {
+                    log.error( "Now able to stop the connector");
+                    active_connector.stop(); //Reassure expected stop() functionality is working here when this is necessary
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
         }
     }
     
