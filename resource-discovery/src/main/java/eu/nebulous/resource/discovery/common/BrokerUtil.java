@@ -56,24 +56,12 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     private void initializeBrokerConnection() {
-        boolean not_initialized=true;
-        while (not_initialized) {
             try {
                 openBrokerConnection();
-                not_initialized=false;
             } catch (Exception e) {
                 log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
-                //taskScheduler.schedule(this::initializeBrokerConnection,
-                //        Instant.now().plusSeconds(properties.getSubscriptionRetryDelay()));
-                try {
-                    long seconds_to_wait = properties.getSubscriptionRetryDelay();
-                    log.error("Waiting "+seconds_to_wait+" seconds before retrying to initialize the connection to the broker");
-                    Thread.sleep(seconds_to_wait*1000L);
-                    log.error("Retrying to connect to the broker...");
-                } catch (InterruptedException ex) {
-                    throw new RuntimeException(ex);
-                }
-            }
+            taskScheduler.schedule(this::initializeBrokerConnection,
+                    Instant.now().plusSeconds(properties.getSubscriptionRetryDelay()));
         }
     }
 
