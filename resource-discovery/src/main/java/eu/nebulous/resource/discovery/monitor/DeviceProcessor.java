@@ -164,7 +164,7 @@ public class DeviceProcessor  implements InitializingBean {
                     }
                     sending_attempt++;
                 }
-                device_lost_publisher.publish(lost_device_message.toJSONString(), Collections.singleton(""),true);
+                device_lost_publisher.publish(lost_device_message.toJSONString(), Collections.singleton(""),false);
                 log.warn("processFailedDevices: Marked as FAILED device with Id: {}", device.getId());
                 //device_lost_publisher.stop();
             }
