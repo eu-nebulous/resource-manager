@@ -16,6 +16,7 @@ import java.util.*;
 public class BrokerPublisher {
     public static String EMPTY="";
     //private HashMap<String, HashSet<String>> broker_and_topics_to_publish_to = new HashMap<>();
+    private static HashMap<String, BrokerPublisher> hostnames_topics_broker_publishers = new HashMap<>();
     private Publisher private_publisher_instance;
     private ArrayList<Publisher> publishers = new ArrayList<>();
 
@@ -25,8 +26,16 @@ public class BrokerPublisher {
     private String broker_ip;
     private int broker_port;
 
-    
+    public static BrokerPublisher getExistingOrNewBrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
+        if (hostnames_topics_broker_publishers.containsKey(broker_ip + "," + topic)){
+            return(hostnames_topics_broker_publishers.get(broker_ip + "," + topic));
+        }else{
+            return(new BrokerPublisher(topic, broker_ip, broker_port, brokerUsername, brokerPassword, amqLibraryConfigurationLocation));
+        }
+    }
     public BrokerPublisher(String topic, String broker_ip, int broker_port, String brokerUsername, String brokerPassword, String amqLibraryConfigurationLocation) {
+        
+
         boolean able_to_initialize_BrokerPublisher = topic!=null && broker_ip!=null && brokerUsername!=null && brokerPassword!=null && !topic.equals(EMPTY) && !broker_ip.equals(EMPTY) && !brokerUsername.equals(EMPTY) && !brokerPassword.equals(EMPTY);
 
         if (!able_to_initialize_BrokerPublisher){
@@ -102,8 +111,9 @@ public class BrokerPublisher {
                     )
             );
             active_connector.start();
-
+        
         //}
+        hostnames_topics_broker_publishers.put(broker_ip+","+topic,this);
     }
 
     //TODO The methods below assume that the only content to be sent is json-like
