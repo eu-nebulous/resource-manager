@@ -60,7 +60,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                 openBrokerConnection();
             } catch (Exception e) {
                 log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
-            taskScheduler.schedule(this::initializeBrokerConnection,
+                taskScheduler.schedule(this::initializeBrokerConnection,
                     Instant.now().plusSeconds(properties.getSubscriptionRetryDelay()));
         }
     }
