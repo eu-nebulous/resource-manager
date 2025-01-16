@@ -71,7 +71,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
             // Re-subscribe consumers
             log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-subscribing consumers to topics: {}", consumers.keySet());
-            Set<String> consumerTopics = consumers.keySet();
+            Set<String> consumerTopics = new HashSet<>(consumers.keySet());
             consumers.clear();
             consumerTopics.forEach((topic) -> {
                 try {
@@ -85,7 +85,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
             // Re-create producers
             log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-creating producers for topics: {}", producers.keySet());
-            Set<String> producerTopics = producers.keySet();
+            Set<String> producerTopics = new HashSet<>(producers.keySet());
             producers.clear();
             producerTopics.forEach((topic) -> {
                 try {
