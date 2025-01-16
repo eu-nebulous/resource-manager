@@ -56,10 +56,40 @@ public class BrokerUtil implements InitializingBean, MessageListener {
         }
     }
 
-    private void initializeBrokerConnection() {
+    private synchronized void initializeBrokerConnection() {
         try {
+            // Open new connection to broker
             log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: BEGIN: Calling openBrokerConnection()");
             openBrokerConnection();
+
+            // Re-subscribe consumers
+            log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-subscribing consumers to topics: {}", consumers.keySet());
+            Set<String> consumerTopics = consumers.keySet();
+            consumers.clear();
+            consumerTopics.forEach((topic) -> {
+                try {
+                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....Re-subscribing consumer to topic: {}", topic);
+                    getOrCreateConsumer(topic).setMessageListener(this);
+                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....OK Re-subscribing consumer to topic: {}", topic);
+                } catch (JMSException e) {
+                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....ERROR while Re-subscribing consumer to topic: {}", topic);
+                }
+            });
+
+            // Re-create producers
+            log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-creating producers for topics: {}", producers.keySet());
+            Set<String> producerTopics = producers.keySet();
+            producers.clear();
+            consumerTopics.forEach((topic) -> {
+                try {
+                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....Re-creating producer for topic: {}", topic);
+                    getOrCreateProducer(topic);
+                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....OK Re-creating producer for topic: {}", topic);
+                } catch (JMSException e) {
+                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....ERROR while Re-creating producer for topic: {}", topic);
+                }
+            });
+
             log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: END");
         } catch (Exception e) {
             log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
