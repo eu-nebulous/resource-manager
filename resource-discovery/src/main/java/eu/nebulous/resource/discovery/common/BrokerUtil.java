@@ -41,6 +41,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        log.info(">>>>>>>>  BrokerUtil: afterPropertiesSet: BEGIN");
         // Initialize broker connection
         taskScheduler.schedule(this::initializeBrokerConnection,
                 Instant.now().plusSeconds(properties.getSubscriptionStartupDelay()));
