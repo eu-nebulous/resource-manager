@@ -33,8 +33,8 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     private final EncryptionUtil encryptionUtil;
     private final TaskScheduler taskScheduler;
     private final ObjectMapper objectMapper;
-    private final Map<String,MessageProducer> producers = new HashMap<>();
-    private final Map<String,MessageConsumer> consumers = new HashMap<>();
+    private final Map<String, MessageProducer> producers = new HashMap<>();
+    private final Map<String, MessageConsumer> consumers = new HashMap<>();
     private final Map<String, Set<Listener>> listeners = new HashMap<>();
     private ActiveMQConnection connection;
     private Session session;
@@ -47,7 +47,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
         // Initialize connection health check
         int healthCheckPeriod = properties.getConnectionHealthCheckPeriod();
-        if (healthCheckPeriod>0) {
+        if (healthCheckPeriod > 0) {
             taskScheduler.scheduleAtFixedRate(this::connectionHealthCheck,
                     Instant.now().plusSeconds(properties.getSubscriptionStartupDelay()),
                     Duration.ofSeconds(healthCheckPeriod));
@@ -56,16 +56,21 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     private void initializeBrokerConnection() {
-            try {
-                openBrokerConnection();
-            } catch (Exception e) {
-                log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
-                taskScheduler.schedule(this::initializeBrokerConnection,
+        try {
+            log.info(">>>>>>>>  BrokerUtil: initializeBrokerConnection: BEGIN: Calling openBrokerConnection()");
+            openBrokerConnection();
+            log.info(">>>>>>>>  BrokerUtil: initializeBrokerConnection: END");
+        } catch (Exception e) {
+            log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
+            log.error("BrokerUtil: Will retry calling 'initializeBrokerConnection' in {} seconds: ", properties.getSubscriptionRetryDelay());
+            taskScheduler.schedule(this::initializeBrokerConnection,
                     Instant.now().plusSeconds(properties.getSubscriptionRetryDelay()));
         }
     }
 
     private void openBrokerConnection() throws Exception {
+        log.info(">>>>>>>>  BrokerUtil: openBrokerConnection: BEGIN");
+
         ActiveMQSslConnectionFactory cf = new ActiveMQSslConnectionFactory(properties.getBrokerURL());
         cf.setUserName(properties.getBrokerUsername());
         cf.setPassword(properties.getBrokerPassword());
@@ -86,9 +91,17 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
         ActiveMQConnection conn = (ActiveMQConnection) cf.createConnection();
         Session ses = conn.createSession();
+        log.info(">>>>>>>>  BrokerUtil: openBrokerConnection: Starting connection: {}", conn);
         conn.start();
         this.connection = conn;
         this.session = ses;
+
+        while (! conn.isStarted()) {
+            log.info(">>>>>>>>  BrokerUtil: openBrokerConnection: Waiting connection to start...");
+            try { Thread.sleep(1000L); } catch (InterruptedException e) { log.warn(">>>>>>>>  BrokerUtil: openBrokerConnection: Interrupted!"); }
+        }
+        log.info(">>>>>>>>  BrokerUtil: openBrokerConnection: connection.isStarted={}", conn.isStarted());
+
         log.info("BrokerUtil: Opened connection to Message broker: {}", properties.getBrokerURL());
     }
 
@@ -96,8 +109,8 @@ public class BrokerUtil implements InitializingBean, MessageListener {
         producers.clear();
         consumers.clear();
         listeners.clear();
-        if (session!=null) this.session.close();
-        if (connection!=null && ! connection.isClosed() && ! connection.isClosing())
+        if (session != null) this.session.close();
+        if (connection != null && !connection.isClosed() && !connection.isClosing())
             this.connection.close();
         this.session = null;
         this.connection = null;
@@ -132,16 +145,16 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
     // ------------------------------------------------------------------------
 
-    public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message) {
-         sendMessage(topic, message, false);
+    public void sendMessage(@NonNull String topic, @NonNull Map<String, ? extends Object> message) {
+        sendMessage(topic, message, false);
     }
 
-    public void sendMessage(@NonNull String topic, @NonNull Map<String,? extends Object> message, boolean encrypt) {
+    public void sendMessage(@NonNull String topic, @NonNull Map<String, ? extends Object> message, boolean encrypt) {
         String jsonMessage = null;
         try {
             jsonMessage = objectMapper.writer().writeValueAsString(message);
         } catch (JsonProcessingException e) {
-            log.error("Could not parse json message "+e);
+            log.error("Could not parse json message " + e);
         }
         sendMessage(topic, jsonMessage, encrypt);
     }
@@ -151,27 +164,36 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     public void sendMessage(@NonNull String topic, @NonNull String message, boolean encrypt) {
+        log.info(">>>>>>>>  BrokerUtil: sendMessage: BEGIN: topic={}, encrypt={}, message={}", topic, encrypt, message);
         ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
         if (encrypt) {
+            log.info(">>>>>>>>  BrokerUtil: sendMessage: ENCRYPT: topic={}, encrypt={}, message={}", topic, encrypt, message);
             sendMessage(topic, Map.of("encrypted-message", encryptionUtil.encryptText(message)), false);
+            log.info(">>>>>>>>  BrokerUtil: sendMessage: ENCRYPT-END: topic={}, encrypt={}, message={}", topic, encrypt, message);
         } else {
-            
+            log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: topic={}, encrypt={}, message={}", topic, encrypt, message);
+
             boolean message_sent = false;
             while (!message_sent) {
                 boolean error = false;
                 try {
+                    log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Sending....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     textMessage.setText(message);
                     getOrCreateProducer(topic).send(textMessage);
-                    message_sent=true;
+                    message_sent = true;
+                    log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Sending....OK  topic={}, encrypt={}, message={}", topic, encrypt, message);
                 } catch (Exception e) {
                     log.warn("BrokerUtil: EXCEPTION during sending message: ", e);
                     error = true;
                 }
 
                 if (error) {
+                    log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: ERROR!!!!!  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     // Close connection
                     try {
+                        log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Closing conn....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                         closeBrokerConnection();
+                        log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Closed conn....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     } catch (Exception e) {
                         log.error("BrokerUtil: ERROR while closing connection to Message broker: ", e);
                         this.session = null;
@@ -179,11 +201,15 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                     }
 
                     // Try to re-connect
-                    taskScheduler.schedule(this::initializeBrokerConnection,
-                            Instant.now().plusSeconds(1));
+                    log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: RECONNECTING....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                    initializeBrokerConnection();
+
+                    // Wait until
+                    log.info(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: DELAYING 2 seconds....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     try {
-                        Thread.sleep(1000L);
+                        Thread.sleep(2000L);
                     } catch (InterruptedException e) {
+                        log.warn(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Interrupted DELAYING 2 seconds....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                         throw new RuntimeException(e);
                     }
                 }
@@ -195,23 +221,33 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
     public MessageProducer getOrCreateProducer(@NonNull String topic) throws JMSException {
         MessageProducer producer = producers.get(topic);
-        if (producer==null) { producer = createProducer(topic); producers.put(topic, producer); }
+        if (producer == null) {
+            producer = createProducer(topic);
+            producers.put(topic, producer);
+        }
         return producer;
     }
 
     public MessageConsumer getOrCreateConsumer(@NonNull String topic) throws JMSException {
         MessageConsumer consumer = consumers.get(topic);
-        if (consumer==null) { consumer = createConsumer(topic); consumers.put(topic, consumer); }
+        if (consumer == null) {
+            consumer = createConsumer(topic);
+            consumers.put(topic, consumer);
+        }
         return consumer;
     }
 
     public MessageProducer createProducer(@NonNull String topic) throws JMSException {
-        if (session==null) initializeBrokerConnection();
+        log.info(">>>>>>>>  BrokerUtil: createProducer: BEGIN: topic={}, session={}", topic, session);
+        if (session == null) initializeBrokerConnection();
+        log.info(">>>>>>>>  BrokerUtil: createProducer: MID: topic={}, session={}", topic, session);
         return session.createProducer(new ActiveMQTopic(topic));
     }
 
     public MessageConsumer createConsumer(@NonNull String topic) throws JMSException {
-        if (session==null) initializeBrokerConnection();
+        log.info(">>>>>>>>  BrokerUtil: createConsumer: BEGIN: topic={}, session={}", topic, session);
+        if (session == null) initializeBrokerConnection();
+        log.info(">>>>>>>>  BrokerUtil: createConsumer: MID: topic={}, session={}", topic, session);
         return session.createConsumer(new ActiveMQTopic(topic));
     }
 
@@ -232,16 +268,16 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                 String payload = textMessage.getText();
                 log.trace("BrokerUtil: Message payload: {}", payload);
 
-                TypeReference<Map<String,Object>> typeRef = new TypeReference<>() { };
+                TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
+                };
                 Object obj = objectMapper.readerFor(typeRef).readValue(payload);
 
-                if (obj instanceof Map<?,?> dataMap) {
+                if (obj instanceof Map<?, ?> dataMap) {
                     String topic = ((ActiveMQTextMessage) message).getDestination().getPhysicalName();
                     // Print response messages except the EMS node status reports (_ui_instance_info, _client_metrics)
                     if (StringUtils.isNotBlank(topic)
-                            && ! topic.equals(properties.getDeviceStatusMonitorTopic())
-                            && ! topic.equals(properties.getDeviceMetricsMonitorTopic()))
-                    {
+                            && !topic.equals(properties.getDeviceStatusMonitorTopic())
+                            && !topic.equals(properties.getDeviceMetricsMonitorTopic())) {
                         log.warn("BrokerUtil: Received a new message:   topic: {}", topic);
                         log.warn("BrokerUtil: Received a new message: payload: {}", dataMap);
                     }
@@ -260,12 +296,12 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     private void handlePayload(@NonNull String topic, @NonNull Map<?, ?> dataMap) {
         // Decrypt message (if encrypted)
         Object encryptedMessage = dataMap.get("encrypted-message");
-        if (encryptedMessage!=null)
+        if (encryptedMessage != null)
             dataMap = encryptionUtil.decryptMap(encryptedMessage.toString());
 
         // Dispatch message to listeners
         Set<Listener> set = listeners.get(topic);
-        if (set==null) return;
+        if (set == null) return;
         final Map<?, ?> immutableMap = Collections.unmodifiableMap(dataMap);
         set.forEach(l -> l.onMessage(immutableMap));
     }
