@@ -54,6 +54,13 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                     Duration.ofSeconds(healthCheckPeriod));
             log.info("BrokerUtil: Enabled connection health check: period={}s", healthCheckPeriod);
         }
+
+        // Debug print of BrokerUtil state
+        taskScheduler.scheduleAtFixedRate(() ->
+                        log.error(">>>>>>>>  BrokerUtil: current state:\n\tconsumers={}\n\tproducers={}\n\tlisteners={}\n",
+                                consumers, producers, listeners),
+                Instant.now().plusSeconds(5L),
+                Duration.ofSeconds(5L));
     }
 
     private synchronized void initializeBrokerConnection() {
@@ -80,7 +87,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
             log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-creating producers for topics: {}", producers.keySet());
             Set<String> producerTopics = producers.keySet();
             producers.clear();
-            consumerTopics.forEach((topic) -> {
+            producerTopics.forEach((topic) -> {
                 try {
                     log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....Re-creating producer for topic: {}", topic);
                     getOrCreateProducer(topic);
@@ -142,9 +149,9 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     private void closeBrokerConnection() throws JMSException {
-        producers.clear();
+        /*producers.clear();
         consumers.clear();
-        listeners.clear();
+        listeners.clear();*/
         if (session != null) this.session.close();
         if (connection != null && !connection.isClosed() && !connection.isClosing())
             this.connection.close();
