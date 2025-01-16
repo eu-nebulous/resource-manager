@@ -72,6 +72,11 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     private void openBrokerConnection() throws Exception {
         log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: BEGIN");
 
+        if (connection!=null && connection.isStarted()) {
+            log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: END: Connection has already started!");
+            return;
+        }
+
         ActiveMQSslConnectionFactory cf = new ActiveMQSslConnectionFactory(properties.getBrokerURL());
         cf.setUserName(properties.getBrokerUsername());
         cf.setPassword(properties.getBrokerPassword());
@@ -230,9 +235,12 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     public MessageConsumer getOrCreateConsumer(@NonNull String topic) throws JMSException {
+        log.error(">>>>>>>>  BrokerUtil: getOrCreateConsumer: BEGIN: topic={}", topic);
         MessageConsumer consumer = consumers.get(topic);
+        log.error(">>>>>>>>  BrokerUtil: getOrCreateConsumer: MID: topic={}, consumer={}", topic, consumer);
         if (consumer == null) {
             consumer = createConsumer(topic);
+            log.error(">>>>>>>>  BrokerUtil: getOrCreateConsumer: NEW CONSUMER: topic={}, consumer={}", topic, consumer);
             consumers.put(topic, consumer);
         }
         return consumer;
@@ -255,56 +263,76 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     // ------------------------------------------------------------------------
 
     public void subscribe(@NonNull String topic, @NonNull Listener listener) throws JMSException {
+        log.error(">>>>>>>>  BrokerUtil: subscribe: BEGIN: topic={}, listener={}", topic, listener);
         Set<Listener> set = listeners.computeIfAbsent(topic, t -> new HashSet<>());
         if (set.contains(listener)) return;
+        log.error(">>>>>>>>  BrokerUtil: subscribe: ADDING LISTENER: topic={}, listener={}", topic, listener);
         set.add(listener);
         getOrCreateConsumer(topic).setMessageListener(this);
+        log.error(">>>>>>>>  BrokerUtil: subscribe: END: topic={}, listener={}", topic, listener);
     }
 
     @Override
     public void onMessage(Message message) {
         try {
+            log.error(">>>>>>>>  BrokerUtil: onMessage: BEGIN: message={}", message);
             log.debug("BrokerUtil: Received a message from broker: {}", message);
             if (message instanceof ActiveMQTextMessage textMessage) {
                 String payload = textMessage.getText();
+                log.error(">>>>>>>>  BrokerUtil: onMessage: AMQ-TEXT-MESG: payload={}", payload);
                 log.trace("BrokerUtil: Message payload: {}", payload);
 
                 TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
                 };
                 Object obj = objectMapper.readerFor(typeRef).readValue(payload);
+                log.error(">>>>>>>>  BrokerUtil: onMessage: OBJ-from-TEXT: obj={}", obj);
 
                 if (obj instanceof Map<?, ?> dataMap) {
+                    log.error(">>>>>>>>  BrokerUtil: onMessage: OBJ-is-MAP: dataMap={}", dataMap);
                     String topic = ((ActiveMQTextMessage) message).getDestination().getPhysicalName();
+                    log.error(">>>>>>>>  BrokerUtil: onMessage: DESTINATION: topic={}", topic);
                     // Print response messages except the EMS node status reports (_ui_instance_info, _client_metrics)
                     if (StringUtils.isNotBlank(topic)
                             && !topic.equals(properties.getDeviceStatusMonitorTopic())
-                            && !topic.equals(properties.getDeviceMetricsMonitorTopic())) {
+                            && !topic.equals(properties.getDeviceMetricsMonitorTopic()))
+                    {
                         log.warn("BrokerUtil: Received a new message:   topic: {}", topic);
                         log.warn("BrokerUtil: Received a new message: payload: {}", dataMap);
                     }
                     handlePayload(topic, dataMap);
                 } else {
+                    log.error(">>>>>>>>  BrokerUtil: onMessage: NOT-a-MAP: {} -- {}", obj!=null?obj.getClass().getName():null, obj);
                     log.warn("BrokerUtil: Message payload is not recognized. Expected Map but got: type={}, object={}", obj.getClass().getName(), obj);
                 }
             } else {
+                log.error(">>>>>>>>  BrokerUtil: onMessage: NOT-TEXT-MESG: {} -- {}", message.getClass().getName(), message);
                 log.debug("BrokerUtil: Message type is not supported: {}", message);
             }
         } catch (Exception e) {
+            log.error(">>>>>>>>  BrokerUtil: onMessage: EXCEPTION: ", e);
             log.warn("BrokerUtil: ERROR while processing message: {}\nException: ", message, e);
         }
     }
 
     private void handlePayload(@NonNull String topic, @NonNull Map<?, ?> dataMap) {
+        log.error(">>>>>>>>  BrokerUtil: handlePayload: BEGIN: topic={}, map={}", topic, dataMap);
         // Decrypt message (if encrypted)
         Object encryptedMessage = dataMap.get("encrypted-message");
+        log.error(">>>>>>>>  BrokerUtil: handlePayload: encrypted={}", encryptedMessage);
         if (encryptedMessage != null)
             dataMap = encryptionUtil.decryptMap(encryptedMessage.toString());
+        log.error(">>>>>>>>  BrokerUtil: handlePayload: DATA-MAP={}", dataMap);
 
         // Dispatch message to listeners
         Set<Listener> set = listeners.get(topic);
+        log.error(">>>>>>>>  BrokerUtil: handlePayload: listeners: {}", set);
         if (set == null) return;
         final Map<?, ?> immutableMap = Collections.unmodifiableMap(dataMap);
-        set.forEach(l -> l.onMessage(immutableMap));
+        set.forEach(l -> {
+            log.error(">>>>>>>>  BrokerUtil: handlePayload: ....CALLING LISTENER: {} -- mao: {}", l, immutableMap);
+            l.onMessage(immutableMap);
+        });
+        log.error(">>>>>>>>  BrokerUtil: handlePayload: END");
     }
 
     public interface Listener {
