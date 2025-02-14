@@ -41,7 +41,7 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        log.error(">>>>>>>>  BrokerUtil: afterPropertiesSet: BEGIN");
+        log.trace("BrokerUtil: afterPropertiesSet: BEGIN");
         // Initialize broker connection
         taskScheduler.schedule(this::initializeBrokerConnection,
                 Instant.now().plusSeconds(properties.getSubscriptionStartupDelay()));
@@ -56,48 +56,49 @@ public class BrokerUtil implements InitializingBean, MessageListener {
         }
 
         // Debug print of BrokerUtil state
-        taskScheduler.scheduleAtFixedRate(() ->
-                        log.error(">>>>>>>>  BrokerUtil: current state:\n\tconsumers={}\n\tproducers={}\n\tlisteners={}\n",
+        /*taskScheduler.scheduleAtFixedRate(() ->
+                        log.debug("BrokerUtil: current state:\n\tconsumers={}\n\tproducers={}\n\tlisteners={}\n",
                                 consumers, producers, listeners),
                 Instant.now().plusSeconds(5L),
-                Duration.ofSeconds(5L));
+                Duration.ofSeconds(60L));*/
     }
 
     private synchronized void initializeBrokerConnection() {
         try {
             // Open new connection to broker
-            log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: BEGIN: Calling openBrokerConnection()");
+            log.info("BrokerUtil: Initializing broker connection");
+            log.trace("BrokerUtil: initializeBrokerConnection: BEGIN: Calling openBrokerConnection()");
             openBrokerConnection();
 
             // Re-subscribe consumers
-            log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-subscribing consumers to topics: {}", consumers.keySet());
+            log.info("BrokerUtil: Re-subscribing consumers to topics: {}", consumers.keySet());
             Set<String> consumerTopics = new HashSet<>(consumers.keySet());
             consumers.clear();
             consumerTopics.forEach((topic) -> {
                 try {
-                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....Re-subscribing consumer to topic: {}", topic);
+                    log.trace("BrokerUtil: initializeBrokerConnection: ....Re-subscribing consumer to topic: {}", topic);
                     getOrCreateConsumer(topic).setMessageListener(this);
-                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....OK Re-subscribing consumer to topic: {}", topic);
+                    log.trace("BrokerUtil: initializeBrokerConnection: ....SUCCESS Re-subscribing consumer to topic: {}", topic);
                 } catch (JMSException e) {
-                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....ERROR while Re-subscribing consumer to topic: {}", topic);
+                    log.error("BrokerUtil: initializeBrokerConnection: ....ERROR while Re-subscribing consumer to topic: {}", topic);
                 }
             });
 
             // Re-create producers
-            log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: Re-creating producers for topics: {}", producers.keySet());
+            log.info("BrokerUtil: Re-creating producers for topics: {}", producers.keySet());
             Set<String> producerTopics = new HashSet<>(producers.keySet());
             producers.clear();
             producerTopics.forEach((topic) -> {
                 try {
-                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....Re-creating producer for topic: {}", topic);
+                    log.trace("BrokerUtil: initializeBrokerConnection: ....Re-creating producer for topic: {}", topic);
                     getOrCreateProducer(topic);
-                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....OK Re-creating producer for topic: {}", topic);
+                    log.trace("BrokerUtil: initializeBrokerConnection: ....SUCCESS Re-creating producer for topic: {}", topic);
                 } catch (JMSException e) {
-                    log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: ....ERROR while Re-creating producer for topic: {}", topic);
+                    log.warn("BrokerUtil: initializeBrokerConnection: ....ERROR while Re-creating producer for topic: {}", topic);
                 }
             });
 
-            log.error(">>>>>>>>  BrokerUtil: initializeBrokerConnection: END");
+            log.trace("BrokerUtil: initializeBrokerConnection: END");
         } catch (Exception e) {
             log.error("BrokerUtil: ERROR while opening connection to Message broker: ", e);
             log.error("BrokerUtil: Will retry calling 'initializeBrokerConnection' in {} seconds: ", properties.getSubscriptionRetryDelay());
@@ -107,10 +108,11 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     private void openBrokerConnection() throws Exception {
-        log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: BEGIN");
+        log.trace("BrokerUtil: openBrokerConnection: BEGIN");
 
         if (connection!=null && connection.isStarted()) {
-            log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: END: Connection has already started!");
+            log.warn("BrokerUtil: Connection has already started!");
+            log.trace("BrokerUtil: openBrokerConnection: END: Connection has already started!");
             return;
         }
 
@@ -134,16 +136,19 @@ public class BrokerUtil implements InitializingBean, MessageListener {
 
         ActiveMQConnection conn = (ActiveMQConnection) cf.createConnection();
         Session ses = conn.createSession();
-        log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: Starting connection: {}", conn);
+        log.trace("BrokerUtil: openBrokerConnection: Starting connection: {}", conn);
         conn.start();
         this.connection = conn;
         this.session = ses;
 
+        long startTm = System.currentTimeMillis();
         while (! conn.isStarted()) {
-            log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: Waiting connection to start...");
-            try { Thread.sleep(1000L); } catch (InterruptedException e) { log.warn(">>>>>>>>  BrokerUtil: openBrokerConnection: Interrupted!"); }
+            if (System.currentTimeMillis() - startTm > 60*1000L)
+                throw new RuntimeException("Waiting broker connection to start for too long");
+            log.trace("BrokerUtil: openBrokerConnection: Waiting connection to start...");
+            try { Thread.sleep(1000L); } catch (InterruptedException e) { log.warn("BrokerUtil: openBrokerConnection: Interrupted!"); }
         }
-        log.error(">>>>>>>>  BrokerUtil: openBrokerConnection: connection.isStarted={}", conn.isStarted());
+        log.trace("BrokerUtil: openBrokerConnection: connection.isStarted={}", conn.isStarted());
 
         log.info("BrokerUtil: Opened connection to Message broker: {}", properties.getBrokerURL());
     }
@@ -207,36 +212,37 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     public void sendMessage(@NonNull String topic, @NonNull String message, boolean encrypt) {
-        log.error(">>>>>>>>  BrokerUtil: sendMessage: BEGIN: topic={}, encrypt={}, message={}", topic, encrypt, message);
+        log.trace("BrokerUtil: sendMessage: BEGIN: topic={}, encrypt={}, message={}", topic, encrypt, message);
         ActiveMQTextMessage textMessage = new ActiveMQTextMessage();
         if (encrypt) {
-            log.error(">>>>>>>>  BrokerUtil: sendMessage: ENCRYPT: topic={}, encrypt={}, message={}", topic, encrypt, message);
+            log.debug("BrokerUtil: sendMessage: ENCRYPT: topic={}, encrypt={}, message={}", topic, encrypt, message);
             sendMessage(topic, Map.of("encrypted-message", encryptionUtil.encryptText(message)), false);
-            log.error(">>>>>>>>  BrokerUtil: sendMessage: ENCRYPT-END: topic={}, encrypt={}, message={}", topic, encrypt, message);
+            log.trace("BrokerUtil: sendMessage: ENCRYPT-END: topic={}, encrypt={}, message={}", topic, encrypt, message);
         } else {
-            log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: topic={}, encrypt={}, message={}", topic, encrypt, message);
+            log.trace("BrokerUtil: sendMessage: PLAIN: topic={}, encrypt={}, message={}", topic, encrypt, message);
 
             boolean message_sent = false;
             while (!message_sent) {
                 boolean error = false;
                 try {
-                    log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Sending....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                    log.trace("BrokerUtil: sendMessage: PLAIN: Sending....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     textMessage.setText(message);
                     getOrCreateProducer(topic).send(textMessage);
                     message_sent = true;
-                    log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Sending....OK  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                    log.trace("BrokerUtil: sendMessage: PLAIN: Sending....OK  topic={}, encrypt={}, message={}", topic, encrypt, message);
                 } catch (Exception e) {
                     log.warn("BrokerUtil: EXCEPTION during sending message: ", e);
                     error = true;
                 }
 
                 if (error) {
-                    log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: ERROR!!!!!  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                    log.warn("BrokerUtil: Error while sending message to topic: {}", topic);
+                    log.trace("BrokerUtil: sendMessage: PLAIN: ERROR!!!!!  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     // Close connection
                     try {
-                        log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Closing conn....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                        log.trace("BrokerUtil: sendMessage: PLAIN: Closing conn....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                         closeBrokerConnection();
-                        log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Closed conn....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                        log.trace("BrokerUtil: sendMessage: PLAIN: Closed conn....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     } catch (Exception e) {
                         log.error("BrokerUtil: ERROR while closing connection to Message broker: ", e);
                         this.session = null;
@@ -244,15 +250,15 @@ public class BrokerUtil implements InitializingBean, MessageListener {
                     }
 
                     // Try to re-connect
-                    log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: RECONNECTING....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                    log.trace("BrokerUtil: sendMessage: PLAIN: RECONNECTING....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     initializeBrokerConnection();
 
                     // Wait until
-                    log.error(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: DELAYING 2 seconds....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                    log.trace("BrokerUtil: sendMessage: PLAIN: DELAYING 2 seconds....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                     try {
                         Thread.sleep(2000L);
                     } catch (InterruptedException e) {
-                        log.warn(">>>>>>>>  BrokerUtil: sendMessage: PLAIN: Interrupted DELAYING 2 seconds....  topic={}, encrypt={}, message={}", topic, encrypt, message);
+                        log.warn("BrokerUtil: sendMessage: PLAIN: Interrupted DELAYING 2 seconds....  topic={}, encrypt={}, message={}", topic, encrypt, message);
                         throw new RuntimeException(e);
                     }
                 }
@@ -272,104 +278,101 @@ public class BrokerUtil implements InitializingBean, MessageListener {
     }
 
     public MessageConsumer getOrCreateConsumer(@NonNull String topic) throws JMSException {
-        log.error(">>>>>>>>  BrokerUtil: getOrCreateConsumer: BEGIN: topic={}", topic);
+        log.trace("BrokerUtil: getOrCreateConsumer: BEGIN: topic={}", topic);
         MessageConsumer consumer = consumers.get(topic);
-        log.error(">>>>>>>>  BrokerUtil: getOrCreateConsumer: MID: topic={}, consumer={}", topic, consumer);
+        log.debug("BrokerUtil: getOrCreateConsumer: MID: topic={}, consumer={}", topic, consumer);
         if (consumer == null) {
             consumer = createConsumer(topic);
-            log.error(">>>>>>>>  BrokerUtil: getOrCreateConsumer: NEW CONSUMER: topic={}, consumer={}", topic, consumer);
+            log.trace("BrokerUtil: getOrCreateConsumer: NEW CONSUMER: topic={}, consumer={}", topic, consumer);
             consumers.put(topic, consumer);
         }
         return consumer;
     }
 
     public MessageProducer createProducer(@NonNull String topic) throws JMSException {
-        log.error(">>>>>>>>  BrokerUtil: createProducer: BEGIN: topic={}, session={}", topic, session);
+        log.trace("BrokerUtil: createProducer: BEGIN: topic={}, session={}", topic, session);
         if (session == null) initializeBrokerConnection();
-        log.error(">>>>>>>>  BrokerUtil: createProducer: MID: topic={}, session={}", topic, session);
+        log.debug("BrokerUtil: createProducer: New producer for: topic={}, session={}", topic, session);
         return session.createProducer(new ActiveMQTopic(topic));
     }
 
     public MessageConsumer createConsumer(@NonNull String topic) throws JMSException {
-        log.error(">>>>>>>>  BrokerUtil: createConsumer: BEGIN: topic={}, session={}", topic, session);
+        log.trace("BrokerUtil: createConsumer: BEGIN: topic={}, session={}", topic, session);
         if (session == null) initializeBrokerConnection();
-        log.error(">>>>>>>>  BrokerUtil: createConsumer: MID: topic={}, session={}", topic, session);
+        log.debug("BrokerUtil: createConsumer: New consumer for: topic={}, session={}", topic, session);
         return session.createConsumer(new ActiveMQTopic(topic));
     }
 
     // ------------------------------------------------------------------------
 
     public void subscribe(@NonNull String topic, @NonNull Listener listener) throws JMSException {
-        log.error(">>>>>>>>  BrokerUtil: subscribe: BEGIN: topic={}, listener={}", topic, listener);
+        log.trace("BrokerUtil: subscribe: BEGIN: topic={}, listener={}", topic, listener);
         Set<Listener> set = listeners.computeIfAbsent(topic, t -> new HashSet<>());
         if (set.contains(listener)) return;
-        log.error(">>>>>>>>  BrokerUtil: subscribe: ADDING LISTENER: topic={}, listener={}", topic, listener);
+        log.trace("BrokerUtil: subscribe: ADDING LISTENER: topic={}, listener={}", topic, listener);
         set.add(listener);
         getOrCreateConsumer(topic).setMessageListener(this);
-        log.error(">>>>>>>>  BrokerUtil: subscribe: END: topic={}, listener={}", topic, listener);
+        log.trace("BrokerUtil: subscribe: END: topic={}, listener={}", topic, listener);
     }
 
     @Override
     public void onMessage(Message message) {
         try {
-            log.error(">>>>>>>>  BrokerUtil: onMessage: BEGIN: message={}", message);
             log.debug("BrokerUtil: Received a message from broker: {}", message);
             if (message instanceof ActiveMQTextMessage textMessage) {
                 String payload = textMessage.getText();
-                log.error(">>>>>>>>  BrokerUtil: onMessage: AMQ-TEXT-MESG: payload={}", payload);
-                log.trace("BrokerUtil: Message payload: {}", payload);
+                log.trace("BrokerUtil: Message payload (TEXT): {}", payload);
 
                 TypeReference<Map<String, Object>> typeRef = new TypeReference<>() {
                 };
                 Object obj = objectMapper.readerFor(typeRef).readValue(payload);
-                log.error(">>>>>>>>  BrokerUtil: onMessage: OBJ-from-TEXT: obj={}", obj);
+                log.trace("BrokerUtil: Message payload (OBJ):  {}", obj);
 
                 if (obj instanceof Map<?, ?> dataMap) {
-                    log.error(">>>>>>>>  BrokerUtil: onMessage: OBJ-is-MAP: dataMap={}", dataMap);
+                    log.trace("BrokerUtil: Payload map: {}", dataMap);
                     String topic = ((ActiveMQTextMessage) message).getDestination().getPhysicalName();
-                    log.error(">>>>>>>>  BrokerUtil: onMessage: DESTINATION: topic={}", topic);
+                    log.trace("BrokerUtil: Topic={}", topic);
                     // Print response messages except the EMS node status reports (_ui_instance_info, _client_metrics)
                     if (StringUtils.isNotBlank(topic)
                             && !topic.equals(properties.getDeviceStatusMonitorTopic())
                             && !topic.equals(properties.getDeviceMetricsMonitorTopic()))
                     {
-                        log.warn("BrokerUtil: Received a new message:   topic: {}", topic);
-                        log.warn("BrokerUtil: Received a new message: payload: {}", dataMap);
+                        log.trace("BrokerUtil: Received a new message:   topic: {}", topic);
+                        log.trace("BrokerUtil: Received a new message: payload: {}", dataMap);
                     }
                     handlePayload(topic, dataMap);
                 } else {
-                    log.error(">>>>>>>>  BrokerUtil: onMessage: NOT-a-MAP: {} -- {}", obj!=null?obj.getClass().getName():null, obj);
-                    log.warn("BrokerUtil: Message payload is not recognized. Expected Map but got: type={}, object={}", obj.getClass().getName(), obj);
+                    log.warn("BrokerUtil: Message payload is not recognized. Expected Map but got: type={}, object={}",
+                            obj!=null ? obj.getClass().getName() : null, obj);
                 }
             } else {
-                log.error(">>>>>>>>  BrokerUtil: onMessage: NOT-TEXT-MESG: {} -- {}", message.getClass().getName(), message);
-                log.debug("BrokerUtil: Message type is not supported: {}", message);
+                log.debug("BrokerUtil: Message type is not supported: type={}, message={}",
+                        message!=null ? message.getClass().getName() : null, message);
             }
         } catch (Exception e) {
-            log.error(">>>>>>>>  BrokerUtil: onMessage: EXCEPTION: ", e);
             log.warn("BrokerUtil: ERROR while processing message: {}\nException: ", message, e);
         }
     }
 
     private void handlePayload(@NonNull String topic, @NonNull Map<?, ?> dataMap) {
-        log.error(">>>>>>>>  BrokerUtil: handlePayload: BEGIN: topic={}, map={}", topic, dataMap);
+        log.trace("BrokerUtil: handlePayload: BEGIN: topic={}, map={}", topic, dataMap);
         // Decrypt message (if encrypted)
         Object encryptedMessage = dataMap.get("encrypted-message");
-        log.error(">>>>>>>>  BrokerUtil: handlePayload: encrypted={}", encryptedMessage);
+        log.trace("BrokerUtil: handlePayload: encrypted={}", encryptedMessage);
         if (encryptedMessage != null)
             dataMap = encryptionUtil.decryptMap(encryptedMessage.toString());
-        log.error(">>>>>>>>  BrokerUtil: handlePayload: DATA-MAP={}", dataMap);
+        log.trace("BrokerUtil: handlePayload: DATA-MAP={}", dataMap);
 
         // Dispatch message to listeners
         Set<Listener> set = listeners.get(topic);
-        log.error(">>>>>>>>  BrokerUtil: handlePayload: listeners: {}", set);
+        log.trace("BrokerUtil: handlePayload: listeners: {}", set);
         if (set == null) return;
         final Map<?, ?> immutableMap = Collections.unmodifiableMap(dataMap);
         set.forEach(l -> {
-            log.error(">>>>>>>>  BrokerUtil: handlePayload: ....CALLING LISTENER: {} -- mao: {}", l, immutableMap);
+            log.trace("BrokerUtil: handlePayload: ....CALLING LISTENER: {} -- mao: {}", l, immutableMap);
             l.onMessage(immutableMap);
         });
-        log.error(">>>>>>>>  BrokerUtil: handlePayload: END");
+        log.trace("BrokerUtil: handlePayload: END");
     }
 
     public interface Listener {
