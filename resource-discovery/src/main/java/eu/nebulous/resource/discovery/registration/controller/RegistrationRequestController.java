@@ -65,10 +65,18 @@ public class RegistrationRequestController implements InitializingBean {
 				
 				String topic_suffix = broker_subscription_details.getTopic().replace("topic://"+GET_USER_TOPIC,"");
 				if (topic_suffix!=null && !topic_suffix.isEmpty()){
-					String nonce_from_topic = StringUtils.substringAfterLast(topic_suffix,".");
+					//String nonce_from_topic = StringUtils.substringAfterLast(topic_suffix,".");
+					JSONParser parser = new JSONParser();
+					JSONObject message_json;
+                    try {
+                         message_json = (JSONObject) parser.parse(message_body);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                    String nonce = (String) message_json.get("nonce");
 					log.warn("Received message"+message_body+" at "+broker_subscription_details.getTopic());
-					nonce_messages.put(nonce_from_topic,message_body);
-					nonce_message_published.add(nonce_from_topic);
+					nonce_messages.put(nonce,message_body);
+					nonce_message_published.add(nonce);
 				}
 				return message_body;
 			};
