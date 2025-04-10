@@ -73,7 +73,7 @@ public class RegistrationRequestController implements InitializingBean {
                     } catch (ParseException e) {
                         throw new RuntimeException(e);
                     }
-                    String nonce = (String) message_json.get("nonce");
+                    String nonce = (String) message_json.get("token");
 					log.warn("Received message"+message_body+" at "+broker_subscription_details.getTopic());
 					nonce_messages.put(nonce,message_body);
 					nonce_message_published.add(nonce);
@@ -140,7 +140,7 @@ public class RegistrationRequestController implements InitializingBean {
 		String appId = (String) data.get("appId");
 		
 		JSONObject json_request = new JSONObject();
-		json_request.put("nonce",nonce);
+		json_request.put("token",nonce);
 		json_request.put("appId",appId);
 		
 		String empty_response = null; //"{\"nonce\": \"" + nonce + "\", \"username\": \"" + "" + "\"}";
