@@ -74,6 +74,7 @@ public class RegistrationRequestController implements InitializingBean {
                         throw new RuntimeException(e);
                     }
                     String nonce = (String) message_json.get("token");
+					if (StringUtils.isBlank(nonce)) nonce = (String) message_json.get("uuid");
 					log.warn("Received message"+message_body+" at "+broker_subscription_details.getTopic());
 					nonce_messages.put(nonce,message_body);
 					nonce_message_published.add(nonce);
