@@ -74,6 +74,16 @@ public class RegistrationRequestController implements InitializingBean {
                         throw new RuntimeException(e);
                     }
                     String nonce = (String) message_json.get("token");
+					//String nonce_from_topic = StringUtils.substringAfterLast(topic_suffix,".");
+					JSONParser parser = new JSONParser();
+					JSONObject message_json;
+                    try {
+                         message_json = (JSONObject) parser.parse(message_body);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                    String nonce = (String) message_json.get("token");
+					if (StringUtils.isBlank(nonce)) nonce = (String) message_json.get("uuid");
 					log.warn("Received message"+message_body+" at "+broker_subscription_details.getTopic());
 					nonce_messages.put(nonce,message_body);
 					nonce_message_published.add(nonce);

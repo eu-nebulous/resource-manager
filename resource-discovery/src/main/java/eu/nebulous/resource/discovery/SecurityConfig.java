@@ -209,7 +209,7 @@ public class SecurityConfig {
                                     Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
                     // store completed authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.error("User was authenticated using a nonce token");
+                    log.info("User {} was authenticated using a nonce token", username);
                 }
                 else{
                     log.error("Received a null user");
