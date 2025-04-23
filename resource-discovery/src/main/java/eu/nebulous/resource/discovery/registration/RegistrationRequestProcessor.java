@@ -232,6 +232,7 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 	}
 
 	private void processResponse(@NonNull Map<String, Object> response) {
+		log.debug("RegistrationRequestProcessor: processResponse: BEGIN: {}", response);
 		String requestType = response.getOrDefault("requestType", "").toString().trim();
 		String requestId = response.getOrDefault("requestId", "").toString().trim();
 		String reference = response.getOrDefault("reference", "").toString().trim();
@@ -240,8 +241,9 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 		long timestamp = Long.parseLong(response.getOrDefault("timestamp", "-1").toString().trim());
 
 		RegistrationRequest registrationRequest = registrationRequestService.getById(requestId).orElse(null);
-		log.warn("RegistrationRequestProcessor: processResponse: request: {}", registrationRequest);
+		log.debug("RegistrationRequestProcessor: processResponse: request: {}", registrationRequest);
 		if (registrationRequest!=null) {
+			log.trace("RegistrationRequestProcessor: processResponse: request != null");
 			RegistrationRequestStatus currStatus = registrationRequest.getStatus();
 			RegistrationRequestStatus newStatus = switch (currStatus) {
 				case PRE_AUTHORIZATION_REQUESTED -> RegistrationRequestStatus.PRE_AUTHORIZATION_ERROR;
@@ -250,11 +252,12 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				case ONBOARDING_REQUESTED -> RegistrationRequestStatus.ONBOARDING_ERROR;
 				default -> currStatus;
 			};
-			log.debug("processResponse: Temporary status change: {} --> {}", currStatus, newStatus);
+			log.debug("RegistrationRequestProcessor: processResponse: Temporary status change: {} --> {}", currStatus, newStatus);
 			registrationRequest.setStatus(newStatus);
+			log.trace("RegistrationRequestProcessor: processResponse: Temp. status: {}", newStatus);
 
 			if (currStatus==RegistrationRequestStatus.SUCCESS) {
-				log.error("ERROR: received response for a request with status SUCCESS. Will ignore response: request-id={}", requestId);
+				log.warn("RegistrationRequestProcessor: ERROR: received response for a request with status SUCCESS. Will ignore response: request-id={}", requestId);
 				// Discarding changes
 				return;
 			}
@@ -267,29 +270,34 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
 			}
+			log.trace("RegistrationRequestProcessor: processResponse: After checking device address: is-error={}", isError);
 			if (timestamp < registrationRequest.getRequestDate().toEpochMilli()) {
 				String mesg = String.format("Response timestamp is older than Request's date: id=%s, timestamp=%d < %s", requestId, timestamp, registrationRequest.getRequestDate());
 				log.warn("processResponse: {}", mesg);
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
 			}
+			log.trace("RegistrationRequestProcessor: processResponse: After checking timestamps: is-error={}", isError);
 			if (! "SUCCESS".equals(responseStatus)) {
 				String mesg = String.format("RESPONSE status is not SUCCESS: id=%s, timestamp=%d, status=%s", requestId, timestamp, responseStatus);
 				log.warn("processResponse: {}", mesg);
 				registrationRequest.getMessages().add(mesg);
 				isError = true;
 			}
+			log.trace("RegistrationRequestProcessor: processResponse: After checking response status: is-error={}", isError);
 			if (isError) {
+				log.trace("RegistrationRequestProcessor: processResponse: Checks failed: {}", registrationRequest.getMessages());
 				if (log.isDebugEnabled())
 					log.debug("processResponse: Save request with errors: id={}, errors={}, request={}", requestId, registrationRequest.getMessages(), registrationRequest);
 				log.warn("processResponse: Save request with errors: id={}, errors={}", requestId, registrationRequest.getMessages());
 				registrationRequestService.update(registrationRequest, false, true, null);
 				return;
 			}
+			log.trace("RegistrationRequestProcessor: processResponse: Checks passed");
 
 			boolean doArchive = false;
 			Object obj = response.get("nodeInfo");
-			log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: {} {}", obj==null?null:obj.getClass().getTypeName(), obj);
+			log.debug("RegistrationRequestProcessor: processResponse: nodeInfo: {} {}", obj==null?null:obj.getClass().getTypeName(), obj);
 
 			// If device info are missing copy them from the registration request
 			if (obj==null || obj instanceof Map && ((Map) obj).isEmpty()) {
@@ -302,8 +310,10 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 					log.warn("RegistrationRequestProcessor: processResponse: nodeInfo: ** PROBLEM: REGISTRATION REQUEST DOES NOT CONTAIN DEVICE INFO EITHER **");
 				}
 			}
+			log.trace("RegistrationRequestProcessor: processResponse: nodeInfo: {}", obj);
 
 			if (obj instanceof Map devInfo) {
+				log.trace("RegistrationRequestProcessor: processResponse: devInfo: {}", devInfo);
 				// Update request info
 				registrationRequest.setLastUpdateDate(Instant.ofEpochMilli(timestamp));
 
@@ -329,16 +339,21 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 				log.info("processResponse: New Device info for request: id={}, timestamp={}, device-info={}",
 						requestId, timestamp, processedDevInfo);
 				registrationRequest.getDevice().setDeviceInfo(processedDevInfo);
+				log.trace("RegistrationRequestProcessor: processResponse: Device updated: {}", processedDevInfo);
 
 				// Set node reference (meaningful only in case of Onboarding)
 				if (StringUtils.isNotBlank(reference) && currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
+					log.trace("RegistrationRequestProcessor: processResponse: ONBOARDING_REQUESTED: reference={}", reference);
 					registrationRequest.setNodeReference(reference.trim());
 				}
 
 				// Set new status
-				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED)
-					registrationRequest.setStatus( getNextStatus(currStatus) );
+				if (currStatus==RegistrationRequestStatus.DATA_COLLECTION_REQUESTED) {
+					log.trace("RegistrationRequestProcessor: processResponse: DATA_COLLECTION_REQUESTED: next-status={}", getNextStatus(currStatus));
+					registrationRequest.setStatus(getNextStatus(currStatus));
+				}
 				if (currStatus==RegistrationRequestStatus.ONBOARDING_REQUESTED) {
+					log.trace("RegistrationRequestProcessor: processResponse: ONBOARDING_REQUESTED (2): next-status=SUCCESS");
 					registrationRequest.setStatus(RegistrationRequestStatus.SUCCESS);
 					doArchive = processorProperties.isImmediatelyArchiveSuccessRequests();
 				}
@@ -351,25 +366,28 @@ public class RegistrationRequestProcessor implements IRegistrationRequestProcess
 			// If request status is SUCCESS then copy Device in monitoring subsystem
 			if (registrationRequest.getStatus() == RegistrationRequestStatus.SUCCESS) {
 				try {
+					log.trace("RegistrationRequestProcessor: processResponse: SUCCESS - COPY DEVICE:  {}", registrationRequest);
 					copyDeviceToMonitoring(registrationRequest);
 				} catch (Exception e) {
-					log.warn("processResponse: EXCEPTION: while copying device to monitoring subsystem: request={}\n", registrationRequest, e);
+					log.error("RegistrationRequestProcessor: processResponse: EXCEPTION while copying device to monitoring subsystem: request={}\n", registrationRequest, e);
 					registrationRequest.setStatus(RegistrationRequestStatus.ONBOARDING_ERROR);
 					registrationRequest.getMessages().add("Exception while copying device to monitoring subsystem: " + e.getMessage());
 				}
 			}
 
 			// Store changes
-			log.debug("processResponse: Save updated request: id={}, request={}", requestId, registrationRequest);
+			log.debug("RegistrationRequestProcessor: processResponse: Save updated request: id={}, request={}", requestId, registrationRequest);
 			registrationRequestService.update(registrationRequest, false, true, null);
 
 			// Archive success requests
 			if (doArchive) {
+				log.debug("RegistrationRequestProcessor: processResponse: Archiving registration request:  {}", registrationRequest);
 				registrationRequestService.archiveRequestBySystem(registrationRequest.getId());
 			}
 		} else {
-			log.debug("processResponse: Request not found: id={}, requestType={}", requestId, requestType);
+			log.error("RegistrationRequestProcessor: processResponse: Request not found: id={}, requestType={}", requestId, requestType);
 		}
+		log.trace("RegistrationRequestProcessor: processResponse: END:  {}", registrationRequest);
 	}
 
 	private RegistrationRequestStatus getNextStatus(RegistrationRequestStatus currStatus) {

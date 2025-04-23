@@ -195,7 +195,11 @@ public class SecurityConfig {
                 HashMap<String, String> map = new HashMap<>();
                 map.put(NONCE_REQUEST_PARAM, nonce);
                 map.put(APPID_REQUEST_PARAM, appId);
+                log.trace("nonceAuthenticationFilter: Starting NONCE authentication: map={}", map);
+                long startTm = System.currentTimeMillis();
                 username = RegistrationRequestController.getNonceUsername(map);
+                long endTm = System.currentTimeMillis();
+                log.trace("nonceAuthenticationFilter: NONCE authentication completed in {}ms: username={}, nonce={}", endTm-startTm, username, nonce);
 //                if ((nonce != null && appId != null) && (!nonce.isEmpty())) {
 //                    HashMap<String, String> map = new HashMap<>();
 //                    map.put(NONCE_REQUEST_PARAM, nonce);
@@ -209,7 +213,10 @@ public class SecurityConfig {
                                     Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
                     // store completed authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.debug("User was authenticated using a nonce token");
+                    log.info("User {} was authenticated using a nonce token", username);
+                }
+                else{
+                    log.error("Received a null user");
                 }
                 
             } catch (Exception e) {

@@ -65,10 +65,19 @@ public class RegistrationRequestController implements InitializingBean {
 				
 				String topic_suffix = broker_subscription_details.getTopic().replace("topic://"+GET_USER_TOPIC,"");
 				if (topic_suffix!=null && !topic_suffix.isEmpty()){
-					String nonce_from_topic = StringUtils.substringAfterLast(topic_suffix,".");
+					//String nonce_from_topic = StringUtils.substringAfterLast(topic_suffix,".");
+					JSONParser parser = new JSONParser();
+					JSONObject message_json;
+                    try {
+                         message_json = (JSONObject) parser.parse(message_body);
+                    } catch (ParseException e) {
+                        throw new RuntimeException(e);
+                    }
+                    String nonce = (String) message_json.get("token");
+					if (StringUtils.isBlank(nonce)) nonce = (String) message_json.get("uuid");
 					log.warn("Received message"+message_body+" at "+broker_subscription_details.getTopic());
-					nonce_messages.put(nonce_from_topic,message_body);
-					nonce_message_published.add(nonce_from_topic);
+					nonce_messages.put(nonce,message_body);
+					nonce_message_published.add(nonce);
 				}
 				return message_body;
 			};
@@ -132,7 +141,7 @@ public class RegistrationRequestController implements InitializingBean {
 		String appId = (String) data.get("appId");
 		
 		JSONObject json_request = new JSONObject();
-		json_request.put("nonce",nonce);
+		json_request.put("token",nonce);
 		json_request.put("appId",appId);
 		
 		String empty_response = null; //"{\"nonce\": \"" + nonce + "\", \"username\": \"" + "" + "\"}";
