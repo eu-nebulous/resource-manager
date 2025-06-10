@@ -191,6 +191,12 @@ public class SecurityConfig {
                 String nonce = servletRequest.getParameter(NONCE_REQUEST_PARAM);
                 String appId = servletRequest.getParameter(APPID_REQUEST_PARAM);
 
+                if (StringUtils.isBlank(nonce)) {
+                    log.debug("nonceAuthenticationFilter: Nonce not provided in request parameters");
+                    filterChain.doFilter(servletRequest, servletResponse);
+                    return;
+                }
+
                 String username =null;
                 HashMap<String, String> map = new HashMap<>();
                 map.put(NONCE_REQUEST_PARAM, nonce);
