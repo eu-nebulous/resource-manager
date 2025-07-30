@@ -15,9 +15,11 @@ server.servlet.session.timeout: 120m
 
 spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
 spring.data.mongodb.database: resource_discovery
+  
+server.port: 8082
 
 discovery:
-  brokerURL: "ssl://localhost:61617?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
+  brokerURL: "tcp://nebulous-monitoring:61616?daemon=true&trace=false&useInactivityMonitor=false&connectionTimeout=0&keepAlive=true"
   brokerUsername: "aaa"
   brokerPassword: "111"
   nebulous_broker_ip_address: "nebulous-activemq"
@@ -49,5 +51,5 @@ discovery:
 #  apiKeyValue: 1234567890
 
 #logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE
-logging.level.eu.nebulous.resource: DEBUG
+logging.level.eu.nebulous: TRACE
 management.endpoints.web.exposure.include: '*'

@@ -60,6 +60,8 @@ public class RegistrationRequestController implements InitializingBean {
 
 			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(),processorPropertiesStatic.getNebulous_broker_password(), "","");
 
+			//nonce_synced_publisher = new SyncedBrokerPublisher();
+			
 			log.debug("Defining function");
 			BiFunction<BrokerSubscriptionDetails,String,String> function = (broker_subscription_details, message_body) -> {
 				
@@ -140,6 +142,7 @@ public class RegistrationRequestController implements InitializingBean {
 		String nonce = (String) data.get("nonce");
 		String appId = (String) data.get("appId");
 		
+		
 		JSONObject json_request = new JSONObject();
 		json_request.put("token",nonce);
 		json_request.put("appId",appId);
@@ -148,7 +151,10 @@ public class RegistrationRequestController implements InitializingBean {
 		
 		log.debug("Sending nonce message to middleware");
 		nonce_publisher.publish(json_request.toJSONString(),List.of(""),false);
-
+		
+		if (StringUtils.isBlank(nonce) || StringUtils.isBlank(appId)) {
+			return empty_response;
+		}
 		
 		int cumulative_sleep = 0;
 		int sleep_duration_millis = 500;
