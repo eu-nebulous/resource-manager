@@ -201,11 +201,7 @@ public class SecurityConfig {
                 HashMap<String, String> map = new HashMap<>();
                 map.put(NONCE_REQUEST_PARAM, nonce);
                 map.put(APPID_REQUEST_PARAM, appId);
-                log.trace("nonceAuthenticationFilter: Starting NONCE authentication: map={}", map);
-                long startTm = System.currentTimeMillis();
                 username = RegistrationRequestController.getNonceUsername(map);
-                long endTm = System.currentTimeMillis();
-                log.trace("nonceAuthenticationFilter: NONCE authentication completed in {}ms: username={}, nonce={}", endTm-startTm, username, nonce);
 //                if ((nonce != null && appId != null) && (!nonce.isEmpty())) {
 //                    HashMap<String, String> map = new HashMap<>();
 //                    map.put(NONCE_REQUEST_PARAM, nonce);

@@ -17,6 +17,7 @@ public class BrokerPublisher {
     public static String EMPTY="";
     //private HashMap<String, HashSet<String>> broker_and_topics_to_publish_to = new HashMap<>();
     private static HashMap<String, BrokerPublisher> hostnames_topics_broker_publishers = new HashMap<>();
+    private static HashMap<String, BrokerPublisher> hostnames_topics_synced_broker_publishers = new HashMap<>();
     private Publisher private_publisher_instance;
     private ArrayList<Publisher> publishers = new ArrayList<>();
 
