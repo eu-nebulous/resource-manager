@@ -15,7 +15,7 @@ import java.util.Map;
 public class Device {
     private String id;
     private String ref;
-    private Integer gpu_cores;
+    private Integer gpus;
     private Double price;
     private String os;
     private String name;
