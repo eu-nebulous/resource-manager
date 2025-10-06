@@ -124,7 +124,7 @@ public class SALRegistrationService implements InitializingBean {
         //register_device_message.put("timestamp",(int)(clock.millis()/1000));
 
 
-        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cpu_cores,gpus,ram_mb,disk_mb,number_of_fpgas,device_name,price,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
+        String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cores,ram_mb,disk_mb,number_of_gpus,number_of_fpgas,device_name,price,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
         log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
         log.info("broker port is {}", processorProperties.getNebulous_broker_port());
