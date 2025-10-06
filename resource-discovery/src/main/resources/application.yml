@@ -15,7 +15,6 @@ server.servlet.session.timeout: 120m
 
 spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
 spring.data.mongodb.database: resource_discovery
-  
 
 
 discovery:

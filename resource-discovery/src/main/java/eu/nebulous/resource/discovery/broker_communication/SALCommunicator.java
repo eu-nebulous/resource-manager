@@ -92,7 +92,8 @@ public class SALCommunicator {
         return  get_jobs_string;
     }
 
-    private static void register_devices(String request_body_file, String sessionID, ArrayList<String> applications,String internal_ip_address, String external_ip_address, int cpu_cores, int gpus, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, int number_of_devices_to_register) {
+
+    private static void register_devices(String request_body_file, String sessionID, ArrayList<String> applications,String internal_ip_address, String external_ip_address, int cpu_cores, int gpu, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, int number_of_devices_to_register) {
 
         for (int counter = 0; counter < number_of_devices_to_register; counter++) {
             JSONObject json = JsonFileParser.parse(request_body_file);
@@ -105,7 +106,8 @@ public class SALCommunicator {
                 ((JSONObject) json.get("nodeProperties")).put("ram", new Random().nextInt(1, 17));
                 ((JSONObject) json.get("nodeProperties")).put("providerId", String.valueOf(new Random().nextInt(1, 21)));
                 ((JSONObject) json.get("nodeProperties")).put("cores", new Random().nextInt(1, 17));
-                ((JSONObject) json.get("nodeProperties")).put("gpus", new Random().nextInt(128, 1024));
+                ((JSONObject) json.get("nodeProperties")).put("gpu", new Random().nextInt(128, 1024));
+
 
                 String[] country_choices = {"Greece", "Poland", "France"};
                 String[] city_choices = {"Athens", "Warsaw", "Nice"};
@@ -123,7 +125,7 @@ public class SALCommunicator {
                 ((JSONObject) json.get("nodeProperties")).put("ram", ram_gb);
                 ((JSONObject) json.get("nodeProperties")).put("providerId", provider_id);
                 ((JSONObject) json.get("nodeProperties")).put("cores", cpu_cores);
-                ((JSONObject) json.get("nodeProperties")).put("gpus", gpus);
+                ((JSONObject) json.get("nodeProperties")).put("gpu", gpu);
                 ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("country", country_name);
                 ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("city", city_name);
                 ((JSONObject) ((JSONObject) json.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
@@ -151,7 +153,7 @@ public class SALCommunicator {
         return root_json_object.toJSONString();
     }
 
-    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, int gpus, long ram_gb, long disk_gb, int number_of_fpgas, String device_name,Double price, String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
+    public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, int gpu, long ram_gb, long disk_gb, int number_of_fpgas, String device_name,Double price, String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
 
             JSONObject root_json_object = new JSONObject();
             JSONObject loginCredential = new JSONObject();
@@ -186,11 +188,10 @@ public class SALCommunicator {
 
             nodeProperties.put("providerId", provider_id);
             nodeProperties.put("cores", cpu_cores);
-            nodeProperties.put("gpus", gpus);
+            nodeProperties.put("gpu", gpu);
             nodeProperties.put("ram", ram_gb);
             nodeProperties.put("disk", disk_gb);
             nodeProperties.put("price", price);
-            nodeProperties.put("gpu", gpus);
             nodeProperties.put("fpga", number_of_fpgas);            
             nodeProperties.put("operatingSystem", operatingSystem);
             nodeProperties.put("geoLocation", geoLocation);

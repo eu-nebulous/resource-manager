@@ -19,7 +19,7 @@ public class Device {
     private String id; //This is the internal id of the device in the Resource Discovery component 
     private String sal_id; //This identifier is used by SAL, and is used for deregistration
     private String ref; //This identifier is used by the Cloud Fog Service Broker, to ascertain which devices are available for which applications
-    private Integer gpus;
+    private Integer gpu;
     private Double price;
     private String os;
     private String name;
