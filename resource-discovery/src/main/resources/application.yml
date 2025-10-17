@@ -15,6 +15,7 @@ server.servlet.session.timeout: 120m
 
 spring.data.mongodb.uri: mongodb://root:example@localhost:27017/admin
 spring.data.mongodb.database: resource_discovery
+  
 
 
 discovery:
@@ -25,7 +26,7 @@ discovery:
   nebulous_broker_port: 5672
   nebulous_broker_username: "admin"
   nebulous_broker_password: "admin"
-  deregistration_emulated: true
+  deregistration_emulated: false
   sal_host: "localhost"
   sal_port: 8080
   lost_device_topic: "eu.nebulouscloud.monitoring.device_lost"
@@ -50,5 +51,5 @@ discovery:
 #  apiKeyValue: 1234567890
 
 #logging.level.eu.nebulous.resource.discovery.registration.RegistrationRequestProcessor: TRACE
-logging.level.eu.nebulous: TRACE
+logging.level.eu.nebulous.resource: DEBUG
 management.endpoints.web.exposure.include: '*'

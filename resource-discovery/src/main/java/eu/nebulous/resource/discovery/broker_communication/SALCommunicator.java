@@ -150,6 +150,13 @@ public class SALCommunicator {
     public static String get_device_deregistration_json(Device device){
         JSONObject root_json_object = new JSONObject();
         //root_json_object.put("name",device.getRef());
+        JSONObject metadata_object = new JSONObject();
+
+        metadata_object.put("nodeId",device.getSal_id());
+        metadata_object.put("type","edge");
+        metadata_object.put("user","admin");
+        root_json_object.put("metaData",metadata_object);
+        
         return root_json_object.toJSONString();
     }
 

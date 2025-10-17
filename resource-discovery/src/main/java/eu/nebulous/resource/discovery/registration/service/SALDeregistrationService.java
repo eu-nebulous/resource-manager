@@ -28,7 +28,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiFunction;
 
 import static eu.nebulous.resource.discovery.broker_communication.SALCommunicator.get_device_deregistration_json;
-import static eu.nebulous.resource.discovery.broker_communication.SALCommunicator.get_device_registration_json;
 
 @Slf4j
 @Service
@@ -62,14 +61,14 @@ public class SALDeregistrationService implements InitializingBean {
         if (processorProperties.isDeregistration_emulated()){
             return;
         }
-        SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(device.getSal_id()), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+        SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
         int sending_attempt = 1;
         while (deregister_device_publisher.is_publisher_null()) {
             if (sending_attempt <= 2) {
-                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             } else {
                 log.warn("Will now attempt to reset the Synchronous publisher connector to deregister");
-                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }
             try {
                 Thread.sleep(3000);
@@ -80,8 +79,8 @@ public class SALDeregistrationService implements InitializingBean {
         }
         //TODO handle the response here
         if (deregister_device_message_string!=null && !deregister_device_message_string.isEmpty()) {
-            Map response = deregister_device_publisher.publish_for_response(deregister_device_message_string, Collections.singleton(application_name));
-            log.warn("The response received while trying to deregister device " + device.getRef() + " is " + response.toString());
+            deregister_device_publisher.publish_for_response(deregister_device_message_string, Collections.singleton(application_name));
+            //log.warn("The response received while trying to deregister device " + device.getRef() + " is " + response.toString());
         }else{
             log.warn("Deregistration was to be initiated with an empty deregistration payload");
         }
@@ -100,8 +99,8 @@ public class SALDeregistrationService implements InitializingBean {
 
     }
     
-    private String get_deregistration_topic_name(String sal_id) {
-        return processorProperties.getDeregistration_topic_prefix()+"."+sal_id;
+    private String get_deregistration_topic_name() {
+        return processorProperties.getDeregistration_topic_prefix();
     }
 
     @Override

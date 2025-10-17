@@ -67,7 +67,7 @@ public class ResourceDiscoveryProperties {
 	private boolean salRegistrationEnabled = true;
 	private long salRegistrationTimeout = 60*1000;
 	private String registration_topic_name = "eu.nebulouscloud.exn.sal.node.create";
-	private String deregistration_topic_prefix = "eu.nebulouscloud.exn.sal.node.delete";
+	private String deregistration_topic_prefix = "eu.nebulouscloud.exn.sal.edge.node.delete";
 	
 	// Failed devices detection
 	private boolean automaticFailedDetection = true;
