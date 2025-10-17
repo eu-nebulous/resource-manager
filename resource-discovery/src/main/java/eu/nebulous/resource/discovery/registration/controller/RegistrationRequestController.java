@@ -4,6 +4,7 @@ import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.broker_communication.BrokerPublisher;
 import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriber;
 import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriptionDetails;
+import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
 import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
@@ -46,7 +47,7 @@ public class RegistrationRequestController implements InitializingBean {
 	private static final Set<String> nonce_message_published = Collections.synchronizedSet(new HashSet<>());
 	private static boolean has_initialized_nonce_connector = false;
 	private static BrokerSubscriber nonce_subscriber;
-	private static BrokerPublisher nonce_publisher;
+	private static SynchronousBrokerPublisher nonce_publisher;
 	private static final int TIMEOUT_DURATION_SECONDS = 5;
 
 
@@ -56,9 +57,13 @@ public class RegistrationRequestController implements InitializingBean {
 
 		log.debug("Initializing connector");
 		if (!has_initialized_nonce_connector){
-			nonce_publisher = getExistingOrNewBrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(), processorPropertiesStatic.getNebulous_broker_password(), "");
+			nonce_publisher = new SynchronousBrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(), processorPropertiesStatic.getNebulous_broker_password(), "");
 
+			//Testing change 1
+			/*
 			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(),processorPropertiesStatic.getNebulous_broker_password(), "","");
+			
+			
 
 			//nonce_synced_publisher = new SyncedBrokerPublisher();
 			
@@ -84,10 +89,13 @@ public class RegistrationRequestController implements InitializingBean {
 				return message_body;
 			};
 
+			
 			log.debug("Starting subscription thread");
 			Thread subscriber_thread = new Thread (()->	nonce_subscriber.subscribe(function,""));//Could have a particular application name instead of empty here if needed
 			subscriber_thread.start();
 			has_initialized_nonce_connector = true;
+			
+			 */
 		}
 		
 	}
@@ -150,7 +158,7 @@ public class RegistrationRequestController implements InitializingBean {
 		String empty_response = null; //"{\"nonce\": \"" + nonce + "\", \"username\": \"" + "" + "\"}";
 		
 		log.debug("Sending nonce message to middleware");
-		nonce_publisher.publish(json_request.toJSONString(),List.of(""),false);
+		Map nonce_publisher_response = nonce_publisher.publish_for_response(json_request.toJSONString(),List.of(""));
 		
 		if (StringUtils.isBlank(nonce) || StringUtils.isBlank(appId)) {
 			return empty_response;
@@ -161,6 +169,8 @@ public class RegistrationRequestController implements InitializingBean {
 		
 		JSONParser parser = new JSONParser();
 		
+		//Testing Change 1
+		/*
 		while (!nonce_message_published.contains(nonce)){
 			log.debug("While iteration, nonce messages {}",nonce_messages.keySet());
 			log.debug("While iteration, nonce message published {}",nonce_message_published);
@@ -176,18 +186,24 @@ public class RegistrationRequestController implements InitializingBean {
                 throw new RuntimeException(e);
             }
         }
+        
+		 */
 		try {
 			
 			//nonce_message_published.remove(nonce);
 			//nonce_messages.remove(nonce);
 			
+			//Testing change 1
+			/*
 			JSONObject response = (JSONObject) parser.parse(nonce_messages.get(nonce));
+			 */
+			JSONObject response = new JSONObject(nonce_publisher_response);
 			String username = (String) response.get("username");
 
 			// Return an appropriate JSON object to the client
 			//return "{\"nonce\": \"" + nonce + "\", \"username\": \"" + username + "\"}";
 			return username;
-		} catch (ParseException e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 		

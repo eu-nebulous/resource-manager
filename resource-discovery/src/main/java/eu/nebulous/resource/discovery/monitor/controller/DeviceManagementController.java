@@ -8,9 +8,11 @@ import eu.nebulous.resource.discovery.monitor.model.DeviceException;
 import eu.nebulous.resource.discovery.monitor.service.DeviceLifeCycleRequestService;
 import eu.nebulous.resource.discovery.monitor.service.DeviceManagementService;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
+import eu.nebulous.resource.discovery.registration.service.SALDeregistrationService;
 import eu.nebulous.resource.discovery.registration.service.SALRegistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -39,6 +42,7 @@ public class DeviceManagementController {
 	private final DeviceManagementService deviceService;
 	private final DeviceLifeCycleRequestService deviceLifeCycleRequestService;
 	private final Optional<SALRegistrationService> salRegistrationService;
+	private final Optional<SALDeregistrationService> salDeregistrationService;
 
 	private boolean isAuthenticated(Authentication authentication) {
 		return authentication!=null && StringUtils.isNotBlank(authentication.getName());
@@ -61,6 +65,16 @@ public class DeviceManagementController {
 				: listDevicesAll();
 	}
 
+	@GetMapping(value = "/testdereg/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String testderegistration(@PathVariable String id) {
+		Device device = new Device();
+		device.setRef("application_id|222|"+ RandomStringUtils.randomAlphanumeric(10));
+		device.setSal_id(id);
+		salDeregistrationService.ifPresent(sdr -> sdr.deregister(device));
+		return "Triggered deregistration for device";
+	}
+	
+	
 	@GetMapping(value = "/device/all", produces = MediaType.APPLICATION_JSON_VALUE)
 	public List<Device> listDevicesAll() {
 		return deviceService.getAll();
