@@ -87,9 +87,6 @@ public class SynchronousBrokerPublisher {
     public Map publish_for_response (String json_string_content, Collection<String> application_names){
         Map reply = null;
         HashMap<String,Object> payload = new HashMap<>();
-        HashMap<String,String> metadata = new HashMap<>();
-        metadata.put("user","admin");
-        metadata.put("type","edge");
         if (application_names!=null && !application_names.isEmpty()) {
             for (String application_name : application_names) {
 
@@ -103,19 +100,18 @@ public class SynchronousBrokerPublisher {
                     log.warn("publish_for_response-if: Could not parse the string content to be published to the broker as json, which is the following: " + json_string_content);
                 }
                 //metadata.put("jobId",application_name);
-                metadata.put("jobId","");
-                payload.put("metaData",metadata);
                 if (private_publisher_instance != null) {
                     //reply = private_publisher_instance.sendSync(json_object, application_name, null, false);
                     if (successful_json_parsing) {
                         //json_object.put("jobId",application_name);
-                        json_object.put("jobId","");
-                        payload.put("body",json_object.toJSONString());
+                        for (Object key : json_object.keySet()) {
+                            payload.put((String)key, json_object.get(key));
+                        }
                         reply = private_publisher_instance.sendSync(payload, application_name, null, false);
                     }else{
                         payload.put("body",json_string_content);
-                        log.warn(Marker.ANY_MARKER,"Sending the original json string without any modification as its parsing was not successful");
-                        reply = private_publisher_instance.sendSync(payload, application_name, null, false);
+                        log.warn("Not Sending the original json string as its parsing was not successful");
+                        //reply = private_publisher_instance.sendSync(payload, application_name, null, false);
                     }
                 } else {
                     log.error("Could not send message to AMQP broker, as the private publisher instance is null (is broker ip specified?)");
