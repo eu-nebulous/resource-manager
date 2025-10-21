@@ -154,7 +154,7 @@ public class SALCommunicator {
         metadata_object.put("type","edge");
         metadata_object.put("user","admin");
         root_json_object.put("metaData",metadata_object);
-        
+
         return root_json_object.toJSONString();
     }
 
@@ -197,7 +197,7 @@ public class SALCommunicator {
             nodeProperties.put("ram", ram_gb);
             nodeProperties.put("disk", disk_gb);
             nodeProperties.put("price", price);
-            nodeProperties.put("fpga", number_of_fpgas);            
+            nodeProperties.put("fpga", number_of_fpgas);
             nodeProperties.put("operatingSystem", operatingSystem);
             nodeProperties.put("geoLocation", geoLocation);
 

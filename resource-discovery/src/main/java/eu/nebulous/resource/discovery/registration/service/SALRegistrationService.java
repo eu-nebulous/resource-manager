@@ -51,7 +51,7 @@ public class SALRegistrationService implements InitializingBean {
         if (public_ip==null || public_ip.isEmpty()){
             public_ip = processorProperties.getNebulous_server_ip_address();
             log.warn("Using default IP address ({}) to fetch Proactive client jar files from, as the environmental variable was not set or found", public_ip);}*/
-        String public_ip = processorProperties.getNebulous_server_ip_address();
+        String public_ip = processorProperties.getNebulousServerIpAddress();
 
         Map<String,String> device_info = device.getDeviceInfo();
         log.warn("SALRegistrationService: register: DEVICE-INFO: {}", device_info);
@@ -125,21 +125,21 @@ public class SALRegistrationService implements InitializingBean {
 
         String register_device_message_string = get_device_registration_json(internal_ip,external_ip_address,external_access_port,os_family,os_architecture,jar_url,os_version,cpu_cores,gpu,ram_mb,disk_mb,number_of_fpgas,device_name,price,provider_id,city_name,country_name, device_username, device_password,private_key,device_longitude, device_latitude);
         log.info("topic is {}", get_registration_topic_name(application_name));
-        log.info("broker ip is {}", processorProperties.getNebulous_broker_ip_address());
-        log.info("broker port is {}", processorProperties.getNebulous_broker_port());
-        log.info("username is {}", processorProperties.getNebulous_broker_username());
-        log.info("password is {}", StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) ? "<provided>" : "<not provided>");
+        log.info("broker ip is {}", processorProperties.getNebulousBrokerIpAddress());
+        log.info("broker port is {}", processorProperties.getNebulousBrokerPort());
+        log.info("username is {}", processorProperties.getNebulousBrokerUsername());
+        log.info("password is {}", StringUtils.isNotBlank(processorProperties.getNebulousBrokerPassword()) ? "<provided>" : "<not provided>");
         //String sal_running_applications_reply = request_running_applications_AMQP();
         //ArrayList<String> applications = get_running_applications(sal_running_applications_reply);
         //for (String application_name:applications) {
-        SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+        SynchronousBrokerPublisher register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulousBrokerIpAddress(),processorProperties.getNebulousBrokerPort(), processorProperties.getNebulousBrokerUsername(), processorProperties.getNebulousBrokerPassword(), "");
         int sending_attempt = 1;
         while (register_device_publisher.is_publisher_null()){
             if (sending_attempt<=2) {
-                register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulousBrokerIpAddress(), processorProperties.getNebulousBrokerPort(), processorProperties.getNebulousBrokerUsername(), processorProperties.getNebulousBrokerPassword(), "");
             }else{
                 log.warn("Will now attempt to reset the Synchronous publisher connector to register");
-                register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
+                register_device_publisher = new SynchronousBrokerPublisher(get_registration_topic_name(application_name), processorProperties.getNebulousBrokerIpAddress(), processorProperties.getNebulousBrokerPort(), processorProperties.getNebulousBrokerUsername(), processorProperties.getNebulousBrokerPassword(), "");
             }
             try {
                 Thread.sleep(3000);
@@ -188,18 +188,18 @@ public class SALRegistrationService implements InitializingBean {
             return;
         }
 
-        if (    StringUtils.isNotBlank(processorProperties.getNebulous_broker_ip_address()) &&
-                StringUtils.isNotBlank(processorProperties.getNebulous_broker_username()) &&
-                StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) )
+        if (    StringUtils.isNotBlank(processorProperties.getNebulousBrokerIpAddress()) &&
+                StringUtils.isNotBlank(processorProperties.getNebulousBrokerUsername()) &&
+                StringUtils.isNotBlank(processorProperties.getNebulousBrokerPassword()) )
         {
             log.info("Successful setting of properties for communication with SAL");
             taskExecutor.execute(this::processQueue);
             taskExecutor.execute(this::checkProcessQueue);
         } else {
             String message = String.format("Nebulous broker configuration is missing:  ip-address=%s, username=%s, password=%s",
-                    processorProperties.getNebulous_broker_ip_address(),
-                    processorProperties.getNebulous_broker_username(),
-                    StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) ? "<provided>" : "<not provided>");
+                    processorProperties.getNebulousBrokerIpAddress(),
+                    processorProperties.getNebulousBrokerUsername(),
+                    StringUtils.isNotBlank(processorProperties.getNebulousBrokerPassword()) ? "<provided>" : "<not provided>");
             log.error(message);
             throw new RuntimeException(message);
         }
