@@ -4,6 +4,7 @@ import eu.nebulous.resource.discovery.registration.controller.RegistrationReques
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -143,6 +144,14 @@ public class SecurityConfig {
                                 // store completed authentication in security context
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
                                 log.info("apiKeyAuthenticationFilter: Successful authentication with API Key. SSO user: {}", username);
+
+                                String appId = servletRequest.getParameter(APPID_REQUEST_PARAM);
+                                if (StringUtils.isNotBlank(appId)) {
+                                    HttpSession session = request.getSession(true);
+                                    if (session!=null) {
+                                        session.setAttribute("appId", appId);
+                                    }
+                                }
                             } catch (Exception e) {
                                 log.error("apiKeyAuthenticationFilter: EXCEPTION: ", e);
                             }
@@ -216,6 +225,13 @@ public class SecurityConfig {
                     // store completed authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     log.info("User {} was authenticated using a nonce token", username);
+
+                    if (StringUtils.isNotBlank(appId)) {
+                        HttpSession session = request.getSession(true);
+                        if (session!=null) {
+                            session.setAttribute("appId", appId);
+                        }
+                    }
                 }
                 else{
                     log.error("Received a null user");
