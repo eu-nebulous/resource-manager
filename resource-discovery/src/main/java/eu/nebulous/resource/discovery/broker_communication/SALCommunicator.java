@@ -92,7 +92,6 @@ public class SALCommunicator {
         return  get_jobs_string;
     }
 
-
     private static void register_devices(String request_body_file, String sessionID, ArrayList<String> applications,String internal_ip_address, String external_ip_address, int cpu_cores, int gpu, int ram_gb, int disk_gb, String device_name,String provider_id, String city_name, String country_name, int number_of_devices_to_register) {
 
         for (int counter = 0; counter < number_of_devices_to_register; counter++) {
@@ -107,7 +106,6 @@ public class SALCommunicator {
                 ((JSONObject) json.get("nodeProperties")).put("providerId", String.valueOf(new Random().nextInt(1, 21)));
                 ((JSONObject) json.get("nodeProperties")).put("cores", new Random().nextInt(1, 17));
                 ((JSONObject) json.get("nodeProperties")).put("gpu", new Random().nextInt(128, 1024));
-
 
                 String[] country_choices = {"Greece", "Poland", "France"};
                 String[] city_choices = {"Athens", "Warsaw", "Nice"};
@@ -156,7 +154,7 @@ public class SALCommunicator {
         metadata_object.put("type","edge");
         metadata_object.put("user","admin");
         root_json_object.put("metaData",metadata_object);
-        
+
         return root_json_object.toJSONString();
     }
 
@@ -199,7 +197,7 @@ public class SALCommunicator {
             nodeProperties.put("ram", ram_gb);
             nodeProperties.put("disk", disk_gb);
             nodeProperties.put("price", price);
-            nodeProperties.put("fpga", number_of_fpgas);            
+            nodeProperties.put("fpga", number_of_fpgas);
             nodeProperties.put("operatingSystem", operatingSystem);
             nodeProperties.put("geoLocation", geoLocation);
 

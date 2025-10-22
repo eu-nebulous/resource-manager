@@ -3,6 +3,7 @@ package eu.nebulous.resource.discovery;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -13,7 +14,7 @@ import java.util.List;
 @Data
 @Configuration
 @ConfigurationProperties(prefix = ResourceDiscoveryProperties.CONFIG_PREFIX)
-public class ResourceDiscoveryProperties {
+public class ResourceDiscoveryProperties implements InitializingBean {
 	public final static String CONFIG_PREFIX = "discovery";
 
 	// Broker configuration
@@ -100,16 +101,21 @@ public class ResourceDiscoveryProperties {
 	private String apiKeyValue;
 
 	// Nebulous broker subscription details
-	private String nebulous_broker_ip_address;
-	private int nebulous_broker_port;
-	private String nebulous_broker_username;
-	private String nebulous_broker_password;
-	private boolean deregistration_emulated;
-	private String lost_device_topic;
-	private String compromised_device_topic;
+	private String nebulousBrokerIpAddress;
+	private int nebulousBrokerPort;
+	private String nebulousBrokerUsername;
+	private String nebulousBrokerPassword;
+	private boolean deregistrationEmulated;
+	private String lostDeviceTopic;
+	private String compromisedDeviceTopic;
 	
 	// Nebulous server data
-	private String nebulous_server_ip_address;
+	private String nebulousServerIpAddress;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        log.debug("ResourceDiscoveryProperties: {}", this);
+    }
 
 	public enum AUTHORIZATION_TYPE {
 		NONE, MANUAL,
