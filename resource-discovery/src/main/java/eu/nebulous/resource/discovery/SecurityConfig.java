@@ -145,12 +145,17 @@ public class SecurityConfig {
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
                                 log.info("apiKeyAuthenticationFilter: Successful authentication with API Key. SSO user: {}", username);
 
+                                // Invalidate the old session if it exists
+                                HttpSession oldSession = request.getSession(false);
+                                if (oldSession != null) {
+                                    oldSession.invalidate();
+                                }
+                                // Create a new session
+                                HttpSession session = request.getSession(true);
+
                                 String appId = servletRequest.getParameter(APPID_REQUEST_PARAM);
                                 if (StringUtils.isNotBlank(appId)) {
-                                    HttpSession session = request.getSession(true);
-                                    if (session!=null) {
-                                        session.setAttribute("appId", appId);
-                                    }
+                                    session.setAttribute("appId", appId);
                                 }
                             } catch (Exception e) {
                                 log.error("apiKeyAuthenticationFilter: EXCEPTION: ", e);
@@ -230,11 +235,16 @@ public class SecurityConfig {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     log.info("User {} was authenticated using a nonce token", username);
 
+                    // Invalidate the old session if it exists
+                    HttpSession oldSession = request.getSession(false);
+                    if (oldSession != null) {
+                        oldSession.invalidate();
+                    }
+                    // Create a new session
+                    HttpSession session = request.getSession(true);
+
                     if (StringUtils.isNotBlank(appId)) {
-                        HttpSession session = request.getSession(true);
-                        if (session!=null) {
-                            session.setAttribute("appId", appId);
-                        }
+                        session.setAttribute("appId", appId);
                     }
                 }
                 else{
