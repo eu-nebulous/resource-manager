@@ -108,11 +108,11 @@ public class SecurityConfig {
     public Filter apiKeyAuthenticationFilter() {
         return (servletRequest, servletResponse, filterChain) -> {
 
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            /*Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth!=null && auth.isAuthenticated()) {
                 filterChain.doFilter(servletRequest, servletResponse);
                 return;
-            }
+            }*/
             
             if (properties.isApiKeyAuthenticationEnabled() && StringUtils.isNotBlank(properties.getApiKeyValue())) {
                 if (servletRequest instanceof HttpServletRequest request && servletResponse instanceof HttpServletResponse) {
@@ -145,12 +145,17 @@ public class SecurityConfig {
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
                                 log.info("apiKeyAuthenticationFilter: Successful authentication with API Key. SSO user: {}", username);
 
+                                // Invalidate the old session if it exists
+                                HttpSession oldSession = request.getSession(false);
+                                if (oldSession != null) {
+                                    oldSession.invalidate();
+                                }
+                                // Create a new session
+                                HttpSession session = request.getSession(true);
+
                                 String appId = servletRequest.getParameter(APPID_REQUEST_PARAM);
                                 if (StringUtils.isNotBlank(appId)) {
-                                    HttpSession session = request.getSession(true);
-                                    if (session!=null) {
-                                        session.setAttribute("appId", appId);
-                                    }
+                                    session.setAttribute("appId", appId);
                                 }
                             } catch (Exception e) {
                                 log.error("apiKeyAuthenticationFilter: EXCEPTION: ", e);
@@ -176,21 +181,17 @@ public class SecurityConfig {
         return (servletRequest, servletResponse, filterChain) -> {
             try {
                 HttpServletRequest request = ((HttpServletRequest )servletRequest);
-//                HttpSession session = request.getSession(false);
-//                
-//                if(session!=null){
-//                    filterChain.doFilter(servletRequest, servletResponse);
-//                    return;
-//                }
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+                /*Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 if (auth!=null && auth.isAuthenticated()) {
                     filterChain.doFilter(servletRequest, servletResponse);
                     return;
-                }
-                StringBuilder requestURL = new StringBuilder(request.getRequestURL().toString());
+                }*/
+
+                /*StringBuilder requestURL = new StringBuilder(request.getRequestURL().toString());
                 String queryString = request.getQueryString();
 
-                /*if (queryString == null) {
+                if (queryString == null) {
                     log.warn( requestURL.toString());
                 } else {
                     log.warn(requestURL.append('?').append(queryString).toString());
@@ -206,7 +207,7 @@ public class SecurityConfig {
                     return;
                 }
 
-                String username =null;
+                String username = null;
                 HashMap<String, String> map = new HashMap<>();
                 map.put(NONCE_REQUEST_PARAM, nonce);
                 map.put(APPID_REQUEST_PARAM, appId);
@@ -230,11 +231,16 @@ public class SecurityConfig {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     log.info("User {} was authenticated using a nonce token", username);
 
+                    // Invalidate the old session if it exists
+                    HttpSession oldSession = request.getSession(false);
+                    if (oldSession != null) {
+                        oldSession.invalidate();
+                    }
+                    // Create a new session
+                    HttpSession session = request.getSession(true);
+
                     if (StringUtils.isNotBlank(appId)) {
-                        HttpSession session = request.getSession(true);
-                        if (session!=null) {
-                            session.setAttribute("appId", appId);
-                        }
+                        session.setAttribute("appId", appId);
                     }
                 }
                 else{
