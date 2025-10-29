@@ -1,9 +1,7 @@
 package eu.nebulous.resource.discovery.registration.controller;
 
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
-import eu.nebulous.resource.discovery.broker_communication.BrokerPublisher;
 import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriber;
-import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriptionDetails;
 import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
 import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
@@ -11,6 +9,8 @@ import eu.nebulous.resource.discovery.registration.model.RegistrationRequest;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestException;
 import eu.nebulous.resource.discovery.registration.model.RegistrationRequestStatus;
 import eu.nebulous.resource.discovery.registration.service.RegistrationRequestService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -57,11 +57,11 @@ public class RegistrationRequestController implements InitializingBean {
 
 		log.debug("Initializing connector");
 		if (!has_initialized_nonce_connector){
-			nonce_publisher = new SynchronousBrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(), processorPropertiesStatic.getNebulous_broker_password(), "");
+			nonce_publisher = new SynchronousBrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulousBrokerIpAddress(), processorPropertiesStatic.getNebulousBrokerPort(), processorPropertiesStatic.getNebulousBrokerUsername(), processorPropertiesStatic.getNebulousBrokerPassword(), "");
 
 			//Testing change 1
 			/*
-			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(),processorPropertiesStatic.getNebulous_broker_password(), "","");
+			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulousBrokerIpAddress(), processorPropertiesStatic.getNebulousBrokerPort(), processorPropertiesStatic.getNebulousBrokerUsername(),processorPropertiesStatic.getNebulousBrokerPassword(), "","");
 			
 			
 
@@ -89,7 +89,6 @@ public class RegistrationRequestController implements InitializingBean {
 				return message_body;
 			};
 
-			
 			log.debug("Starting subscription thread");
 			Thread subscriber_thread = new Thread (()->	nonce_subscriber.subscribe(function,""));//Could have a particular application name instead of empty here if needed
 			subscriber_thread.start();
@@ -101,17 +100,23 @@ public class RegistrationRequestController implements InitializingBean {
 	}
 	
 	@GetMapping(value = "/whoami", produces = MediaType.APPLICATION_JSON_VALUE)
-	public Map<String, Object> whoami(Authentication authentication) {
+	public Map<String, Object> whoami(Authentication authentication, HttpServletRequest request) {
 		List<String> roles = authentication != null
 				? authentication.getAuthorities().stream()
 						.map(Object::toString)
 						.map(s -> StringUtils.removeStartIgnoreCase(s, "ROLE_"))
 						.toList()
 				: Collections.emptyList();
+        HttpSession session = request.getSession(false);
+        String appId = Optional.ofNullable(session)
+                .map(s -> s.getAttribute("appId"))
+                .map(Object::toString)
+                .orElse("");
 		return Map.of(
 				"user", authentication!=null ? authentication.getName() : "",
 				"roles", roles,
-				"admin", roles.contains("ADMIN")
+				"admin", roles.contains("ADMIN"),
+                "appId", appId
 		);
 	}
 
@@ -186,8 +191,8 @@ public class RegistrationRequestController implements InitializingBean {
                 throw new RuntimeException(e);
             }
         }
-        
-		 */
+		*/
+
 		try {
 			
 			//nonce_message_published.remove(nonce);
