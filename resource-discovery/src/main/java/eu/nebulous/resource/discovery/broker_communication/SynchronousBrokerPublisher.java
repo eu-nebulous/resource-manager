@@ -54,7 +54,7 @@ public class SynchronousBrokerPublisher {
                 SyncedPublisher publisher = new SyncedPublisher("resource_manager_"+topic, topic, true, true);
                 publishers.add(publisher);
             //    if (broker_topic.equals(topic)){
-                    log.error("inside_assignment_to_private_publisher_instance");
+                    log.debug("inside_assignment_to_private_publisher_instance");
                     this.private_publisher_instance = (SyncedPublisher) publishers.get(publishers.size()-1);
                     //this.topic = broker_topic;
                     this.topic = topic;
