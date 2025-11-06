@@ -17,8 +17,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,6 +26,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -56,13 +58,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .formLogin(withDefaults())
-                .authorizeHttpRequests(authorize -> authorize.requestMatchers(
-                        "/discovery/**", "/*.html").authenticated())
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-                .addFilterAfter(apiKeyAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(nonceAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/discovery/**", "/monitor/**", "/*.html").authenticated()
+                        .requestMatchers("/css/**", "/js/**", "/img/**", "/sass/**").permitAll()
+                        .anyRequest().permitAll()
+                )
+                .addFilterBefore(apiKeyAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(nonceAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return httpSecurity.build();
     }
@@ -141,8 +145,11 @@ public class SecurityConfig {
                                 UsernamePasswordAuthenticationToken authentication =
                                         new UsernamePasswordAuthenticationToken(username, properties.getApiKeyValue(),
                                                 Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
-                                // store completed authentication in security context
-                                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                                // Store completed authentication in security context
+                                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                                context.setAuthentication(authentication);
+                                SecurityContextHolder.setContext(context);
                                 log.info("apiKeyAuthenticationFilter: Successful authentication with API Key. SSO user: {}", username);
 
                                 // Invalidate the old session if it exists
@@ -157,6 +164,11 @@ public class SecurityConfig {
                                 if (StringUtils.isNotBlank(appId)) {
                                     session.setAttribute("appId", appId);
                                 }
+
+                                // ✅ Save SecurityContext so it persists for future requests
+                                SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+                                securityContextRepository.saveContext( context, request, (HttpServletResponse) servletResponse );
+
                             } catch (Exception e) {
                                 log.error("apiKeyAuthenticationFilter: EXCEPTION: ", e);
                             }
@@ -180,7 +192,7 @@ public class SecurityConfig {
     public Filter nonceAuthenticationFilter(){
         return (servletRequest, servletResponse, filterChain) -> {
             try {
-                HttpServletRequest request = ((HttpServletRequest )servletRequest);
+                HttpServletRequest request = ((HttpServletRequest) servletRequest);
 
                 /*Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 if (auth!=null && auth.isAuthenticated()) {
@@ -227,8 +239,11 @@ public class SecurityConfig {
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(username, nonce,
                                     Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
-                    // store completed authentication in security context
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    // Store completed authentication in security context
+                    SecurityContext context = SecurityContextHolder.createEmptyContext();
+                    context.setAuthentication(authentication);
+                    SecurityContextHolder.setContext(context);
                     log.info("User {} was authenticated using a nonce token", username);
 
                     // Invalidate the old session if it exists
@@ -242,6 +257,10 @@ public class SecurityConfig {
                     if (StringUtils.isNotBlank(appId)) {
                         session.setAttribute("appId", appId);
                     }
+
+                    // ✅ Save SecurityContext so it persists for future requests
+                    SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+                    securityContextRepository.saveContext( context, request, (HttpServletResponse) servletResponse );
                 }
                 else{
                     log.error("Received a null user");
