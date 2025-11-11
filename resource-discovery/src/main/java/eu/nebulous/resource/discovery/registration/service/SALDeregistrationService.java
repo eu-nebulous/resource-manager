@@ -56,17 +56,17 @@ public class SALDeregistrationService implements InitializingBean {
 
 
         String deregister_device_message_string = get_device_deregistration_json(device);
-        if (processorProperties.isDeregistrationEmulated()){
+        if (processorProperties.isDeregistration_emulated()){
             return;
         }
-        SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulousBrokerIpAddress(), processorProperties.getNebulousBrokerPort(), processorProperties.getNebulousBrokerUsername(), processorProperties.getNebulousBrokerPassword(), "");
+        SynchronousBrokerPublisher deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
         int sending_attempt = 1;
         while (deregister_device_publisher.is_publisher_null()) {
             if (sending_attempt <= 2) {
-                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulousBrokerIpAddress(), processorProperties.getNebulousBrokerPort(), processorProperties.getNebulousBrokerUsername(), processorProperties.getNebulousBrokerPassword(), "");
+                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             } else {
                 log.warn("Will now attempt to reset the Synchronous publisher connector to deregister");
-                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulousBrokerIpAddress(), processorProperties.getNebulousBrokerPort(), processorProperties.getNebulousBrokerUsername(), processorProperties.getNebulousBrokerPassword(), "");
+                deregister_device_publisher = new SynchronousBrokerPublisher(get_deregistration_topic_name(), processorProperties.getNebulous_broker_ip_address(), processorProperties.getNebulous_broker_port(), processorProperties.getNebulous_broker_username(), processorProperties.getNebulous_broker_password(), "");
             }
             try {
                 Thread.sleep(3000);
@@ -108,17 +108,17 @@ public class SALDeregistrationService implements InitializingBean {
             return;
         }
 
-        if (StringUtils.isNotBlank(processorProperties.getNebulousBrokerIpAddress()) &&
-                StringUtils.isNotBlank(processorProperties.getNebulousBrokerUsername()) &&
-                StringUtils.isNotBlank(processorProperties.getNebulousBrokerPassword())) {
+        if (StringUtils.isNotBlank(processorProperties.getNebulous_broker_ip_address()) &&
+                StringUtils.isNotBlank(processorProperties.getNebulous_broker_username()) &&
+                StringUtils.isNotBlank(processorProperties.getNebulous_broker_password())) {
             log.info("Successful setting of properties for communication with SAL");
             taskExecutor.execute(this::processQueue);
             taskExecutor.execute(this::checkProcessQueue);
         } else {
             String message = String.format("Nebulous broker configuration is missing:  ip-address=%s, username=%s, password=%s",
-                    processorProperties.getNebulousBrokerIpAddress(),
-                    processorProperties.getNebulousBrokerUsername(),
-                    StringUtils.isNotBlank(processorProperties.getNebulousBrokerPassword()) ? "<provided>" : "<not provided>");
+                    processorProperties.getNebulous_broker_ip_address(),
+                    processorProperties.getNebulous_broker_username(),
+                    StringUtils.isNotBlank(processorProperties.getNebulous_broker_password()) ? "<provided>" : "<not provided>");
             log.error(message);
             throw new RuntimeException(message);
         }
@@ -151,7 +151,7 @@ public class SALDeregistrationService implements InitializingBean {
         String topicName = get_device_compromised_topic_name();
         log.info("Subscribing to topic: {}", topicName);
         try {
-            BrokerSubscriber subscriber = new BrokerSubscriber(topicName,processorProperties.getNebulousBrokerIpAddress(),processorProperties.getNebulousBrokerPort(),processorProperties.getBrokerUsername(),processorProperties.getBrokerPassword(),"","");
+            BrokerSubscriber subscriber = new BrokerSubscriber(topicName,processorProperties.getNebulous_broker_ip_address(),processorProperties.getNebulous_broker_port(),processorProperties.getBrokerUsername(),processorProperties.getBrokerPassword(),"","");
             subscriber.subscribe(compromised_device_handling,"");
         } catch (Exception e) {
             log.error("Error while subscribing to topic: " + topicName, e);
@@ -202,6 +202,6 @@ public class SALDeregistrationService implements InitializingBean {
     }
     
     private String get_device_compromised_topic_name(){
-        return processorProperties.getCompromisedDeviceTopic();
+        return processorProperties.getCompromised_device_topic();
     }
 }
