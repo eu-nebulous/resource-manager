@@ -2,6 +2,7 @@ package eu.nebulous.resource.discovery.registration.controller;
 
 import eu.nebulous.resource.discovery.ResourceDiscoveryProperties;
 import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriber;
+import eu.nebulous.resource.discovery.broker_communication.BrokerSubscriptionDetails;
 import eu.nebulous.resource.discovery.broker_communication.SynchronousBrokerPublisher;
 import eu.nebulous.resource.discovery.registration.IRegistrationRequestProcessor;
 import eu.nebulous.resource.discovery.registration.model.ArchivedRegistrationRequest;
@@ -16,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -57,13 +57,14 @@ public class RegistrationRequestController implements InitializingBean {
 
 		log.debug("Initializing connector");
 		if (!has_initialized_nonce_connector){
-			nonce_publisher = new SynchronousBrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulousBrokerIpAddress(), processorPropertiesStatic.getNebulousBrokerPort(), processorPropertiesStatic.getNebulousBrokerUsername(), processorPropertiesStatic.getNebulousBrokerPassword(), "");
+			nonce_publisher = new SynchronousBrokerPublisher(GET_USER_TOPIC,processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(), processorPropertiesStatic.getNebulous_broker_password(), "");
 
 			//Testing change 1
 			/*
 			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulousBrokerIpAddress(), processorPropertiesStatic.getNebulousBrokerPort(), processorPropertiesStatic.getNebulousBrokerUsername(),processorPropertiesStatic.getNebulousBrokerPassword(), "","");
-			
-			
+			//Testing change 1
+			/*
+			nonce_subscriber = new BrokerSubscriber(GET_USER_TOPIC+".>",processorPropertiesStatic.getNebulous_broker_ip_address(), processorPropertiesStatic.getNebulous_broker_port(), processorPropertiesStatic.getNebulous_broker_username(),processorPropertiesStatic.getNebulous_broker_password(), "","");
 
 			//nonce_synced_publisher = new SyncedBrokerPublisher();
 			

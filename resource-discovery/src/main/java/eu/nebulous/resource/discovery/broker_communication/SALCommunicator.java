@@ -199,7 +199,6 @@ public class SALCommunicator {
             nodeProperties.put("ram", ram_gb);
             nodeProperties.put("disk", disk_gb);
             nodeProperties.put("price", price);
-            nodeProperties.put("gpu", gpu);
             nodeProperties.put("fpga", number_of_fpgas);
             nodeProperties.put("operatingSystem", operatingSystem);
             nodeProperties.put("geoLocation", geoLocation);
