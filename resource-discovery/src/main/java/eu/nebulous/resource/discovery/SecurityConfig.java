@@ -4,6 +4,7 @@ import eu.nebulous.resource.discovery.registration.controller.RegistrationReques
 import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,8 +17,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,6 +26,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -55,13 +58,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .formLogin(withDefaults())
-                .authorizeHttpRequests(authorize -> authorize.requestMatchers(
-                        "/discovery/**", "/*.html").authenticated())
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
-                .addFilterAfter(apiKeyAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(nonceAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/discovery/**", "/monitor/**", "/*.html").authenticated()
+                        .requestMatchers("/css/**", "/js/**", "/img/**", "/sass/**").permitAll()
+                        .anyRequest().permitAll()
+                )
+                .addFilterBefore(apiKeyAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(nonceAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.ALWAYS));
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
 
         return httpSecurity.build();
     }
@@ -107,11 +112,11 @@ public class SecurityConfig {
     public Filter apiKeyAuthenticationFilter() {
         return (servletRequest, servletResponse, filterChain) -> {
 
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            /*Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth!=null && auth.isAuthenticated()) {
                 filterChain.doFilter(servletRequest, servletResponse);
                 return;
-            }
+            }*/
             
             if (properties.isApiKeyAuthenticationEnabled() && StringUtils.isNotBlank(properties.getApiKeyValue())) {
                 if (servletRequest instanceof HttpServletRequest request && servletResponse instanceof HttpServletResponse) {
@@ -140,9 +145,30 @@ public class SecurityConfig {
                                 UsernamePasswordAuthenticationToken authentication =
                                         new UsernamePasswordAuthenticationToken(username, properties.getApiKeyValue(),
                                                 Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
-                                // store completed authentication in security context
-                                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                                // Store completed authentication in security context
+                                SecurityContext context = SecurityContextHolder.createEmptyContext();
+                                context.setAuthentication(authentication);
+                                SecurityContextHolder.setContext(context);
                                 log.info("apiKeyAuthenticationFilter: Successful authentication with API Key. SSO user: {}", username);
+
+                                // Invalidate the old session if it exists
+                                HttpSession oldSession = request.getSession(false);
+                                if (oldSession != null) {
+                                    oldSession.invalidate();
+                                }
+                                // Create a new session
+                                HttpSession session = request.getSession(true);
+
+                                String appId = servletRequest.getParameter(APPID_REQUEST_PARAM);
+                                if (StringUtils.isNotBlank(appId)) {
+                                    session.setAttribute("appId", appId);
+                                }
+
+                                // ✅ Save SecurityContext so it persists for future requests
+                                SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+                                securityContextRepository.saveContext( context, request, (HttpServletResponse) servletResponse );
+
                             } catch (Exception e) {
                                 log.error("apiKeyAuthenticationFilter: EXCEPTION: ", e);
                             }
@@ -166,22 +192,18 @@ public class SecurityConfig {
     public Filter nonceAuthenticationFilter(){
         return (servletRequest, servletResponse, filterChain) -> {
             try {
-                HttpServletRequest request = ((HttpServletRequest )servletRequest);
-//                HttpSession session = request.getSession(false);
-//                
-//                if(session!=null){
-//                    filterChain.doFilter(servletRequest, servletResponse);
-//                    return;
-//                }
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                HttpServletRequest request = ((HttpServletRequest) servletRequest);
+
+                /*Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 if (auth!=null && auth.isAuthenticated()) {
                     filterChain.doFilter(servletRequest, servletResponse);
                     return;
-                }
-                StringBuilder requestURL = new StringBuilder(request.getRequestURL().toString());
+                }*/
+
+                /*StringBuilder requestURL = new StringBuilder(request.getRequestURL().toString());
                 String queryString = request.getQueryString();
 
-                /*if (queryString == null) {
+                if (queryString == null) {
                     log.warn( requestURL.toString());
                 } else {
                     log.warn(requestURL.append('?').append(queryString).toString());
@@ -197,11 +219,15 @@ public class SecurityConfig {
                     return;
                 }
 
-                String username =null;
+                String username = null;
                 HashMap<String, String> map = new HashMap<>();
                 map.put(NONCE_REQUEST_PARAM, nonce);
                 map.put(APPID_REQUEST_PARAM, appId);
+                log.trace("nonceAuthenticationFilter: Starting NONCE authentication: map={}", map);
+                long startTm = System.currentTimeMillis();
                 username = RegistrationRequestController.getNonceUsername(map);
+                long endTm = System.currentTimeMillis();
+                log.trace("nonceAuthenticationFilter: NONCE authentication completed in {}ms: username={}, nonce={}", endTm-startTm, username, nonce);
 //                if ((nonce != null && appId != null) && (!nonce.isEmpty())) {
 //                    HashMap<String, String> map = new HashMap<>();
 //                    map.put(NONCE_REQUEST_PARAM, nonce);
@@ -213,9 +239,28 @@ public class SecurityConfig {
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(username, nonce,
                                     Collections.singletonList(new SimpleGrantedAuthority(SSO_USER_ROLE)));
-                    // store completed authentication in security context
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    // Store completed authentication in security context
+                    SecurityContext context = SecurityContextHolder.createEmptyContext();
+                    context.setAuthentication(authentication);
+                    SecurityContextHolder.setContext(context);
                     log.info("User {} was authenticated using a nonce token", username);
+
+                    // Invalidate the old session if it exists
+                    HttpSession oldSession = request.getSession(false);
+                    if (oldSession != null) {
+                        oldSession.invalidate();
+                    }
+                    // Create a new session
+                    HttpSession session = request.getSession(true);
+
+                    if (StringUtils.isNotBlank(appId)) {
+                        session.setAttribute("appId", appId);
+                    }
+
+                    // ✅ Save SecurityContext so it persists for future requests
+                    SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+                    securityContextRepository.saveContext( context, request, (HttpServletResponse) servletResponse );
                 }
                 else{
                     log.error("Received a null user");

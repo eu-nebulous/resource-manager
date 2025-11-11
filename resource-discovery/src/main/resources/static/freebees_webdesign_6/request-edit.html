@@ -347,6 +347,17 @@ function sendRequestData(requestData) {
                             if (isNew) {
                                 var it = $(`[id="request#device#owner"]`);
                                 it.val( username );
+
+                                var sessionAppId = data.appId;
+                                console.log('>> sessionAppId: ', sessionAppId);
+                                if (sessionAppId!=='') {
+                                    var it = $(`[id="request#device#ref"]`);
+                                    var devRef = it.val();
+                                    console.log('>> sessionAppId: Old devRef: ', devRef);
+                                    devRef = devRef.replace('|all-applications|', '|'+sessionAppId.trim()+'|');
+                                    it.val( devRef );
+                                    console.log('>> sessionAppId: New devRef: ', devRef);
+                                }
                             }
 
                             checkSameUser();
