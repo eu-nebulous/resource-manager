@@ -161,6 +161,8 @@ public class SALCommunicator {
     public static String get_device_registration_json(String internal_ip_address, String external_ip_address, int external_access_port, String os_family, String os_architecture, String jar_url, int os_version, int cpu_cores, int gpu, long ram_gb, long disk_gb, int number_of_fpgas, String device_name,Double price, String provider_id, String city_name, String country_name, String device_username, String device_password, String private_key, double device_longitude, double device_latitude) {
 
             JSONObject root_json_object = new JSONObject();
+            JSONObject metadata_object = new JSONObject();
+            JSONObject body_json_object = new JSONObject();
             JSONObject loginCredential = new JSONObject();
             JSONObject ipAddress1 = new JSONObject();
             JSONObject ipAddress2 = new JSONObject();
@@ -201,33 +203,38 @@ public class SALCommunicator {
             nodeProperties.put("operatingSystem", operatingSystem);
             nodeProperties.put("geoLocation", geoLocation);
 
-            root_json_object.put("name", device_name);
-            root_json_object.put("loginCredential", loginCredential);
-            root_json_object.put("port", external_access_port);
+            body_json_object.put("name", device_name);
+            body_json_object.put("loginCredential", loginCredential);
+            body_json_object.put("port", external_access_port);
 
             JSONArray ipAddresses = new JSONArray();
             ipAddresses.add(ipAddress1);
             ipAddresses.add(ipAddress2);
-            root_json_object.put("ipAddresses", ipAddresses);
+            body_json_object.put("ipAddresses", ipAddresses);
 
-            root_json_object.put("nodeProperties", nodeProperties);
-            root_json_object.put("systemArch", os_architecture); //TODO refine - for now assuming that the architecture of the device is the same as that of the OS installed on top of it, could be a wrong assumption
-            root_json_object.put("scriptURL", "https://www.google.com");
-            root_json_object.put("jarURL", jar_url);
+            body_json_object.put("nodeProperties", nodeProperties);
+            body_json_object.put("systemArch", os_architecture); //TODO refine - for now assuming that the architecture of the device is the same as that of the OS installed on top of it, could be a wrong assumption
+            body_json_object.put("scriptURL", "https://www.google.com");
+            body_json_object.put("jarURL", jar_url);
+            
+            metadata_object.put("type","edge");
+            metadata_object.put("jobId","app_job_id");
+            
+            root_json_object.put("metaData", metadata_object);
+            root_json_object.put("body", body_json_object);
 
-
-            //JSONObject root_json_object = JsonFileParser.parse(request_body_file);
-            //root_json_object.put("name", device_name);
-            //((JSONObject) ((JSONArray) root_json_object.get("ipAddresses")).get(0)).put("value", internal_ip_address);
-            //((JSONObject) ((JSONArray) root_json_object.get("ipAddresses")).get(1)).put("value", external_ip_address);
-            //((JSONObject) root_json_object.get("nodeProperties")).put("disk", disk_gb);
-            //((JSONObject) root_json_object.get("nodeProperties")).put("ram", ram_gb);
-            //((JSONObject) root_json_object.get("nodeProperties")).put("providerId", provider_id);
-            //((JSONObject) root_json_object.get("nodeProperties")).put("cores", cpu_cores);
-            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("country", country_name);
-            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("city", city_name);
-            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
-            //((JSONObject) ((JSONObject) root_json_object.get("nodeProperties")).get("geoLocation")).put("longitude", new Random().nextFloat(-90, 90));
+            //JSONObject body_json_object = JsonFileParser.parse(request_body_file);
+            //body_json_object.put("name", device_name);
+            //((JSONObject) ((JSONArray) body_json_object.get("ipAddresses")).get(0)).put("value", internal_ip_address);
+            //((JSONObject) ((JSONArray) body_json_object.get("ipAddresses")).get(1)).put("value", external_ip_address);
+            //((JSONObject) body_json_object.get("nodeProperties")).put("disk", disk_gb);
+            //((JSONObject) body_json_object.get("nodeProperties")).put("ram", ram_gb);
+            //((JSONObject) body_json_object.get("nodeProperties")).put("providerId", provider_id);
+            //((JSONObject) body_json_object.get("nodeProperties")).put("cores", cpu_cores);
+            //((JSONObject) ((JSONObject) body_json_object.get("nodeProperties")).get("geoLocation")).put("country", country_name);
+            //((JSONObject) ((JSONObject) body_json_object.get("nodeProperties")).get("geoLocation")).put("city", city_name);
+            //((JSONObject) ((JSONObject) body_json_object.get("nodeProperties")).get("geoLocation")).put("latitude", new Random().nextFloat(-90, 90));
+            //((JSONObject) ((JSONObject) body_json_object.get("nodeProperties")).get("geoLocation")).put("longitude", new Random().nextFloat(-90, 90));
             return(root_json_object.toJSONString());
     }
 
