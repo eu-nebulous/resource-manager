@@ -108,7 +108,7 @@ public class SALDeregistrationService implements InitializingBean {
             return;
         }
 
-        if (StringUtils.isNotBlank(processorProperties.getNebulousServerIpAddress()) &&
+        if (StringUtils.isNotBlank(processorProperties.getNebulousBrokerIpAddress()) &&
                 StringUtils.isNotBlank(processorProperties.getNebulousBrokerUsername()) &&
                 StringUtils.isNotBlank(processorProperties.getNebulousBrokerPassword())) {
             log.info("Successful setting of properties for communication with SAL");
