@@ -24,9 +24,9 @@ discovery:
   brokerPassword: "111"
 
   nebulousBrokerIpAddress: "nebulous-activemq"
-  nebulousBrokerPort: 5672
-  nebulousBrokerUsername: "admin"
-  nebulousBrokerPassword: "admin"
+  nebulousBrokerPort: ${NEBULOUS_BROKER_PORT}
+  nebulousBrokerUsername: ${NEBULOUS_BROKER_USERNAME}
+  nebulousBrokerPassword: ${NEBULOUS_BROKER_PASSWORD}
   deregistrationEmulated: false
   lostDeviceTopic: "eu.nebulouscloud.monitoring.device_lost"
   compromisedDeviceTopic: "eu.nebulouscloud.monitoring.device_compromised"
