@@ -72,8 +72,8 @@ public class ResourceDiscoveryProperties implements InitializingBean {
 	
 	// Failed devices detection
 	private boolean automaticFailedDetection = true;
-	private long suspectDeviceThreshold = 5;				// in minutes
-	private long failedDeviceThreshold = 10;				// in minutes
+	private long suspectDeviceThreshold = 0;				// in minutes
+	private long failedDeviceThreshold = 1;				// in minutes
 
 	// Device detailed data settings
 	private String deviceInfoRequestsTopic = "ems.client.info.requests";
